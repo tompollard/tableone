@@ -1,10 +1,10 @@
-"""
+table"""
 Package for producing Table 1 in medical research papers, 
 inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 import pandas as pd 
 from tabulate import tabulate
@@ -49,7 +49,7 @@ class TableOne(object):
         return self.__pretty_print_table()
 
     def __pretty_print_table(self):
-        if strata_col:
+        if self.strata_col:
             strat_str = 'Stratified by ' + '{}\n'.format(self.strata_col)
         else:
             strat_str = 'Overall\n'
