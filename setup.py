@@ -58,8 +58,6 @@ setup(
         'tabulate>=0.7.7',
         ],
 
-    license='MIT',
-
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
