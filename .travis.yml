@@ -1,0 +1,19 @@
+# Link repository to Travis CI
+# https://travis-ci.org/
+
+# Master branch only
+branches:
+  only:
+  - master
+
+# Set the language
+language: python
+python:
+    - "2.7"
+
+# command to install dependencies
+install:
+  - pip install .
+
+# command to run tests
+script: nosetests
