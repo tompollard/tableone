@@ -1,4 +1,4 @@
-table"""
+"""
 Package for producing Table 1 in medical research papers, 
 inspired by the R package of the same name.
 """
