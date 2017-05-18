@@ -1,12 +1,12 @@
 """
-Package for producing Table 1 in medical research papers, 
+Package for producing Table 1 in medical research papers,
 inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
 __version__ = "0.1.4"
 
-import pandas as pd 
+import pandas as pd
 from tabulate import tabulate
 
 
@@ -26,21 +26,23 @@ class TableOne(object):
             self.strata = data[strata_col][data[strata_col].notnull()].astype('category').unique().categories.sort_values()
         else:
             self.strata = ['overall']
-        
+
+        self._n_row = self.__create_n_row(data)
+
         for s in self.strata:
             if strata_col:
                 self._cont_describe[s] = self.__create_cont_describe(data.loc[data[strata_col] == s])
                 self._cat_describe[s] = self.__create_cat_describe(data.loc[data[strata_col] == s])
             else:
                 self._cont_describe[s] = self.__create_cont_describe(data)
-                self._cat_describe[s] = self.__create_cat_describe(data) 
+                self._cat_describe[s] = self.__create_cat_describe(data)
 
         # create tables of continuous and categorical variables
-        self._cont_table = self.__create_cont_table() 
+        self._cont_table = self.__create_cont_table()
         self._cat_table = self.__create_cat_table(data)
 
         # combine continuous variables and categorical variables into table 1
-        self.tableone = self.__create_tableone(data)
+        self.tableone = self.__create_tableone()
 
     def __str__(self):
         return self.__pretty_print_table()
@@ -103,7 +105,7 @@ class TableOne(object):
         for v in self.numerical:
             row = ['{} (mean (std))'.format(v)]
             for strata in self._cont_describe.iterkeys():
-                row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v], 
+                row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v],
                     self._cont_describe[strata]['std'][v]))
             # stack rows to create the table
             table.append(row)
@@ -135,26 +137,28 @@ class TableOne(object):
 
         return table
 
-    def __create_tableone(self,data):
+    def __create_n_row(self,data):
+        """
+        Get n, the number of rows for each strata
+        """
+        n = ['n']
+        if self.strata_col:
+            for s in self.strata:
+                count = data[strata_col][data[strata_col]==s].count()
+                n.append("{}".format(count))
+        else:
+            count = len(data.index)
+            n.append("{}".format(count))
+
+        return n
+
+    def __create_tableone(self):
         """
         Create table 1 by combining the continuous and categorical tables
         """
-        header = [] 
-
-        if not self.strata_col:
-            # s_row = ['']
-            # s_row.append("{}".format('overall'))
-            # header.append(s_row)
-            n_row = ['n'] 
-            n_row.append("{}".format(len(data.index)))
-            header.append(n_row)
-        elif self.strata_col:
-            pass
-
-        table = header + self._cont_table + self._cat_table
+        table = [self._n_row] + self._cont_table + self._cat_table
         
-        return table    
+        return table
 
     def to_csv(self):
         pass
-
