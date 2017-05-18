@@ -79,3 +79,9 @@ Example
     2.0                   35.00 (22.15)      32.00 (20.78)
     3.0                   56.00 (35.44)      64.00 (41.56)
     4.0                   55.00 (34.81)      54.00 (35.06)
+
+9. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML.
+   Files are exported by calling the ``to_<format>`` methods. For example, ``mytable`` can be
+   exported to a CSV named 'mytable.csv' with the following command::
+
+    mytable.to_csv('mytable.csv')
