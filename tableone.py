@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.1.7"
+__version__ = "0.1.8"
 
 import pandas as pd
 from tabulate import tabulate
@@ -182,3 +182,33 @@ class TableOne(object):
         with open(fn, "wb") as f:
             writer = csv.writer(f)
             writer.writerows(self.tableone)
+
+    def to_html(self,fn='tableone.html'):
+        """
+        Write tableone to HTML
+        Args:
+            fn (String): Filename (default 'tableone.html')
+        """
+        tablefmt = 'html'
+        with open(fn, "wb") as f:
+            f.write(tabulate(self.tableone, tablefmt=tablefmt))
+
+    def to_markdown(self,fn='tableone.md'):
+        """
+        Write tableone to markdown
+        Args:
+            fn (String): Filename (default 'tableone.md')
+        """
+        tablefmt = 'pipe'
+        with open(fn, "wb") as f:
+            f.write(tabulate(self.tableone, tablefmt=tablefmt))
+
+    def to_latex(self,fn='tableone.tex'):
+        """
+        Write tableone to LaTeX
+        Args:
+            fn (String): Filename (default 'tableone.tex')
+        """
+        tablefmt = 'latex'
+        with open(fn, "wb") as f:
+            f.write(tabulate(self.tableone, tablefmt=tablefmt))
