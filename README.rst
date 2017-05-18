@@ -44,12 +44,9 @@ Example
 
     catvars = ['status','edema','stage']
 
-5. Optionally, a categorical variable for stratification::
+5. Optionally, a categorical variable for stratification and a list of non-normal variables::
 
     strat = 'trt'
-
-6. Optionally, a list of non-normal variables::
-
     nonnormal = ['bili']
 
 7. Create an instance of TableOne with the input arguments::
@@ -86,8 +83,6 @@ Example
     3.0                   56.00 (35.44)      64.00 (41.56)
     4.0                   55.00 (34.81)      54.00 (35.06)
 
-10. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML.
-   Files are exported by calling the ``to_<format>`` methods. For example, ``mytable`` can be
-   exported to a CSV named 'mytable.csv' with the following command::
+9. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML. Files are exported by calling the ``to_format`` methods. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
 
     mytable.to_csv('mytable.csv')
