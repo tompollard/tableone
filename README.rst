@@ -9,7 +9,7 @@ TableOne
 Introduction
 ------------
 
-Package for producing Table 1 in medical research papers, inspired by the R package of the same name.
+tableone is a package for producing Table 1 in medical research papers, inspired by the R package of the same name. A demo Jupyter Notebook is available at: https://github.com/tompollard/tableone/blob/master/tableone.ipynb
 
 Installation
 ------------
@@ -20,7 +20,7 @@ The distribution is hosted on PyPI and directly installable via pip without need
 Usage
 -----
 
-To follow...
+To follow... 
 
 Example
 -------
@@ -69,6 +69,4 @@ mytable
 # 2.0                   35.00 (22.15)      32.00 (20.78)
 # 3.0                   56.00 (35.44)      64.00 (41.56)
 # 4.0                   55.00 (34.81)      54.00 (35.06)
-
-
 
