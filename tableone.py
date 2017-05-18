@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.1.6"
+__version__ = "0.1.7"
 
 import pandas as pd
 from tabulate import tabulate
@@ -12,11 +12,19 @@ import csv
 
 
 class TableOne(object):
+    """
+    Create a tableone instance.
+
+    Args:
+        data (Pandas DataFrame): The dataset to be summarised.
+        numerical (List): List of names for the numerical columns.
+        categorical (List): List of names for the categorical columns.
+        strata_col (String): Name of a column for stratification (default None).
+    """
 
     def __init__(self, data, numerical=None, categorical=None, strata_col=None):
 
         # instance variables
-        # self.data = data
         self.numerical = numerical
         self.categorical = categorical
         self.strata_col = strata_col
@@ -64,17 +72,20 @@ class TableOne(object):
         """
         Describe the continuous data
         """
-        cont_describe = pd.DataFrame(index=self.numerical)
-        cont_describe['n'] = data[self.numerical].count().values
-        cont_describe['isnull'] = data[self.numerical].isnull().sum().values
-        cont_describe['mean'] = data[self.numerical].mean().values
-        cont_describe['std'] = data[self.numerical].std().values
-        cont_describe['q25'] = data[self.numerical].quantile(0.25).values
-        cont_describe['q75'] = data[self.numerical].quantile(0.75).values
-        cont_describe['min'] = data[self.numerical].min().values
-        cont_describe['max'] = data[self.numerical].max().values
-        cont_describe['skew'] = data[self.numerical].skew().values
-        cont_describe['kurt'] = data[self.numerical].kurt().values
+        if self.numerical:
+            cont_describe = pd.DataFrame(index=self.numerical)
+            cont_describe['n'] = data[self.numerical].count().values
+            cont_describe['isnull'] = data[self.numerical].isnull().sum().values
+            cont_describe['mean'] = data[self.numerical].mean().values
+            cont_describe['std'] = data[self.numerical].std().values
+            cont_describe['q25'] = data[self.numerical].quantile(0.25).values
+            cont_describe['q75'] = data[self.numerical].quantile(0.75).values
+            cont_describe['min'] = data[self.numerical].min().values
+            cont_describe['max'] = data[self.numerical].max().values
+            cont_describe['skew'] = data[self.numerical].skew().values
+            cont_describe['kurt'] = data[self.numerical].kurt().values
+        else:
+            cont_describe = []
 
         return cont_describe
 
@@ -162,6 +173,12 @@ class TableOne(object):
         return table
 
     def to_csv(self,fn='tableone.csv'):
+        """
+        Write tableone to CSV
+
+        Args:
+            fn (String): Filename (default 'tableone.csv')
+        """
         with open(fn, "wb") as f:
             writer = csv.writer(f)
             writer.writerows(self.tableone)
