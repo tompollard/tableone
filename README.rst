@@ -9,7 +9,7 @@ TableOne
 Introduction
 ------------
 
-tableone is a package for producing Table 1 in medical research papers, inspired by the R package of the same name. A demo Jupyter Notebook is available at: https://github.com/tompollard/tableone/blob/master/tableone.ipynb
+tableone is a package for producing Table 1 in medical research papers, inspired by the R package of the same name by Kazuki Yoshida and Justin Bohn. A demo Jupyter Notebook is available at: https://github.com/tompollard/tableone/blob/master/tableone.ipynb
 
 Installation
 ------------
