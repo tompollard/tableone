@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 import pandas as pd 
 from tabulate import tabulate
