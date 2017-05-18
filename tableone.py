@@ -4,10 +4,11 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 import pandas as pd
 from tabulate import tabulate
+import csv
 
 
 class TableOne(object):
@@ -157,8 +158,10 @@ class TableOne(object):
         Create table 1 by combining the continuous and categorical tables
         """
         table = [self._n_row] + self._cont_table + self._cat_table
-        
+
         return table
 
-    def to_csv(self):
-        pass
+    def to_csv(self,fn='tableone.csv'):
+        with open(fn, "wb") as f:
+            writer = csv.writer(f)
+            writer.writerows(self.tableone)
