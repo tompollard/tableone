@@ -20,14 +20,16 @@ class TableOne(object):
         continuous (List): List of column names for the continuous variables.
         categorical (List): List of column names for the categorical variables.
         strata_col (String): Column name for stratification (default None).
+        nonnormal (List): List of column names for non-normal variables (default None).
     """
 
-    def __init__(self, data, continuous=None, categorical=None, strata_col=None):
+    def __init__(self, data, continuous=None, categorical=None, strata_col=None, nonnormal=[]):
 
         # instance variables
         self.continuous = continuous
         self.categorical = categorical
         self.strata_col = strata_col
+        self.nonnormal = nonnormal
         self._cont_describe = {}
         self._cat_describe = {}
 
@@ -77,6 +79,7 @@ class TableOne(object):
             cont_describe['n'] = data[self.continuous].count().values
             cont_describe['isnull'] = data[self.continuous].isnull().sum().values
             cont_describe['mean'] = data[self.continuous].mean().values
+            cont_describe['median'] = data[self.continuous].median().values
             cont_describe['std'] = data[self.continuous].std().values
             cont_describe['q25'] = data[self.continuous].quantile(0.25).values
             cont_describe['q75'] = data[self.continuous].quantile(0.75).values
@@ -115,10 +118,18 @@ class TableOne(object):
         table = []
 
         for v in self.continuous:
-            row = ['{} (mean (std))'.format(v)]
+            if v in self.nonnormal:
+                row = ['{} (median [IQR])'.format(v)]
+            else:
+                row = ['{} (mean (std))'.format(v)]
             for strata in self._cont_describe.iterkeys():
-                row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v],
-                    self._cont_describe[strata]['std'][v]))
+                if v in self.nonnormal:
+                    row.append("{:0.2f} [{:0.2f},{:0.2f}]".format(self._cont_describe[strata]['median'][v],
+                        self._cont_describe[strata]['q25'][v],
+                        self._cont_describe[strata]['q75'][v]))
+                else:
+                    row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v],
+                        self._cont_describe[strata]['std'][v]))                    
             # stack rows to create the table
             table.append(row)
 
