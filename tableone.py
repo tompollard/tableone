@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 
 import pandas as pd
 from tabulate import tabulate
@@ -145,7 +145,7 @@ class TableOne(object):
         n = ['n']
         if self.strata_col:
             for s in self.strata:
-                count = data[strata_col][data[strata_col]==s].count()
+                count = data[self.strata_col][data[self.strata_col]==s].count()
                 n.append("{}".format(count))
         else:
             count = len(data.index)
