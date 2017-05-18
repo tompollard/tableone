@@ -38,7 +38,7 @@ Example
 
 3. List of columns containing continuous variables::
 
-    convars = ['time','age','ascites','hepato','spiders']
+    convars = ['time','age','ascites','hepato','spiders','bili']
 
 4. List of columns containing categorical variables::
 
@@ -48,24 +48,30 @@ Example
 
     strat = 'trt'
 
-6. Create an instance of TableOne with the input arguments::
+6. Optionally, a list of non-normal variables::
 
-    mytable = TableOne(data, convars, catvars, strat)
+    nonnormal = ['bili']
 
-7. Type the name of the instance in an interpreter::
+7. Create an instance of TableOne with the input arguments::
+
+    mytable = TableOne(data, convars, catvars, strat, nonnormal)
+
+8. Type the name of the instance in an interpreter::
 
     mytable
 
-8. ...which prints the following table to screen::
+9. ...which prints the following table to screen::
 
     Stratified by trt
                           1.0                2.0
     --------------------  -----------------  -----------------
+    n                     158                154
     time (mean (std))     2015.62 (1094.12)  1996.86 (1155.93)
     age (mean (std))      51.42 (11.01)      48.58 (9.96)
     ascites (mean (std))  0.09 (0.29)        0.06 (0.25)
     hepato (mean (std))   0.46 (0.50)        0.56 (0.50)
     spiders (mean (std))  0.28 (0.45)        0.29 (0.46)
+    bili (median [IQR])   1.40 [0.80,3.20]   1.30 [0.72,3.60]
     status (n (%))
     0                     83.00 (52.53)      85.00 (55.19)
     1                     10.00 (6.33)       9.00 (5.84)
@@ -80,7 +86,7 @@ Example
     3.0                   56.00 (35.44)      64.00 (41.56)
     4.0                   55.00 (34.81)      54.00 (35.06)
 
-9. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML.
+10. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML.
    Files are exported by calling the ``to_<format>`` methods. For example, ``mytable`` can be
    exported to a CSV named 'mytable.csv' with the following command::
 
