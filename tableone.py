@@ -17,15 +17,15 @@ class TableOne(object):
 
     Args:
         data (Pandas DataFrame): The dataset to be summarised.
-        numerical (List): List of names for the numerical columns.
-        categorical (List): List of names for the categorical columns.
-        strata_col (String): Name of a column for stratification (default None).
+        continuous (List): List of column names for the continuous variables.
+        categorical (List): List of column names for the categorical variables.
+        strata_col (String): Column name for stratification (default None).
     """
 
-    def __init__(self, data, numerical=None, categorical=None, strata_col=None):
+    def __init__(self, data, continuous=None, categorical=None, strata_col=None):
 
         # instance variables
-        self.numerical = numerical
+        self.continuous = continuous
         self.categorical = categorical
         self.strata_col = strata_col
         self._cont_describe = {}
@@ -72,18 +72,18 @@ class TableOne(object):
         """
         Describe the continuous data
         """
-        if self.numerical:
-            cont_describe = pd.DataFrame(index=self.numerical)
-            cont_describe['n'] = data[self.numerical].count().values
-            cont_describe['isnull'] = data[self.numerical].isnull().sum().values
-            cont_describe['mean'] = data[self.numerical].mean().values
-            cont_describe['std'] = data[self.numerical].std().values
-            cont_describe['q25'] = data[self.numerical].quantile(0.25).values
-            cont_describe['q75'] = data[self.numerical].quantile(0.75).values
-            cont_describe['min'] = data[self.numerical].min().values
-            cont_describe['max'] = data[self.numerical].max().values
-            cont_describe['skew'] = data[self.numerical].skew().values
-            cont_describe['kurt'] = data[self.numerical].kurt().values
+        if self.continuous:
+            cont_describe = pd.DataFrame(index=self.continuous)
+            cont_describe['n'] = data[self.continuous].count().values
+            cont_describe['isnull'] = data[self.continuous].isnull().sum().values
+            cont_describe['mean'] = data[self.continuous].mean().values
+            cont_describe['std'] = data[self.continuous].std().values
+            cont_describe['q25'] = data[self.continuous].quantile(0.25).values
+            cont_describe['q75'] = data[self.continuous].quantile(0.75).values
+            cont_describe['min'] = data[self.continuous].min().values
+            cont_describe['max'] = data[self.continuous].max().values
+            cont_describe['skew'] = data[self.continuous].skew().values
+            cont_describe['kurt'] = data[self.continuous].kurt().values
         else:
             cont_describe = []
 
@@ -114,7 +114,7 @@ class TableOne(object):
         """
         table = []
 
-        for v in self.numerical:
+        for v in self.continuous:
             row = ['{} (mean (std))'.format(v)]
             for strata in self._cont_describe.iterkeys():
                 row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v],
