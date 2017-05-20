@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.1.11"
+__version__ = "0.1.12"
 
 import pandas as pd
 from tabulate import tabulate
@@ -215,8 +215,8 @@ class TableOne(object):
                         self._cont_describe[strata]['std'][v]))                    
             # add pval column
             if self.pval:
-                row.append('{:0.2f}'.format(x._significance_table.loc[v].pval)) 
-                row.append('{}'.format(x._significance_table.loc[v].testname)) 
+                row.append('{:0.2f}'.format(self._significance_table.loc[v].pval)) 
+                row.append('{}'.format(self._significance_table.loc[v].testname)) 
             # stack rows to create the table           
             table.append(row)
 
@@ -235,8 +235,8 @@ class TableOne(object):
             row = row + len(self.strata) * ['']
             # add pval column
             if self.pval:
-                row.append('{:0.2f}'.format(x._significance_table.loc[v].pval))
-                row.append('{}'.format(x._significance_table.loc[v].testname))
+                row.append('{:0.2f}'.format(self._significance_table.loc[v].pval))
+                row.append('{}'.format(self._significance_table.loc[v].testname))
             table.append(row)
             # For each level within the variable
             for level in data[v][data[v].notnull()].astype('category').unique().categories.sort_values():
