@@ -190,7 +190,7 @@ class TableOne(object):
                         d[k] = 0
             observed = [g.values() for g in grp_counts]
             testname = 'Chi-squared'
-            chi2, pval, dof, expected = stats.chi2_contingency(z)
+            chi2, pval, dof, expected = stats.chi2_contingency(observed)
 
         return pval,testname
 
@@ -232,7 +232,7 @@ class TableOne(object):
         # oh dear the loops
         for v in self.categorical:
             row = ['{} (n (%))'.format(v)]
-            row = row + len(x.strata) * ['']
+            row = row + len(self.strata) * ['']
             # add pval column
             if self.pval:
                 row.append('{:0.2f}'.format(x._significance_table.loc[v].pval))
