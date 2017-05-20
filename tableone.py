@@ -9,6 +9,8 @@ __version__ = "0.1.10"
 import pandas as pd
 from tabulate import tabulate
 import csv
+from scipy import stats
+from collections import Counter, OrderedDict
 
 
 class TableOne(object):
@@ -23,7 +25,7 @@ class TableOne(object):
         nonnormal (List): List of column names for non-normal variables (default None).
     """
 
-    def __init__(self, data, continuous=None, categorical=None, strata_col=None, nonnormal=[]):
+    def __init__(self, data, continuous=[], categorical=[], strata_col=None, nonnormal=[]):
 
         # instance variables
         self.continuous = continuous
@@ -37,6 +39,10 @@ class TableOne(object):
             self.strata = data[strata_col][data[strata_col].notnull()].astype('category').unique().categories.sort_values()
         else:
             self.strata = ['overall']
+
+        # forgive me jraffa
+        if strata_col:
+            self._significance_table = self.__create_significance_table(data)
 
         self._n_row = self.__create_n_row(data)
 
@@ -72,7 +78,7 @@ class TableOne(object):
 
     def __create_cont_describe(self,data):
         """
-        Describe the continuous data
+        Describe the continuous data.
         """
         if self.continuous:
             cont_describe = pd.DataFrame(index=self.continuous)
@@ -94,7 +100,7 @@ class TableOne(object):
 
     def __create_cat_describe(self,data):
         """
-        Describe the categorical data
+        Describe the categorical data.
         """
         cats = {}
 
@@ -111,9 +117,76 @@ class TableOne(object):
 
         return cats
 
+    def __create_significance_table(self,data):
+        """
+        Create a table containing p values for significance tests. Add features of 
+        the distributions and the p values to the dataframe.
+        """
+
+        # list features of the variable e.g. matched, paired, n_expected
+        df=pd.DataFrame(index=self.continuous+self.categorical,
+            columns=['continuous','nonnormal','min_n','pval','testname'])
+
+        for v in self.continuous + self.categorical:
+            # is the variable continuous?
+            if v in self.categorical:
+                df.loc[v]['continuous'] = 0
+            else:
+                df.loc[v]['continuous'] = 1
+            # is the variable reported to be nonnormal?
+            if v in self.nonnormal:
+                df.loc[v]['nonnormal'] = 1
+            else:
+                df.loc[v]['nonnormal'] = 0            
+            # group the data for analysis
+            grouped_data = []
+            for s in self.strata:
+                grouped_data.append(data[v][data[self.strata_col]==s].values)
+            # minimum n across groups
+            df.loc[v]['min_n'] = len(min(grouped_data,key=len))
+            # compute p value
+            df.loc[v]['pval'],df.loc[v]['testname'] = self.__p_test(df,v,grouped_data,data)
+
+        return df
+
+    def __p_test(self,df,v,grouped_data,data):
+        """
+        Compute p value
+        """
+
+        # default, don't test
+        pval = None
+        testname = 'Not tested'
+
+        # continuous
+        if df.loc[v]['continuous'] == 1:
+            if df.loc[v]['nonnormal'] == 0:
+                # normally distributed
+                testname = 'One_way_ANOVA'
+                test_stat, pval = stats.f_oneway(*grouped_data)
+            elif df.loc[v]['nonnormal'] == 1:
+                # non-normally distributed
+                testname = 'Kruskal-Wallis'
+                test_stat, pval = stats.kruskal(*grouped_data)
+        # categorical
+        elif df.loc[v]['continuous'] == 0:
+            # get the ordered observed frequencies of each level within each strata
+            all_lvls = sorted(data[v][data[v].notnull()].unique())
+            grp_counts = [OrderedDict(Counter(g)) for g in grouped_data]
+            # make sure that all_lvls are represented in the grp_counts
+            for d in grp_counts:
+                for k in all_lvls:
+                    if k not in d:
+                        d[k] = 0
+            observed = [g.values() for g in grp_counts]
+            testname = 'Chi-squared'
+            chi2, pval, dof, expected = stats.chi2_contingency(z)
+
+        return pval,testname
+
     def __create_cont_table(self):
         """
-        Create a table displaying table one for continuous data
+        Create a table displaying table one for continuous data.
         """
         table = []
 
@@ -137,7 +210,7 @@ class TableOne(object):
 
     def __create_cat_table(self,data):
         """
-        Create a table displaying table one for categorical data
+        Create a table displaying table one for categorical data.
         """
         table = []
 
@@ -162,7 +235,7 @@ class TableOne(object):
 
     def __create_n_row(self,data):
         """
-        Get n, the number of rows for each strata
+        Get n, the number of rows for each strata.
         """
         n = ['n']
         if self.strata_col:
@@ -177,7 +250,7 @@ class TableOne(object):
 
     def __create_tableone(self):
         """
-        Create table 1 by combining the continuous and categorical tables
+        Create table 1 by combining the continuous and categorical tables.
         """
         table = [self._n_row] + self._cont_table + self._cat_table
 
@@ -185,7 +258,7 @@ class TableOne(object):
 
     def to_csv(self,fn='tableone.csv'):
         """
-        Write tableone to CSV
+        Write tableone to CSV.
 
         Args:
             fn (String): Filename (default 'tableone.csv')
@@ -196,7 +269,8 @@ class TableOne(object):
 
     def to_html(self,fn='tableone.html'):
         """
-        Write tableone to HTML
+        Write tableone to HTML.
+
         Args:
             fn (String): Filename (default 'tableone.html')
         """
@@ -206,7 +280,8 @@ class TableOne(object):
 
     def to_markdown(self,fn='tableone.md'):
         """
-        Write tableone to markdown
+        Write tableone to markdown.
+
         Args:
             fn (String): Filename (default 'tableone.md')
         """
@@ -216,7 +291,8 @@ class TableOne(object):
 
     def to_latex(self,fn='tableone.tex'):
         """
-        Write tableone to LaTeX
+        Write tableone to LaTeX.
+
         Args:
             fn (String): Filename (default 'tableone.tex')
         """

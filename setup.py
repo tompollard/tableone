@@ -56,6 +56,7 @@ setup(
     install_requires=[
         'pandas>=0.18.1',
         'tabulate>=0.7.7',
+        'scipy==0.18.1'
         ],
 
     # List additional groups of dependencies here (e.g. development
