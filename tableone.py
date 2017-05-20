@@ -18,20 +18,21 @@ class TableOne(object):
     Create a tableone instance.
 
     Args:
-        data (Pandas DataFrame): The dataset to be summarised.
+        data (Pandas DataFrame): The dataset to be summarised. Rows are a separate subjects, columns are variables.
         continuous (List): List of column names for the continuous variables.
         categorical (List): List of column names for the categorical variables.
         strata_col (String): Column name for stratification (default None).
         nonnormal (List): List of column names for non-normal variables (default None).
     """
 
-    def __init__(self, data, continuous=[], categorical=[], strata_col=None, nonnormal=[]):
+    def __init__(self, data, continuous=[], categorical=[], strata_col=None, nonnormal=[], pval=False):
 
         # instance variables
         self.continuous = continuous
         self.categorical = categorical
         self.strata_col = strata_col
         self.nonnormal = nonnormal
+        self.pval = pval
         self._cont_describe = {}
         self._cat_describe = {}
 
@@ -68,12 +69,21 @@ class TableOne(object):
         return self.__pretty_print_table()
 
     def __pretty_print_table(self):
+        """
+        Print formatted table to screen.
+        """
         if self.strata_col:
             strat_str = 'Stratified by ' + '{}\n'.format(self.strata_col)
         else:
             strat_str = 'Overall\n'
         headers = [''] + sorted(self._cat_describe.keys())
+        
+        if self.pval:
+            headers.append('pval')
+            headers.append('testname')
+
         table = tabulate(self.tableone, headers = headers)
+
         return strat_str + table
 
     def __create_cont_describe(self,data):
@@ -203,7 +213,11 @@ class TableOne(object):
                 else:
                     row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v],
                         self._cont_describe[strata]['std'][v]))                    
-            # stack rows to create the table
+            # add pval column
+            if self.pval:
+                row.append('{:0.2f}'.format(x._significance_table.loc[v].pval)) 
+                row.append('{}'.format(x._significance_table.loc[v].testname)) 
+            # stack rows to create the table           
             table.append(row)
 
         return table
@@ -218,7 +232,11 @@ class TableOne(object):
         # oh dear the loops
         for v in self.categorical:
             row = ['{} (n (%))'.format(v)]
-            row.append('')
+            row = row + len(x.strata) * ['']
+            # add pval column
+            if self.pval:
+                row.append('{:0.2f}'.format(x._significance_table.loc[v].pval))
+                row.append('{}'.format(x._significance_table.loc[v].testname))
             table.append(row)
             # For each level within the variable
             for level in data[v][data[v].notnull()].astype('category').unique().categories.sort_values():
@@ -229,6 +247,7 @@ class TableOne(object):
                     freq = vals['freq'].values[0]
                     percent = vals['percent'].values[0]
                     row.append("{:0.2f} ({:0.2f})".format(freq,percent))
+                # stack rows to create the table              
                 table.append(row)
 
         return table
@@ -245,6 +264,9 @@ class TableOne(object):
         else:
             count = len(data.index)
             n.append("{}".format(count))
+
+        if self.pval:
+            n.append('')
 
         return n
 
