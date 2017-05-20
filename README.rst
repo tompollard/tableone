@@ -49,15 +49,15 @@ Example
     strat = 'trt'
     nonnormal = ['bili']
 
-7. Create an instance of TableOne with the input arguments::
+6. Create an instance of TableOne with the input arguments::
 
     mytable = TableOne(data, convars, catvars, strat, nonnormal)
 
-8. Type the name of the instance in an interpreter::
+7. Type the name of the instance in an interpreter::
 
     mytable
 
-9. ...which prints the following table to screen::
+8. ...which prints the following table to screen::
 
     Stratified by trt
                           1.0                2.0
@@ -86,3 +86,7 @@ Example
 9. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML. Files are exported by calling the ``to_format`` methods. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
 
     mytable.to_csv('mytable.csv')
+
+9. Compute p values by setting the ``pval`` argument to true::
+
+    mytable = TableOne(data, convars, catvars, strat, nonnormal, pval=True)
