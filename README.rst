@@ -26,38 +26,38 @@ To follow...
 Example
 -------
 
-1. Import libraries::
+#. Import libraries::
 
     from tableone import TableOne
     import pandas as pd
 
-2. Load sample data into a pandas dataframe::
+#. Load sample data into a pandas dataframe::
 
     url="https://raw.githubusercontent.com/tompollard/data/master/primary-biliary-cirrhosis/pbc.csv"
     data=pd.read_csv(url)
 
-3. List of columns containing continuous variables::
+#. List of columns containing continuous variables::
 
     convars = ['time','age','ascites','hepato','spiders','bili']
 
-4. List of columns containing categorical variables::
+#. List of columns containing categorical variables::
 
     catvars = ['status','edema','stage']
 
-5. Optionally, a categorical variable for stratification and a list of non-normal variables::
+#. Optionally, a categorical variable for stratification and a list of non-normal variables::
 
     strat = 'trt'
     nonnormal = ['bili']
 
-6. Create an instance of TableOne with the input arguments::
+#. Create an instance of TableOne with the input arguments::
 
     mytable = TableOne(data, convars, catvars, strat, nonnormal)
 
-7. Type the name of the instance in an interpreter::
+#. Type the name of the instance in an interpreter::
 
     mytable
 
-8. ...which prints the following table to screen::
+#. ...which prints the following table to screen::
 
     Stratified by trt
                           1.0                2.0
@@ -83,10 +83,10 @@ Example
     3.0                   56.00 (35.44)      64.00 (41.56)
     4.0                   55.00 (34.81)      54.00 (35.06)
 
-9. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML. Files are exported by calling the ``to_format`` methods. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
-
-    mytable.to_csv('mytable.csv')
-
-9. Compute p values by setting the ``pval`` argument to true::
+#. Compute p values by setting the ``pval`` argument to true::
 
     mytable = TableOne(data, convars, catvars, strat, nonnormal, pval=True)
+
+#. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML. Files are exported by calling the ``to_format`` methods. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
+
+    mytable.to_csv('mytable.csv')
