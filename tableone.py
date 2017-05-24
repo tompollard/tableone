@@ -12,6 +12,7 @@ import csv
 from scipy import stats
 from collections import Counter, OrderedDict
 import warnings
+import numpy as np
 
 
 class TableOne(object):
@@ -222,7 +223,7 @@ class TableOne(object):
         """
 
         # default, don't test
-        pval = None
+        pval = np.nan
         testname = 'Not tested'
 
         # do not test if any sub-group has no observations
