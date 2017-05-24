@@ -139,5 +139,5 @@ class TestTableOne(object):
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
-        assert table2._significance_table.loc['group1','testname'] == 'Fisher exact'
-        assert table3._significance_table.loc['group3','testname'] == 'Not tested'
+        assert table._significance_table.loc['group1','testname'] == 'Fisher exact'
+        assert table._significance_table.loc['group3','testname'] == 'Not tested'
