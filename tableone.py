@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.1.13"
+__version__ = "0.1.14"
 
 import pandas as pd
 from tabulate import tabulate
@@ -33,8 +33,6 @@ class TableOne(object):
         self.strata_col = strata_col
         self.nonnormal = nonnormal
         self.pval = pval
-        self._cont_describe = {}
-        self._cat_describe = {}
 
         if strata_col:
             self.strata = data[strata_col][data[strata_col].notnull()].astype('category').unique().categories.sort_values()
@@ -46,6 +44,10 @@ class TableOne(object):
             self._significance_table = self.__create_significance_table(data)
 
         self._n_row = self.__create_n_row(data)
+
+        self._cont_describe = {}
+        self._cat_describe = {}
+        self._cat_levels = self.__get_cat_levels(data)
 
         for s in self.strata:
             if strata_col:
@@ -108,6 +110,18 @@ class TableOne(object):
 
         return cont_describe
 
+    def __get_cat_levels(self,data):
+        """
+        Get a full list of levels for each categorical variable
+        """
+        levels = {}
+
+        for v in self.categorical:
+            ds = data[v].astype('category')
+            levels[v] = ds[ds.notnull()].unique().categories.sort_values()
+
+        return levels
+
     def __create_cat_describe(self,data):
         """
         Describe the categorical data.
@@ -116,12 +130,14 @@ class TableOne(object):
 
         for v in self.categorical:
             ds = data[v].astype('category')
-            df = pd.DataFrame(index=range(len(ds[ds.notnull()].cat.codes.unique())))
+            df = pd.DataFrame(index=range(len(self._cat_levels[v])))
             df['n'] = ds.count()
             df['isnull'] = ds.isnull().sum()
-            df['level'] = ds[ds.notnull()].unique().categories.sort_values()
+            # df['level'] = ds[ds.notnull()].unique().categories.sort_values()
+            df['level'] = self._cat_levels[v]
             df = df.merge(ds.value_counts(dropna=True).to_frame().rename(columns= {v:'freq'}),
-                left_on='level',right_index=True)
+                left_on='level',right_index=True, how='left')
+            df['freq'].fillna(0,inplace=True)  
             df['percent'] = (df['freq'] / df['n']) * 100
             cats[v] = df
 
@@ -147,11 +163,11 @@ class TableOne(object):
             if v in self.nonnormal:
                 df.loc[v]['nonnormal'] = 1
             else:
-                df.loc[v]['nonnormal'] = 0            
+                df.loc[v]['nonnormal'] = 0 
             # group the data for analysis
             grouped_data = []
             for s in self.strata:
-                grouped_data.append(data[v][data[self.strata_col]==s].values)
+                grouped_data.append(data[v][data[self.strata_col]==s][data[v][data[self.strata_col]==s].notnull()].values)
             # minimum n across groups
             df.loc[v]['min_n'] = len(min(grouped_data,key=len))
             # compute p value
@@ -215,7 +231,7 @@ class TableOne(object):
                         self._cont_describe[strata]['std'][v]))                    
             # add pval column
             if self.pval:
-                row.append('{:0.2f}'.format(self._significance_table.loc[v].pval)) 
+                row.append('{:0.3f}'.format(self._significance_table.loc[v].pval)) 
                 row.append('{}'.format(self._significance_table.loc[v].testname)) 
             # stack rows to create the table           
             table.append(row)
@@ -247,7 +263,7 @@ class TableOne(object):
                     freq = vals['freq'].values[0]
                     percent = vals['percent'].values[0]
                     row.append("{:0.2f} ({:0.2f})".format(freq,percent))
-                # stack rows to create the table              
+                # stack rows to create the table 
                 table.append(row)
 
         return table
