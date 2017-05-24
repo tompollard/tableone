@@ -29,21 +29,21 @@ class TableOne(object):
     def __init__(self, data, continuous=[], categorical=[], strata_col='', nonnormal=[], pval=False):
 
         # check input arguments
-        if strata_col and type(strata_col) == list: 
+        if strata_col and type(strata_col) == list:
             strata_col = strata_col[0]
-        if nonnormal and type(nonnormal) == str: 
+        if nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
-        
+
         self.__check_input_arguments_for_overlap(continuous,categorical,'continuous','categorical')
         self.__check_input_arguments_in_df(data.columns,continuous+categorical+nonnormal)
 
-        if strata_col: 
+        if strata_col:
             self.__check_input_arguments_for_overlap(continuous,[strata_col],'continuous','strata_col')
             self.__check_input_arguments_for_overlap(categorical,[strata_col],'categorical','strata_col')
             self.__check_input_arguments_in_df(data.columns,[strata_col])
 
         if pval and not strata_col:
-            raise ValueError("If pval=True then the strata_col must be specified.")           
+            raise ValueError("If pval=True then the strata_col must be specified.")
 
         # instance variables
         self.continuous = continuous
@@ -107,7 +107,7 @@ class TableOne(object):
         for i in listed:
             if i not in columns:
                 notfound.append(i)
-        
+
         if notfound:
             raise KeyError("The following columns were not found in the input data: {}".format(notfound))
 
@@ -120,7 +120,7 @@ class TableOne(object):
         else:
             strat_str = 'Overall\n'
         headers = [''] + sorted(self._cat_describe.keys())
-        
+
         if self.pval:
             headers.append('pval')
             headers.append('testname')
@@ -178,7 +178,7 @@ class TableOne(object):
             df['level'] = self._cat_levels[v]
             df = df.merge(ds.value_counts(dropna=True).to_frame().rename(columns= {v:'freq'}),
                 left_on='level',right_index=True, how='left')
-            df['freq'].fillna(0,inplace=True)  
+            df['freq'].fillna(0,inplace=True)
             df['percent'] = (df['freq'] / df['n']) * 100
             cats[v] = df
 
@@ -186,7 +186,7 @@ class TableOne(object):
 
     def __create_significance_table(self,data):
         """
-        Create a table containing p values for significance tests. Add features of 
+        Create a table containing p values for significance tests. Add features of
         the distributions and the p values to the dataframe.
         """
 
@@ -204,7 +204,7 @@ class TableOne(object):
             if v in self.nonnormal:
                 df.loc[v]['nonnormal'] = 1
             else:
-                df.loc[v]['nonnormal'] = 0 
+                df.loc[v]['nonnormal'] = 0
             # group the data for analysis
             grouped_data = []
             for s in self.strata:
@@ -225,6 +225,10 @@ class TableOne(object):
         pval = None
         testname = 'Not tested'
 
+        # do not test if any sub-group has no observations
+        if df.loc[v]['min_n'] == 0:
+            return pval,testname
+
         # continuous
         if df.loc[v]['continuous'] == 1:
             if df.loc[v]['nonnormal'] == 0:
@@ -239,15 +243,33 @@ class TableOne(object):
         elif df.loc[v]['continuous'] == 0:
             # get the ordered observed frequencies of each level within each strata
             all_lvls = sorted(data[v][data[v].notnull()].unique())
-            grp_counts = [OrderedDict(Counter(g)) for g in grouped_data]
+            grp_counts = [dict(Counter(g)) for g in grouped_data]
             # make sure that all_lvls are represented in the grp_counts
             for d in grp_counts:
                 for k in all_lvls:
                     if k not in d:
                         d[k] = 0
+
+            # now make sure that the ordered dictionaries have the same order
+            grp_counts_ordered = list()
+            for d in grp_counts:
+                d_ordered = OrderedDict()
+                for k in all_lvls:
+                    d_ordered[k] = d[k]
+                grp_counts_ordered.append(d_ordered)
+
             observed = [g.values() for g in grp_counts]
-            testname = 'Chi-squared'
-            chi2, pval, dof, expected = stats.chi2_contingency(observed)
+
+            # if any of the cell counts are < 5, we shouldn't use chi2
+            if min(min(observed)) < 5:
+                # switch to fisher exact if this is a 2x2
+                if (len(observed)==2) & (len(observed[0])==2):
+                    testname = 'Fisher exact'
+                    oddsratio, pval = stats.fisher_exact(observed)
+                # otherwise, we will not test
+            else:
+                testname = 'Chi-squared'
+                chi2, pval, dof, expected = stats.chi2_contingency(observed)
 
         return pval,testname
 
@@ -269,12 +291,12 @@ class TableOne(object):
                         self._cont_describe[strata]['q75'][v]))
                 else:
                     row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v],
-                        self._cont_describe[strata]['std'][v]))                    
+                        self._cont_describe[strata]['std'][v]))
             # add pval column
             if self.pval:
-                row.append('{:0.3f}'.format(self._significance_table.loc[v].pval)) 
-                row.append('{}'.format(self._significance_table.loc[v].testname)) 
-            # stack rows to create the table           
+                row.append('{:0.3f}'.format(self._significance_table.loc[v].pval))
+                row.append('{}'.format(self._significance_table.loc[v].testname))
+            # stack rows to create the table
             table.append(row)
 
         return table
@@ -304,7 +326,7 @@ class TableOne(object):
                     freq = vals['freq'].values[0]
                     percent = vals['percent'].values[0]
                     row.append("{:0.0f} ({:0.2f})".format(freq,percent))
-                # stack rows to create the table 
+                # stack rows to create the table
                 table.append(row)
 
         return table
