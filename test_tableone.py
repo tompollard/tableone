@@ -127,7 +127,7 @@ class TestTableOne(object):
         categorical=['likesmarmalade']
         table = TableOne(self.data_sample, categorical=categorical, strata_col='bear')
 
-        assert table._significance_table.loc['fictional','testname'] == 'Not tested'
+        assert table._significance_table.loc['likesmarmalade','testname'] == 'Not tested'
 
     @with_setup(setup, teardown)
     def test_fisher_exact_for_small_cell_count(self):
