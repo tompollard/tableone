@@ -33,12 +33,17 @@ class TableOne(object):
             strata_col = strata_col[0]
         if nonnormal and type(nonnormal) == str: 
             nonnormal = [nonnormal]
+        
         self.__check_input_arguments_for_overlap(continuous,categorical,'continuous','categorical')
         self.__check_input_arguments_in_df(data.columns,continuous+categorical+nonnormal)
+
         if strata_col: 
             self.__check_input_arguments_for_overlap(continuous,[strata_col],'continuous','strata_col')
             self.__check_input_arguments_for_overlap(categorical,[strata_col],'categorical','strata_col')
             self.__check_input_arguments_in_df(data.columns,[strata_col])
+
+        if pval and not strata_col:
+            raise ValueError("If pval=True then the strata_col must be specified.")           
 
         # instance variables
         self.continuous = continuous
