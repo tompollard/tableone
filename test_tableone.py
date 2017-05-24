@@ -78,6 +78,16 @@ class TestTableOne(object):
         assert x != y
 
     @with_setup(setup, teardown)
+    def test_examples_used_in_the_readme_run_without_raising_error(self):
+
+        convars = ['time','age','bili','chol','albumin','copper','alk.phos','ast','trig','platelet','protime']
+        catvars = ['status', 'ascites', 'hepato', 'spiders', 'edema','stage', 'sex']
+        strat = 'trt'
+        nonnormal = ['bili']
+        mytable = TableOne(self.data_pbc, convars, catvars, strat, nonnormal, pval=False)
+        mytable = TableOne(self.data_pbc, convars, catvars, strat, nonnormal, pval=True)
+
+    @with_setup(setup, teardown)
     def test_overall_mean_and_std_as_expected_for_cont_variable(self):
 
         continuous=['normal','nonnormal','height']
