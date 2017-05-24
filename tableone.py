@@ -26,17 +26,19 @@ class TableOne(object):
         nonnormal (List): List of column names for non-normal variables (default None).
     """
 
-    def __init__(self, data, continuous=[], categorical=[], strata_col=[], nonnormal=[], pval=False):
+    def __init__(self, data, continuous=[], categorical=[], strata_col='', nonnormal=[], pval=False):
 
         # check input arguments
-        if type(strata_col) == list: 
+        if strata_col and type(strata_col) == list: 
             strata_col = strata_col[0]
-        if type(nonnormal) == str: 
+        if nonnormal and type(nonnormal) == str: 
             nonnormal = [nonnormal]
         self.__check_input_arguments_for_overlap(continuous,categorical,'continuous','categorical')
-        self.__check_input_arguments_for_overlap(continuous,[strata_col],'continuous','strata_col')
-        self.__check_input_arguments_for_overlap(categorical,[strata_col],'categorical','strata_col')
-        self.__check_input_arguments_in_df(data.columns,continuous,categorical,[strata_col],nonnormal)
+        self.__check_input_arguments_in_df(data.columns,continuous+categorical+nonnormal)
+        if strata_col: 
+            self.__check_input_arguments_for_overlap(continuous,[strata_col],'continuous','strata_col')
+            self.__check_input_arguments_for_overlap(categorical,[strata_col],'categorical','strata_col')
+            self.__check_input_arguments_in_df(data.columns,[strata_col])
 
         # instance variables
         self.continuous = continuous
@@ -83,7 +85,7 @@ class TableOne(object):
 
     def __check_input_arguments_for_overlap(self,a,b,a_name,b_name):
         """
-        Print formatted table to screen.
+        Check the input argument for duplicate columns
         """
         if bool(set(a) & set(b)):
             overlap = [val for val in a if val in b]
@@ -92,12 +94,12 @@ class TableOne(object):
         else:
             pass
 
-    def __check_input_arguments_in_df(self,columns,a,b,c,d):
+    def __check_input_arguments_in_df(self,columns,listed):
         """
-        Print formatted table to screen.
+        Check that the columns appear in the input dataframe
         """
         notfound = []
-        for i in a + b + c + d:
+        for i in listed:
             if i not in columns:
                 notfound.append(i)
         
