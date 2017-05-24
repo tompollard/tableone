@@ -4,13 +4,14 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.1.14"
+__version__ = "0.2.0"
 
 import pandas as pd
 from tabulate import tabulate
 import csv
 from scipy import stats
 from collections import Counter, OrderedDict
+import warnings
 
 
 class TableOne(object):
@@ -25,7 +26,17 @@ class TableOne(object):
         nonnormal (List): List of column names for non-normal variables (default None).
     """
 
-    def __init__(self, data, continuous=[], categorical=[], strata_col=None, nonnormal=[], pval=False):
+    def __init__(self, data, continuous=[], categorical=[], strata_col=[], nonnormal=[], pval=False):
+
+        # check input arguments
+        if type(strata_col) == list: 
+            strata_col = strata_col[0]
+        if type(nonnormal) == str: 
+            nonnormal = [nonnormal]
+        self.__check_input_arguments_for_overlap(continuous,categorical,'continuous','categorical')
+        self.__check_input_arguments_for_overlap(continuous,[strata_col],'continuous','strata_col')
+        self.__check_input_arguments_for_overlap(categorical,[strata_col],'categorical','strata_col')
+        self.__check_input_arguments_in_df(data.columns,continuous,categorical,[strata_col],nonnormal)
 
         # instance variables
         self.continuous = continuous
@@ -69,6 +80,29 @@ class TableOne(object):
 
     def __repr__(self):
         return self.__pretty_print_table()
+
+    def __check_input_arguments_for_overlap(self,a,b,a_name,b_name):
+        """
+        Print formatted table to screen.
+        """
+        if bool(set(a) & set(b)):
+            overlap = [val for val in a if val in b]
+            raise ValueError("The {} and {} arguments should not contain duplicate columns. \n \
+                The following items are duplicated: {}".format(a_name,b_name,overlap))
+        else:
+            pass
+
+    def __check_input_arguments_in_df(self,columns,a,b,c,d):
+        """
+        Print formatted table to screen.
+        """
+        notfound = []
+        for i in a + b + c + d:
+            if i not in columns:
+                notfound.append(i)
+        
+        if notfound:
+            raise KeyError("The following columns were not found in the input data: {}".format(notfound))
 
     def __pretty_print_table(self):
         """
@@ -251,7 +285,7 @@ class TableOne(object):
             row = row + len(self.strata) * ['']
             # add pval column
             if self.pval:
-                row.append('{:0.2f}'.format(self._significance_table.loc[v].pval))
+                row.append('{:0.3f}'.format(self._significance_table.loc[v].pval))
                 row.append('{}'.format(self._significance_table.loc[v].testname))
             table.append(row)
             # For each level within the variable
@@ -262,7 +296,7 @@ class TableOne(object):
                     vals = self._cat_describe[strata][v][self._cat_describe[strata][v]['level']==level]
                     freq = vals['freq'].values[0]
                     percent = vals['percent'].values[0]
-                    row.append("{:0.2f} ({:0.2f})".format(freq,percent))
+                    row.append("{:0.0f} ({:0.2f})".format(freq,percent))
                 # stack rows to create the table 
                 table.append(row)
 
@@ -276,10 +310,10 @@ class TableOne(object):
         if self.strata_col:
             for s in self.strata:
                 count = data[self.strata_col][data[self.strata_col]==s].count()
-                n.append("{}".format(count))
+                n.append("{:0.0f}".format(count))
         else:
             count = len(data.index)
-            n.append("{}".format(count))
+            n.append("{:0.0f}".format(count))
 
         if self.pval:
             n.append('')
