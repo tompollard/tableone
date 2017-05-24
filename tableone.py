@@ -259,8 +259,17 @@ class TableOne(object):
                 grp_counts_ordered.append(d_ordered)
 
             observed = [g.values() for g in grp_counts]
-            testname = 'Chi-squared'
-            chi2, pval, dof, expected = stats.chi2_contingency(observed)
+
+            # if any of the cell counts are < 5, we shouldn't use chi2
+            if min(min(observed)) < 5:
+                # switch to fisher exact if this is a 2x2
+                if (len(observed)==2) & (len(observed[0])==2):
+                    testname = 'Fisher exact'
+                    oddsratio, pval = stats.fisher_exact(observed)
+                # otherwise, we will not test
+            else:
+                testname = 'Chi-squared'
+                chi2, pval, dof, expected = stats.chi2_contingency(observed)
 
         return pval,testname
 
