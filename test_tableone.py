@@ -120,7 +120,6 @@ class TestTableOne(object):
         assert abs(100-likepercent) <= 0.01
 
     @with_setup(setup, teardown)
-
     def test_statistical_tests_skipped_if_subgroups_have_zero_observations(self):
         """
         Ensure that the package skips running statistical tests if the subgroups have zero observations
@@ -130,6 +129,7 @@ class TestTableOne(object):
 
         assert table._significance_table.loc['fictional','testname'] == 'Not tested'
 
+    @with_setup(setup, teardown)
     def test_fisher_exact_for_small_cell_count(self):
         """
         Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
