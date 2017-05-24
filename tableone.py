@@ -243,12 +243,21 @@ class TableOne(object):
         elif df.loc[v]['continuous'] == 0:
             # get the ordered observed frequencies of each level within each strata
             all_lvls = sorted(data[v][data[v].notnull()].unique())
-            grp_counts = [OrderedDict(Counter(g)) for g in grouped_data]
+            grp_counts = [dict(Counter(g)) for g in grouped_data]
             # make sure that all_lvls are represented in the grp_counts
             for d in grp_counts:
                 for k in all_lvls:
                     if k not in d:
                         d[k] = 0
+
+            # now make sure that the ordered dictionaries have the same order
+            grp_counts_ordered = list()
+            for d in grp_counts:
+                d_ordered = OrderedDict()
+                for k in all_lvls:
+                    d_ordered[k] = d[k]
+                grp_counts_ordered.append(d_ordered)
+
             observed = [g.values() for g in grp_counts]
             testname = 'Chi-squared'
             chi2, pval, dof, expected = stats.chi2_contingency(observed)
