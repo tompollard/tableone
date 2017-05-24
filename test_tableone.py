@@ -1,5 +1,5 @@
 import pandas as pd
-from tableone import TableOne 
+from tableone import TableOne
 from nose.tools import with_setup
 import numpy as np
 
@@ -45,6 +45,24 @@ class TestTableOne(object):
         self.data_sample.loc[self.data_sample['bear'] == 'Baloo', 'height'] = 20
         self.data_sample.loc[self.data_sample['bear'] == 'Blossom', 'height'] = 7
 
+        self.data_sample['fictional'] = 0
+        self.data_sample.loc[self.data_sample['bear'] == 'Winnie', 'fictional'] = 1
+        self.data_sample.loc[self.data_sample['bear'] == 'Paddington', 'fictional'] = 1
+        self.data_sample.loc[self.data_sample['bear'] == 'Baloo', 'fictional'] = 1
+        self.data_sample.loc[self.data_sample['bear'] == 'Blossom', 'fictional'] = 1
+
+        self.data_small = pd.DataFrame(index=range(10))
+
+        self.data_small['group1'] = 0
+        self.data_small.loc[0:4, 'group1'] = 1
+
+        self.data_small['group2'] = 0
+        self.data_small.loc[2:7, 'group2'] = 1
+
+        self.data_small['group3'] = 0
+        self.data_small.loc[1:2, 'group3'] = 1
+        self.data_small.loc[3:7, 'group3'] = 2
+
     def teardown(self):
         """
         tear down test fixtures
@@ -56,7 +74,7 @@ class TestTableOne(object):
 
         x = 'hello'
         y = 'travis'
-        
+
         assert x != y
 
     @with_setup(setup, teardown)
@@ -101,4 +119,25 @@ class TestTableOne(object):
         assert likefreq == 5993
         assert abs(100-likepercent) <= 0.01
 
+    @with_setup(setup, teardown)
 
+    def test_statistical_tests_skipped_if_subgroups_have_zero_observations(self):
+        """
+        Ensure that the package skips running statistical tests if the subgroups have zero observations
+        """
+        categorical=['likesmarmalade']
+        table = TableOne(self.data_sample, categorical=categorical, strata_col='bear')
+
+        assert table._significance_table.loc['fictional','testname'] == 'Not tested'
+
+    def test_fisher_exact_for_small_cell_count(self):
+        """
+        Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
+        """
+        categorical=['group1','group3']
+        table = TableOne(self.data_small, categorical=categorical, strata_col='group2')
+
+        # group2 should be tested because it's a 2x2
+        # group3 is a 2x3 so should not be tested
+        assert table2._significance_table.loc['group1','testname'] == 'Fisher exact'
+        assert table3._significance_table.loc['group3','testname'] == 'Not tested'
