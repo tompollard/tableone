@@ -224,7 +224,11 @@ class TableOne(object):
         # default, don't test
         pval = None
         testname = 'Not tested'
-
+        
+        # do not test if any sub-group has no observations
+        if df.loc[v]['min_n'] == 0:
+            return pval,testname
+        
         # continuous
         if df.loc[v]['continuous'] == 1:
             if df.loc[v]['nonnormal'] == 0:
