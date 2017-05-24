@@ -228,6 +228,7 @@ class TableOne(object):
 
         # do not test if any sub-group has no observations
         if df.loc[v]['min_n'] == 0:
+            warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
             return pval,testname
 
         # continuous
@@ -267,7 +268,9 @@ class TableOne(object):
                 if (len(observed)==2) & (len(observed[0])==2):
                     testname = 'Fisher exact'
                     oddsratio, pval = stats.fisher_exact(observed)
-                # otherwise, we will not test
+                else:
+                    warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
+                    # otherwise, we will not test
             else:
                 testname = 'Chi-squared'
                 chi2, pval, dof, expected = stats.chi2_contingency(observed)
