@@ -54,7 +54,7 @@ class TableOne(object):
         self.pval = pval
 
         if strata_col:
-            self.strata = data[strata_col][data[strata_col].notnull()].astype('category').unique().categories.sort_values()
+            self.strata = sorted(data.groupby(strata_col).groups.keys())
         else:
             self.strata = ['overall']
 
@@ -120,7 +120,7 @@ class TableOne(object):
             strat_str = 'Stratified by ' + '{}\n'.format(self.strata_col)
         else:
             strat_str = 'Overall\n'
-        headers = [''] + sorted(self._cat_describe.keys())
+        headers = [''] + self.strata
 
         if self.pval:
             headers.append('pval')
@@ -289,7 +289,7 @@ class TableOne(object):
                 row = ['{} (median [IQR])'.format(v)]
             else:
                 row = ['{} (mean (std))'.format(v)]
-            for strata in sorted(self._cont_describe.keys()):
+            for strata in self.strata:
                 if v in self.nonnormal:
                     row.append("{:0.2f} [{:0.2f},{:0.2f}]".format(self._cont_describe[strata]['median'][v],
                         self._cont_describe[strata]['q25'][v],
@@ -326,7 +326,7 @@ class TableOne(object):
             for level in data[v][data[v].notnull()].astype('category').unique().categories.sort_values():
                 row = ["{}".format(level)]
                 # for each strata
-                for strata in sorted(self._cat_describe.iterkeys()):
+                for strata in self.strata:
                     vals = self._cat_describe[strata][v][self._cat_describe[strata][v]['level']==level]
                     freq = vals['freq'].values[0]
                     percent = vals['percent'].values[0]
