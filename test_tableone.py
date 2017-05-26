@@ -135,7 +135,7 @@ class TestTableOne(object):
         Ensure that the package skips running statistical tests if the subgroups have zero observations
         """
         categorical=['likesmarmalade']
-        table = TableOne(self.data_sample, categorical=categorical, strata_col='bear')
+        table = TableOne(self.data_sample, categorical=categorical, strata_col='bear', pval=True)
 
         assert table._significance_table.loc['likesmarmalade','testname'] == 'Not tested'
 
@@ -145,7 +145,7 @@ class TestTableOne(object):
         Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
         """
         categorical=['group1','group3']
-        table = TableOne(self.data_small, categorical=categorical, strata_col='group2')
+        table = TableOne(self.data_small, categorical=categorical, strata_col='group2', pval=True)
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
