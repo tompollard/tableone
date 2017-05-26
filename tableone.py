@@ -212,8 +212,9 @@ class TableOne(object):
                 grouped_data.append(data[v][data[self.strata_col]==s][data[v][data[self.strata_col]==s].notnull()].values)
             # minimum n across groups
             df.loc[v]['min_n'] = len(min(grouped_data,key=len))
-            # compute p value
-            df.loc[v]['pval'],df.loc[v]['testname'] = self.__p_test(df,v,grouped_data,data)
+            if self.pval:
+                # compute p value
+                df.loc[v]['pval'],df.loc[v]['testname'] = self.__p_test(df,v,grouped_data,data)
 
         return df
 
