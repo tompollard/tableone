@@ -51,17 +51,25 @@ class TestTableOne(object):
         self.data_sample.loc[self.data_sample['bear'] == 'Baloo', 'fictional'] = 1
         self.data_sample.loc[self.data_sample['bear'] == 'Blossom', 'fictional'] = 1
 
+        # create small dataset
         self.data_small = pd.DataFrame(index=range(10))
-
         self.data_small['group1'] = 0
         self.data_small.loc[0:4, 'group1'] = 1
-
         self.data_small['group2'] = 0
         self.data_small.loc[2:7, 'group2'] = 1
-
         self.data_small['group3'] = 0
         self.data_small.loc[1:2, 'group3'] = 1
         self.data_small.loc[3:7, 'group3'] = 2
+
+        # create another dataset
+        n = 20
+        self.data_groups = pd.DataFrame(index=range(n))
+        self.data_groups['group'] = 'group1'
+        self.data_groups.loc[ 2:6, 'group'] = 'group2'
+        self.data_groups.loc[ 6:12, 'group'] = 'group3'
+        self.data_groups.loc[12: n, 'group'] = 'group4'
+        self.data_groups['age'] = range(n)
+        self.data_groups['weight'] = [x+100 for x in range(n)]
 
     def teardown(self):
         """
@@ -151,3 +159,17 @@ class TestTableOne(object):
         # group3 is a 2x3 so should not be tested
         assert table._significance_table.loc['group1','testname'] == 'Fisher exact'
         assert table._significance_table.loc['group3','testname'] == 'Not tested'
+
+
+    @with_setup(setup, teardown)
+    def test_sequence_of_cont_table(self):
+        """
+        Ensure that the columns align with the values
+        """
+        continuous = ['age','weight']
+        categorical = []
+        strata_col = 'group'
+        t = TableOne(self.data_groups, continuous = continuous, 
+            categorical = categorical, strata_col = strata_col)
+        
+        pass
