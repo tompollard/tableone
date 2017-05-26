@@ -289,7 +289,7 @@ class TableOne(object):
                 row = ['{} (median [IQR])'.format(v)]
             else:
                 row = ['{} (mean (std))'.format(v)]
-            for strata in self._cont_describe.iterkeys():
+            for strata in sorted(self._cont_describe.keys()):
                 if v in self.nonnormal:
                     row.append("{:0.2f} [{:0.2f},{:0.2f}]".format(self._cont_describe[strata]['median'][v],
                         self._cont_describe[strata]['q25'][v],
