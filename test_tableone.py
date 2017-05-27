@@ -17,12 +17,22 @@ class TestTableOne(object):
         seed = 12345
         np.random.seed(seed)
 
-        # load pbc data
+        self.create_pbc_dataset()
+        self.create_sample_dataset(n = 10000)
+        self.create_small_dataset()
+        self.create_another_dataset(n = 20)
+
+    def create_pbc_dataset(self):
+        """
+        create pbc dataset
+        """
         url="https://raw.githubusercontent.com/tompollard/data/master/primary-biliary-cirrhosis/pbc.csv"
         self.data_pbc=pd.read_csv(url)
 
-        # create sample data
-        n = 10000
+    def create_sample_dataset(self, n):
+        """
+        create sample dataset
+        """
         self.data_sample = pd.DataFrame(index=range(n))
 
         self.mu, self.sigma = 10, 1
@@ -51,7 +61,10 @@ class TestTableOne(object):
         self.data_sample.loc[self.data_sample['bear'] == 'Baloo', 'fictional'] = 1
         self.data_sample.loc[self.data_sample['bear'] == 'Blossom', 'fictional'] = 1
 
-        # create small dataset
+    def create_small_dataset(self):
+        """
+        create small dataset
+        """
         self.data_small = pd.DataFrame(index=range(10))
         self.data_small['group1'] = 0
         self.data_small.loc[0:4, 'group1'] = 1
@@ -61,8 +74,10 @@ class TestTableOne(object):
         self.data_small.loc[1:2, 'group3'] = 1
         self.data_small.loc[3:7, 'group3'] = 2
 
-        # create another dataset
-        n = 20
+    def create_another_dataset(self, n):
+        """
+        create another dataset
+        """
         self.data_groups = pd.DataFrame(index=range(n))
         self.data_groups['group'] = 'group1'
         self.data_groups.loc[ 2:6, 'group'] = 'group2'
@@ -172,4 +187,10 @@ class TestTableOne(object):
         t = TableOne(self.data_groups, continuous = continuous, 
             categorical = categorical, strata_col = strata_col)
         
-        pass
+        # n and weight rows are already ordered, so sorting should not alter the order
+        assert t.tableone[0][1:] == sorted(t.tableone[0][1:])
+        assert t.tableone[1][1:] == ['0.50 (0.71)', '3.50 (1.29)', '8.50 (1.87)', '15.50 (2.45)']
+        assert t.tableone[2][1:] == sorted(t.tableone[2][1:])
+
+
+
