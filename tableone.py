@@ -175,7 +175,6 @@ class TableOne(object):
             df = pd.DataFrame(index=range(len(self._cat_levels[v])))
             df['n'] = ds.count()
             df['isnull'] = ds.isnull().sum()
-            # df['level'] = ds[ds.notnull()].unique().categories.sort_values()
             df['level'] = self._cat_levels[v]
             df = df.merge(ds.value_counts(dropna=True).to_frame().rename(columns= {v:'freq'}),
                 left_on='level',right_index=True, how='left')
