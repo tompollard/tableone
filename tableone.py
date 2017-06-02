@@ -368,7 +368,7 @@ class TableOne(object):
         Args:
             fn (String): Filename (default 'tableone.csv')
         """
-        with open(fn, "wb") as f:
+        with open(fn, 'w') as f:
             writer = csv.writer(f)
             writer.writerows(self.tableone)
 
@@ -380,7 +380,7 @@ class TableOne(object):
             fn (String): Filename (default 'tableone.html')
         """
         tablefmt = 'html'
-        with open(fn, "wb") as f:
+        with open(fn, 'w') as f:
             f.write(tabulate(self.tableone, tablefmt=tablefmt))
 
     def to_markdown(self,fn='tableone.md'):
@@ -391,7 +391,7 @@ class TableOne(object):
             fn (String): Filename (default 'tableone.md')
         """
         tablefmt = 'pipe'
-        with open(fn, "wb") as f:
+        with open(fn, 'w') as f:
             f.write(tabulate(self.tableone, tablefmt=tablefmt))
 
     def to_latex(self,fn='tableone.tex'):
@@ -402,5 +402,5 @@ class TableOne(object):
             fn (String): Filename (default 'tableone.tex')
         """
         tablefmt = 'latex'
-        with open(fn, "wb") as f:
+        with open(fn, 'w') as f:
             f.write(tabulate(self.tableone, tablefmt=tablefmt))
