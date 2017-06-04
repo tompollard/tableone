@@ -253,6 +253,7 @@ class TableOne(object):
                         d[k] = 0
 
             # now make sure that the ordered dictionaries have the same order
+            # getting messy, clean up
             grp_counts_ordered = list()
             for d in grp_counts:
                 d_ordered = OrderedDict()
@@ -260,7 +261,7 @@ class TableOne(object):
                     d_ordered[k] = d[k]
                 grp_counts_ordered.append(d_ordered)
 
-            observed = [g.values() for g in grp_counts]
+            observed = [list(g.values()) for g in grp_counts_ordered]
 
             # if any of the cell counts are < 5, we shouldn't use chi2
             if min((min(x) for x in observed)) < 5:
