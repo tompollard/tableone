@@ -263,7 +263,7 @@ class TableOne(object):
             observed = [g.values() for g in grp_counts]
 
             # if any of the cell counts are < 5, we shouldn't use chi2
-            if min(min(observed)) < 5:
+            if min((min(x) for x in observed)) < 5:
                 # switch to fisher exact if this is a 2x2
                 if (len(observed)==2) & (len(observed[0])==2):
                     testname = 'Fisher exact'
