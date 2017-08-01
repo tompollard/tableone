@@ -187,8 +187,9 @@ class TestTableOne(object):
         columns = ['age','weight']
         categorical = []
         strata_col = 'group'
+        missing = False
         t = TableOne(self.data_groups, columns = columns, 
-            categorical = categorical, strata_col = strata_col)
+            categorical = categorical, strata_col = strata_col, missing = missing)
         
         # n and weight rows are already ordered, so sorting should not alter the order
         assert t.tableone[0][1:] == sorted(t.tableone[0][1:])
