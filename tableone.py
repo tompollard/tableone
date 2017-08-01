@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 
 import pandas as pd
 from tabulate import tabulate
@@ -25,9 +25,12 @@ class TableOne(object):
         categorical (List): List of columns that contain categorical variables.
         strata_col (String): Column name for stratification (default None).
         nonnormal (List): List of columns that contain non-normal variables (default None).
+        pval (Boolean): Whether to display computed P values (default False).
+        missing (Boolean): Whether to display counts of missing values (default True).
+
     """
 
-    def __init__(self, data, columns=[], categorical=[], strata_col='', nonnormal=[], pval=False):
+    def __init__(self, data, columns=[], categorical=[], strata_col='', nonnormal=[], pval=False, missing=True):
 
         # check input arguments
         if strata_col and type(strata_col) == list:
@@ -35,19 +38,12 @@ class TableOne(object):
         if nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
 
-        # self.__check_input_arguments_for_overlap(continuous,categorical,'continuous','categorical')
-        # self.__check_input_arguments_in_df(data.columns,columns+categorical+nonnormal)
-
-        # if strata_col:
-        #     self.__check_input_arguments_for_overlap(continuous,[strata_col],'continuous','strata_col')
-        #     self.__check_input_arguments_for_overlap(categorical,[strata_col],'categorical','strata_col')
-        #     self.__check_input_arguments_in_df(data.columns,[strata_col])
-
         if pval and not strata_col:
             raise ValueError("If pval=True then the strata_col must be specified.")
 
         # instance variables
         self.columns = columns
+        self.missing = missing
         self.continuous = [c for c in columns if c not in categorical + [strata_col]]
         self.categorical = categorical
         self.strata_col = strata_col
@@ -78,7 +74,7 @@ class TableOne(object):
                 self._cat_describe[s] = self.__create_cat_describe(data)
 
         # create tables of continuous and categorical variables
-        self._cont_table = self.__create_cont_table()
+        self._cont_table = self.__create_cont_table(data)
         self._cat_table = self.__create_cat_table(data)
 
         # combine continuous variables and categorical variables into table 1
@@ -90,29 +86,6 @@ class TableOne(object):
     def __repr__(self):
         return self.__pretty_print_table()
 
-    # def __check_input_arguments_for_overlap(self,a,b,a_name,b_name):
-    #     """
-    #     Check the input argument for duplicate columns
-    #     """
-    #     if bool(set(a) & set(b)):
-    #         overlap = [val for val in a if val in b]
-    #         raise ValueError("The {} and {} arguments should not contain duplicate columns. \n \
-    #             The following items are duplicated: {}".format(a_name,b_name,overlap))
-    #     else:
-    #         pass
-
-    # def __check_input_arguments_in_df(self,columns,listed):
-    #     """
-    #     Check that the columns appear in the input dataframe
-    #     """
-    #     notfound = []
-    #     for i in listed:
-    #         if i not in columns:
-    #             notfound.append(i)
-
-    #     if notfound:
-    #         raise KeyError("The following columns were not found in the input data: {}".format(notfound))
-
     def __pretty_print_table(self):
         """
         Print formatted table to screen.
@@ -122,6 +95,9 @@ class TableOne(object):
         else:
             strat_str = 'Overall\n'
         headers = [''] + self.strata
+
+        if self.missing:
+            headers.append('missing')
 
         if self.pval:
             headers.append('pval')
@@ -279,7 +255,7 @@ class TableOne(object):
 
         return pval,testname
 
-    def __create_cont_table(self):
+    def __create_cont_table(self,data):
         """
         Create a table displaying table one for continuous data.
         """
@@ -298,10 +274,16 @@ class TableOne(object):
                 else:
                     row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v],
                         self._cont_describe[strata]['std'][v]))
+
+            # add missing values column
+            if self.missing:
+                row.append(data[v].isnull().sum())
+
             # add pval column
             if self.pval:
                 row.append('{:0.3f}'.format(self._significance_table.loc[v].pval))
                 row.append('{}'.format(self._significance_table.loc[v].testname))
+
             # stack rows to create the table
             table.append(row)
 
@@ -318,11 +300,18 @@ class TableOne(object):
         for v in self.categorical:
             row = ['{} (n (%))'.format(v)]
             row = row + len(self.strata) * ['']
+
+            # add missing values column
+            if self.missing:
+                row.append(data[v].isnull().sum())            
+
             # add pval column
             if self.pval:
                 row.append('{:0.3f}'.format(self._significance_table.loc[v].pval))
                 row.append('{}'.format(self._significance_table.loc[v].testname))
+
             table.append(row)
+
             # For each level within the variable
             for level in data[v][data[v].notnull()].astype('category').unique().categories.sort_values():
                 row = ["{}".format(level)]
@@ -345,10 +334,15 @@ class TableOne(object):
         if self.strata_col:
             for s in self.strata:
                 count = data[self.strata_col][data[self.strata_col]==s].count()
-                n.append("{:0.0f}".format(count))
+                n.append('{:0.0f}'.format(count))
+            if self.missing:
+                missing = data[self.strata_col].isnull().sum()
+                n.append('{:0.0f}'.format(missing)) 
         else:
             count = len(data.index)
             n.append("{:0.0f}".format(count))
+            if self.missing:
+                n.append('') 
 
         if self.pval:
             n.append('')
