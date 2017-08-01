@@ -23,40 +23,40 @@ class TableOne(object):
         data (Pandas DataFrame): The dataset to be summarised. Rows are observations, columns are variables.
         columns (List): List of columns in the dataset to be included in the final table.
         categorical (List): List of columns that contain categorical variables.
-        strata_col (String): Column name for stratification (default None).
+        groupby (String): Optional column for stratifying the final table (default None).
         nonnormal (List): List of columns that contain non-normal variables (default None).
         pval (Boolean): Whether to display computed P values (default False).
-        missing (Boolean): Whether to display counts of missing values (default True).
+        isnull (Boolean): Whether to display a count of null values (default True).
 
     """
 
-    def __init__(self, data, columns=[], categorical=[], strata_col='', nonnormal=[], pval=False, missing=True):
+    def __init__(self, data, columns=[], categorical=[], groupby='', nonnormal=[], pval=False, isnull=True):
 
         # check input arguments
-        if strata_col and type(strata_col) == list:
-            strata_col = strata_col[0]
+        if groupby and type(groupby) == list:
+            groupby = groupby[0]
         if nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
 
-        if pval and not strata_col:
-            raise ValueError("If pval=True then the strata_col must be specified.")
+        if pval and not groupby:
+            raise ValueError("If pval=True then the groupby must be specified.")
 
         # instance variables
         self.columns = columns
-        self.missing = missing
-        self.continuous = [c for c in columns if c not in categorical + [strata_col]]
+        self.isnull = isnull
+        self.continuous = [c for c in columns if c not in categorical + [groupby]]
         self.categorical = categorical
-        self.strata_col = strata_col
+        self.groupby = groupby
         self.nonnormal = nonnormal
         self.pval = pval
 
-        if strata_col:
-            self.strata = sorted(data.groupby(strata_col).groups.keys())
+        if groupby:
+            self.strata = sorted(data.groupby(groupby).groups.keys())
         else:
             self.strata = ['overall']
 
         # forgive me jraffa
-        if strata_col:
+        if groupby:
             self._significance_table = self.__create_significance_table(data)
 
         self._n_row = self.__create_n_row(data)
@@ -66,9 +66,9 @@ class TableOne(object):
         self._cat_levels = self.__get_cat_levels(data)
 
         for s in self.strata:
-            if strata_col:
-                self._cont_describe[s] = self.__create_cont_describe(data.loc[data[strata_col] == s])
-                self._cat_describe[s] = self.__create_cat_describe(data.loc[data[strata_col] == s])
+            if groupby:
+                self._cont_describe[s] = self.__create_cont_describe(data.loc[data[groupby] == s])
+                self._cat_describe[s] = self.__create_cat_describe(data.loc[data[groupby] == s])
             else:
                 self._cont_describe[s] = self.__create_cont_describe(data)
                 self._cat_describe[s] = self.__create_cat_describe(data)
@@ -90,14 +90,14 @@ class TableOne(object):
         """
         Print formatted table to screen.
         """
-        if self.strata_col:
-            strat_str = 'Stratified by ' + '{}\n'.format(self.strata_col)
+        if self.groupby:
+            strat_str = 'Stratified by ' + '{}\n'.format(self.groupby)
         else:
             strat_str = 'Overall\n'
         headers = [''] + self.strata
 
-        if self.missing:
-            headers.append('missing')
+        if self.isnull:
+            headers.append('isnull')
 
         if self.pval:
             headers.append('pval')
@@ -185,7 +185,7 @@ class TableOne(object):
             # group the data for analysis
             grouped_data = []
             for s in self.strata:
-                grouped_data.append(data[v][data[self.strata_col]==s][data[v][data[self.strata_col]==s].notnull()].values)
+                grouped_data.append(data[v][data[self.groupby]==s][data[v][data[self.groupby]==s].notnull()].values)
             # minimum n across groups
             df.loc[v]['min_n'] = len(min(grouped_data,key=len))
             if self.pval:
@@ -275,8 +275,8 @@ class TableOne(object):
                     row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v],
                         self._cont_describe[strata]['std'][v]))
 
-            # add missing values column
-            if self.missing:
+            # add isnull values column
+            if self.isnull:
                 row.append(data[v].isnull().sum())
 
             # add pval column
@@ -301,8 +301,8 @@ class TableOne(object):
             row = ['{} (n (%))'.format(v)]
             row = row + len(self.strata) * ['']
 
-            # add missing values column
-            if self.missing:
+            # add isnull values column
+            if self.isnull:
                 row.append(data[v].isnull().sum())            
 
             # add pval column
@@ -331,17 +331,17 @@ class TableOne(object):
         Get n, the number of rows for each strata.
         """
         n = ['n']
-        if self.strata_col:
+        if self.groupby:
             for s in self.strata:
-                count = data[self.strata_col][data[self.strata_col]==s].count()
+                count = data[self.groupby][data[self.groupby]==s].count()
                 n.append('{:0.0f}'.format(count))
-            if self.missing:
-                missing = data[self.strata_col].isnull().sum()
-                n.append('{:0.0f}'.format(missing)) 
+            if self.isnull:
+                isnull = data[self.groupby].isnull().sum()
+                n.append('{:0.0f}'.format(isnull)) 
         else:
             count = len(data.index)
             n.append("{:0.0f}".format(count))
-            if self.missing:
+            if self.isnull:
                 n.append('') 
 
         if self.pval:

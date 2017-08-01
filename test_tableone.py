@@ -108,10 +108,10 @@ class TestTableOne(object):
             'status', 'ascites', 'hepato', 'spiders', 'edema',
             'stage', 'sex']
         catvars = ['status', 'ascites', 'hepato', 'spiders', 'edema','stage', 'sex']
-        strat = 'trt'
+        groupby = 'trt'
         nonnormal = ['bili']
-        mytable = TableOne(self.data_pbc, columns, catvars, strat, nonnormal, pval=False)
-        mytable = TableOne(self.data_pbc, columns, catvars, strat, nonnormal, pval=True)
+        mytable = TableOne(self.data_pbc, columns, catvars, groupby, nonnormal, pval=False)
+        mytable = TableOne(self.data_pbc, columns, catvars, groupby, nonnormal, pval=True)
 
     @with_setup(setup, teardown)
     def test_overall_mean_and_std_as_expected_for_cont_variable(self):
@@ -161,7 +161,7 @@ class TestTableOne(object):
         Ensure that the package skips running statistical tests if the subgroups have zero observations
         """
         categorical=['likesmarmalade']
-        table = TableOne(self.data_sample, categorical=categorical, strata_col='bear', pval=True)
+        table = TableOne(self.data_sample, categorical=categorical, groupby='bear', pval=True)
 
         assert table._significance_table.loc['likesmarmalade','testname'] == 'Not tested'
 
@@ -171,7 +171,7 @@ class TestTableOne(object):
         Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
         """
         categorical=['group1','group3']
-        table = TableOne(self.data_small, categorical=categorical, strata_col='group2', pval=True)
+        table = TableOne(self.data_small, categorical=categorical, groupby='group2', pval=True)
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
@@ -186,10 +186,9 @@ class TestTableOne(object):
         """
         columns = ['age','weight']
         categorical = []
-        strata_col = 'group'
-        missing = False
+        groupby = 'group'
         t = TableOne(self.data_groups, columns = columns, 
-            categorical = categorical, strata_col = strata_col, missing = missing)
+            categorical = categorical, groupby = groupby, isnull = False)
         
         # n and weight rows are already ordered, so sorting should not alter the order
         assert t.tableone[0][1:] == sorted(t.tableone[0][1:])
