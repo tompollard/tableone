@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 
 import pandas as pd
 from tabulate import tabulate
@@ -20,14 +20,14 @@ class TableOne(object):
     Create a tableone instance.
 
     Args:
-        data (Pandas DataFrame): The dataset to be summarised. Rows are a separate subjects, columns are variables.
-        continuous (List): List of column names for the continuous variables.
-        categorical (List): List of column names for the categorical variables.
+        data (Pandas DataFrame): The dataset to be summarised. Rows are observations, columns are variables.
+        columns (List): List of columns in the dataset to be included in the final table.
+        categorical (List): List of columns that contain categorical variables.
         strata_col (String): Column name for stratification (default None).
-        nonnormal (List): List of column names for non-normal variables (default None).
+        nonnormal (List): List of columns that contain non-normal variables (default None).
     """
 
-    def __init__(self, data, continuous=[], categorical=[], strata_col='', nonnormal=[], pval=False):
+    def __init__(self, data, columns=[], categorical=[], strata_col='', nonnormal=[], pval=False):
 
         # check input arguments
         if strata_col and type(strata_col) == list:
@@ -35,19 +35,20 @@ class TableOne(object):
         if nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
 
-        self.__check_input_arguments_for_overlap(continuous,categorical,'continuous','categorical')
-        self.__check_input_arguments_in_df(data.columns,continuous+categorical+nonnormal)
+        # self.__check_input_arguments_for_overlap(continuous,categorical,'continuous','categorical')
+        # self.__check_input_arguments_in_df(data.columns,columns+categorical+nonnormal)
 
-        if strata_col:
-            self.__check_input_arguments_for_overlap(continuous,[strata_col],'continuous','strata_col')
-            self.__check_input_arguments_for_overlap(categorical,[strata_col],'categorical','strata_col')
-            self.__check_input_arguments_in_df(data.columns,[strata_col])
+        # if strata_col:
+        #     self.__check_input_arguments_for_overlap(continuous,[strata_col],'continuous','strata_col')
+        #     self.__check_input_arguments_for_overlap(categorical,[strata_col],'categorical','strata_col')
+        #     self.__check_input_arguments_in_df(data.columns,[strata_col])
 
         if pval and not strata_col:
             raise ValueError("If pval=True then the strata_col must be specified.")
 
         # instance variables
-        self.continuous = continuous
+        self.columns = columns
+        self.continuous = [c for c in columns if c not in categorical + [strata_col]]
         self.categorical = categorical
         self.strata_col = strata_col
         self.nonnormal = nonnormal
@@ -89,28 +90,28 @@ class TableOne(object):
     def __repr__(self):
         return self.__pretty_print_table()
 
-    def __check_input_arguments_for_overlap(self,a,b,a_name,b_name):
-        """
-        Check the input argument for duplicate columns
-        """
-        if bool(set(a) & set(b)):
-            overlap = [val for val in a if val in b]
-            raise ValueError("The {} and {} arguments should not contain duplicate columns. \n \
-                The following items are duplicated: {}".format(a_name,b_name,overlap))
-        else:
-            pass
+    # def __check_input_arguments_for_overlap(self,a,b,a_name,b_name):
+    #     """
+    #     Check the input argument for duplicate columns
+    #     """
+    #     if bool(set(a) & set(b)):
+    #         overlap = [val for val in a if val in b]
+    #         raise ValueError("The {} and {} arguments should not contain duplicate columns. \n \
+    #             The following items are duplicated: {}".format(a_name,b_name,overlap))
+    #     else:
+    #         pass
 
-    def __check_input_arguments_in_df(self,columns,listed):
-        """
-        Check that the columns appear in the input dataframe
-        """
-        notfound = []
-        for i in listed:
-            if i not in columns:
-                notfound.append(i)
+    # def __check_input_arguments_in_df(self,columns,listed):
+    #     """
+    #     Check that the columns appear in the input dataframe
+    #     """
+    #     notfound = []
+    #     for i in listed:
+    #         if i not in columns:
+    #             notfound.append(i)
 
-        if notfound:
-            raise KeyError("The following columns were not found in the input data: {}".format(notfound))
+    #     if notfound:
+    #         raise KeyError("The following columns were not found in the input data: {}".format(notfound))
 
     def __pretty_print_table(self):
         """

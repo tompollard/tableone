@@ -103,18 +103,21 @@ class TestTableOne(object):
     @with_setup(setup, teardown)
     def test_examples_used_in_the_readme_run_without_raising_error(self):
 
-        convars = ['time','age','bili','chol','albumin','copper','alk.phos','ast','trig','platelet','protime']
+        columns = ['time','age','bili','chol','albumin','copper',
+            'alk.phos','ast','trig','platelet','protime',
+            'status', 'ascites', 'hepato', 'spiders', 'edema',
+            'stage', 'sex']
         catvars = ['status', 'ascites', 'hepato', 'spiders', 'edema','stage', 'sex']
         strat = 'trt'
         nonnormal = ['bili']
-        mytable = TableOne(self.data_pbc, convars, catvars, strat, nonnormal, pval=False)
-        mytable = TableOne(self.data_pbc, convars, catvars, strat, nonnormal, pval=True)
+        mytable = TableOne(self.data_pbc, columns, catvars, strat, nonnormal, pval=False)
+        mytable = TableOne(self.data_pbc, columns, catvars, strat, nonnormal, pval=True)
 
     @with_setup(setup, teardown)
     def test_overall_mean_and_std_as_expected_for_cont_variable(self):
 
-        continuous=['normal','nonnormal','height']
-        table = TableOne(self.data_sample, continuous=['normal','nonnormal','height'])
+        columns=['normal','nonnormal','height']
+        table = TableOne(self.data_sample, columns=columns)
 
         mean =  table._cont_describe['overall'].loc['normal']['mean']
         std = table._cont_describe['overall'].loc['normal']['std']
@@ -181,10 +184,10 @@ class TestTableOne(object):
         """
         Ensure that the columns align with the values
         """
-        continuous = ['age','weight']
+        columns = ['age','weight']
         categorical = []
         strata_col = 'group'
-        t = TableOne(self.data_groups, continuous = continuous, 
+        t = TableOne(self.data_groups, columns = columns, 
             categorical = categorical, strata_col = strata_col)
         
         # n and weight rows are already ordered, so sorting should not alter the order
