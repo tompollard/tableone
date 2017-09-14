@@ -4,6 +4,9 @@ TableOne
 .. image:: https://travis-ci.org/tompollard/tableone.svg?branch=master
     :target: https://travis-ci.org/tompollard/tableone
 
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.837898.svg
+   :target: https://doi.org/10.5281/zenodo.837898
+
 tableone is a package for researchers who need to create Table 1, summary
 statistics for a patient population. It was inspired by the R package of the
 same name by Yoshida and Bohn. A demo Jupyter Notebook is
