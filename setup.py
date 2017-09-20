@@ -22,7 +22,7 @@ setup(
     # Versions should comply with PEP440. For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.2.7',                         
+    version='0.2.8',                         
 
     description='Table One',
     long_description=long_description,
@@ -32,7 +32,7 @@ setup(
 
     # Author details
     author='Tom Pollard',
-    author_email='support@physionet.org',
+    author_email='tpollard@mit.edu',
 
     # Choose your license
     license='MIT',

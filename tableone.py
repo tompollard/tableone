@@ -3,8 +3,8 @@ Package for producing Table 1 in medical research papers,
 inspired by the R package of the same name.
 """
 
-__author__ = "Tom Pollard <tpollard@mit.edu>"
-__version__ = "0.2.7"
+__author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
+__version__ = "0.2.8"
 
 import pandas as pd
 from tabulate import tabulate
