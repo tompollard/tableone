@@ -21,6 +21,7 @@ class TestTableOne(object):
         self.create_sample_dataset(n = 10000)
         self.create_small_dataset()
         self.create_another_dataset(n = 20)
+        self.create_categorical_dataset()
 
     def create_pbc_dataset(self):
         """
@@ -86,6 +87,20 @@ class TestTableOne(object):
         self.data_groups['age'] = range(n)
         self.data_groups['weight'] = [x+100 for x in range(n)]
 
+    def create_categorical_dataset(self, n_cat=100, n_obs_per_cat=1000, n_col=10):
+        """
+        create a dataframe with many categories of many levels
+        """
+        # dataframe with many categories of many levels
+        # generate integers to represent data
+        data = np.arange(n_cat*n_obs_per_cat*n_col)
+        # use modulus to create categories - unique for each column
+        data = np.mod(data,n_cat*n_col)
+        # reshape intro a matrix
+        data = data.reshape(n_cat*n_obs_per_cat, n_col)
+
+        self.data_categorical = pd.DataFrame(data)
+
     def teardown(self):
         """
         tear down test fixtures
@@ -131,10 +146,11 @@ class TestTableOne(object):
         categorical=['likesmarmalade']
         table = TableOne(self.data_sample, categorical=categorical)
 
-        notlikefreq = table._cat_describe['overall']['likesmarmalade'][table._cat_describe['overall']['likesmarmalade']['level']==0]['freq'].values[0]
-        notlikepercent = table._cat_describe['overall']['likesmarmalade'][table._cat_describe['overall']['likesmarmalade']['level']==0]['percent'].values[0]
-        likefreq = table._cat_describe['overall']['likesmarmalade'][table._cat_describe['overall']['likesmarmalade']['level']==1]['freq'].values[0]
-        likepercent = table._cat_describe['overall']['likesmarmalade'][table._cat_describe['overall']['likesmarmalade']['level']==1]['percent'].values[0]
+        lm = table._cat_describe['overall']['likesmarmalade']
+        notlikefreq = lm.loc[0,'freq']
+        notlikepercent = lm.loc[0,'percent']
+        likefreq = lm.loc[1,'freq']
+        likepercent = lm.loc[1,'percent']
 
         assert notlikefreq + likefreq == 10000
         assert abs(100 - notlikepercent - likepercent) <= 0.02
@@ -149,8 +165,9 @@ class TestTableOne(object):
         categorical=['likeshoney']
         table = TableOne(self.data_sample, categorical=categorical)
 
-        likefreq = table._cat_describe['overall']['likeshoney'][table._cat_describe['overall']['likeshoney']['level']==1.0]['freq'].values[0]
-        likepercent = table._cat_describe['overall']['likeshoney'][table._cat_describe['overall']['likeshoney']['level']==1.0]['percent'].values[0]
+        lh = table._cat_describe['overall']['likeshoney']
+        likefreq = lh.loc[1.0,'freq']
+        likepercent = lh.loc[1.0,'percent']
 
         assert likefreq == 5993
         assert abs(100-likepercent) <= 0.01
@@ -178,7 +195,6 @@ class TestTableOne(object):
         assert table._significance_table.loc['group1','testname'] == 'Fisher exact'
         assert table._significance_table.loc['group3','testname'] == 'Not tested'
 
-
     @with_setup(setup, teardown)
     def test_sequence_of_cont_table(self):
         """
@@ -187,13 +203,24 @@ class TestTableOne(object):
         columns = ['age','weight']
         categorical = []
         groupby = 'group'
-        t = TableOne(self.data_groups, columns = columns, 
+        t = TableOne(self.data_groups, columns = columns,
             categorical = categorical, groupby = groupby, isnull = False)
-        
+
         # n and weight rows are already ordered, so sorting should not alter the order
         assert t.tableone[0][1:] == sorted(t.tableone[0][1:])
         assert t.tableone[1][1:] == ['0.50 (0.71)', '3.50 (1.29)', '8.50 (1.87)', '15.50 (2.45)']
         assert t.tableone[2][1:] == sorted(t.tableone[2][1:])
 
 
+    @with_setup(setup, teardown)
+    def test_categorical_cell_count(self):
+        """
+        Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
+        """
+        categorical=['group1','group3']
+        table = TableOne(self.data_categorical, categorical=list(np.arange(10)))
 
+        # each column
+        for i in np.arange(10):
+            # each category should have 100 levels
+            assert table._cat_describe['overall'][i].shape[0] == 100
