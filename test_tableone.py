@@ -21,6 +21,7 @@ class TestTableOne(object):
         self.create_sample_dataset(n = 10000)
         self.create_small_dataset()
         self.create_another_dataset(n = 20)
+        self.create_categorical_dataset()
 
     def create_pbc_dataset(self):
         """
@@ -86,11 +87,19 @@ class TestTableOne(object):
         self.data_groups['age'] = range(n)
         self.data_groups['weight'] = [x+100 for x in range(n)]
 
-    def create_categorical_dataset(self, n):
+    def create_categorical_dataset(self, n_cat=100, n_obs_per_cat=1000, n_col=10):
         """
         create a dataframe with many categories of many levels
         """
-        self.data_categorical = pd.DataFrame(np.mod(np.arange(100000),100).reshape(10000,10))
+        # dataframe with many categories of many levels
+        # generate integers to represent data
+        data = np.arange(n_cat*n_obs_per_cat*n_col)
+        # use modulus to create categories - unique for each column
+        data = np.mod(data,n_cat*n_col)
+        # reshape intro a matrix
+        data = data.reshape(n_cat*n_obs_per_cat, n_col)
+
+        self.data_categorical = pd.DataFrame(data)
 
     def teardown(self):
         """
@@ -209,7 +218,7 @@ class TestTableOne(object):
         Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
         """
         categorical=['group1','group3']
-        table = TableOne(self.data_categorical, categorical=np.arange(10))
+        table = TableOne(self.data_categorical, categorical=list(np.arange(10)))
 
         # each column
         for i in np.arange(10):
