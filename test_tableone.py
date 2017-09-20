@@ -86,6 +86,12 @@ class TestTableOne(object):
         self.data_groups['age'] = range(n)
         self.data_groups['weight'] = [x+100 for x in range(n)]
 
+    def create_categorical_dataset(self, n):
+        """
+        create a dataframe with many categories of many levels
+        """
+        self.data_categorical = pd.DataFrame(np.mod(np.arange(100000),100).reshape(10000,10))
+
     def teardown(self):
         """
         tear down test fixtures
@@ -178,7 +184,6 @@ class TestTableOne(object):
         assert table._significance_table.loc['group1','testname'] == 'Fisher exact'
         assert table._significance_table.loc['group3','testname'] == 'Not tested'
 
-
     @with_setup(setup, teardown)
     def test_sequence_of_cont_table(self):
         """
@@ -187,13 +192,24 @@ class TestTableOne(object):
         columns = ['age','weight']
         categorical = []
         groupby = 'group'
-        t = TableOne(self.data_groups, columns = columns, 
+        t = TableOne(self.data_groups, columns = columns,
             categorical = categorical, groupby = groupby, isnull = False)
-        
+
         # n and weight rows are already ordered, so sorting should not alter the order
         assert t.tableone[0][1:] == sorted(t.tableone[0][1:])
         assert t.tableone[1][1:] == ['0.50 (0.71)', '3.50 (1.29)', '8.50 (1.87)', '15.50 (2.45)']
         assert t.tableone[2][1:] == sorted(t.tableone[2][1:])
 
 
+    @with_setup(setup, teardown)
+    def test_categorical_cell_count(self):
+        """
+        Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
+        """
+        categorical=['group1','group3']
+        table = TableOne(self.data_categorical, categorical=np.arange(10))
 
+        # each column
+        for i in np.arange(10):
+            # each category should have 100 levels
+            assert table._cat_describe['overall'][i].shape[0] == 100
