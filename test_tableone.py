@@ -137,10 +137,11 @@ class TestTableOne(object):
         categorical=['likesmarmalade']
         table = TableOne(self.data_sample, categorical=categorical)
 
-        notlikefreq = table._cat_describe['overall']['likesmarmalade'][table._cat_describe['overall']['likesmarmalade']['level']==0]['freq'].values[0]
-        notlikepercent = table._cat_describe['overall']['likesmarmalade'][table._cat_describe['overall']['likesmarmalade']['level']==0]['percent'].values[0]
-        likefreq = table._cat_describe['overall']['likesmarmalade'][table._cat_describe['overall']['likesmarmalade']['level']==1]['freq'].values[0]
-        likepercent = table._cat_describe['overall']['likesmarmalade'][table._cat_describe['overall']['likesmarmalade']['level']==1]['percent'].values[0]
+        lm = table._cat_describe['overall']['likesmarmalade']
+        notlikefreq = lm.loc[0,'freq']
+        notlikepercent = lm.loc[0,'percent']
+        likefreq = lm.loc[1,'freq']
+        likepercent = lm.loc[1,'percent']
 
         assert notlikefreq + likefreq == 10000
         assert abs(100 - notlikepercent - likepercent) <= 0.02
@@ -155,8 +156,9 @@ class TestTableOne(object):
         categorical=['likeshoney']
         table = TableOne(self.data_sample, categorical=categorical)
 
-        likefreq = table._cat_describe['overall']['likeshoney'][table._cat_describe['overall']['likeshoney']['level']==1.0]['freq'].values[0]
-        likepercent = table._cat_describe['overall']['likeshoney'][table._cat_describe['overall']['likeshoney']['level']==1.0]['percent'].values[0]
+        lh = table._cat_describe['overall']['likeshoney']
+        likefreq = lh.loc[1.0,'freq']
+        likepercent = lh.loc[1.0,'percent']
 
         assert likefreq == 5993
         assert abs(100-likepercent) <= 0.01

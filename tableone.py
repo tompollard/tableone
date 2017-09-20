@@ -157,6 +157,8 @@ class TableOne(object):
                 left_on='level',right_index=True, how='left')
             df['freq'].fillna(0,inplace=True)
             df['percent'] = (df['freq'] / df['n']) * 100
+            # set level as index to df
+            df.set_index('level', inplace=True)
             cats[v] = df
 
         return cats
@@ -303,7 +305,7 @@ class TableOne(object):
 
             # add isnull values column
             if self.isnull:
-                row.append(data[v].isnull().sum())            
+                row.append(data[v].isnull().sum())
 
             # add pval column
             if self.pval:
@@ -317,9 +319,11 @@ class TableOne(object):
                 row = ["{}".format(level)]
                 # for each strata
                 for strata in self.strata:
-                    vals = self._cat_describe[strata][v][self._cat_describe[strata][v]['level']==level]
-                    freq = vals['freq'].values[0]
-                    percent = vals['percent'].values[0]
+                    # get data frame with info about each individual level
+                    vals = self._cat_describe[strata][v]
+                    freq = vals.loc[level, 'freq']
+                    percent = vals.loc[level, 'percent']
+
                     row.append("{:0.0f} ({:0.2f})".format(freq,percent))
                 # stack rows to create the table
                 table.append(row)
@@ -337,12 +341,12 @@ class TableOne(object):
                 n.append('{:0.0f}'.format(count))
             if self.isnull:
                 isnull = data[self.groupby].isnull().sum()
-                n.append('{:0.0f}'.format(isnull)) 
+                n.append('{:0.0f}'.format(isnull))
         else:
             count = len(data.index)
             n.append("{:0.0f}".format(count))
             if self.isnull:
-                n.append('') 
+                n.append('')
 
         if self.pval:
             n.append('')
