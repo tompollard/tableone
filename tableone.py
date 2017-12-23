@@ -42,9 +42,13 @@ class TableOne(object):
 
         # if categorical not specified
         # try to identify categorical
+        if not categorical:
+            categorical = self._detect_categorical_columns(data)
 
-        # if columns not specific
+        # if columns not specified
         # use all columns
+        if not columns:
+            columns = data.columns.get_values()
 
         if pval and not groupby:
             raise ValueError("If pval=True then the groupby must be specified.")
@@ -85,6 +89,21 @@ class TableOne(object):
 
     def __repr__(self):
         return self.tableone.to_string() 
+
+    def _detect_categorical_columns(self,data):
+        """
+        If categorical is not specified, auto-detect categorical columns
+        """
+        # https://stackoverflow.com/questions/35826912/what-is-a-good-heuristic-to-detect-if-a-column-in-a-pandas-dataframe-is-categori
+        # https://stackoverflow.com/questions/29803093/check-which-columns-in-dataframe-are-categorical
+        likely_cat = []
+        for var in data.columns:
+            # 0.05 or some other threshold
+            likely_flag = 1.*data[var].nunique()/data[var].count() < 0.05
+            if likely_flag:
+                 likely_cat.append(var)
+
+        return likely_cat
 
     def _create_cont_describe(self,data):
         """
