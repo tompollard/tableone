@@ -31,8 +31,8 @@ class TableOne(object):
 
     """
 
-    def __init__(self, data, columns=[], categorical=[], groupby='', 
-        nonnormal=[], pval=False, isnull=True, sort=True):
+    def __init__(self, data, columns='autodetect', categorical='autodetect', 
+        groupby='', nonnormal=[], pval=False, isnull=True, sort=True):
 
         # check input arguments
         if groupby and type(groupby) == list:
@@ -42,12 +42,12 @@ class TableOne(object):
 
         # if categorical not specified
         # try to identify categorical
-        if not categorical:
+        if categorical == 'autodetect':
             categorical = self._detect_categorical_columns(data)
 
         # if columns not specified
         # use all columns
-        if not columns:
+        if columns == 'autodetect':
             columns = data.columns.get_values()
 
         if pval and not groupby:
@@ -94,12 +94,9 @@ class TableOne(object):
         """
         If categorical is not specified, auto-detect categorical columns
         """
-        # https://stackoverflow.com/questions/35826912/what-is-a-good-heuristic-to-detect-if-a-column-in-a-pandas-dataframe-is-categori
-        # https://stackoverflow.com/questions/29803093/check-which-columns-in-dataframe-are-categorical
         likely_cat = []
         for var in data.columns:
-            # 0.05 or some other threshold
-            likely_flag = 1.*data[var].nunique()/data[var].count() < 0.05
+            likely_flag = 1.0 * data[var].nunique()/data[var].count() < 0.05
             if likely_flag:
                  likely_cat.append(var)
 
@@ -354,10 +351,5 @@ class TableOne(object):
         # add name of groupby variable to column headers
         table.rename(columns=lambda x: x if x not in self.groupkeys \
             else '{}={}'.format(self.groupby,x), inplace=True)
-
-        # # Add header
-        # if self.groupby:
-        #     title = 'Stratified by {}'.format(self.groupby) 
-        #     pd.concat([table], keys=[title], axis= 1)
 
         return table
