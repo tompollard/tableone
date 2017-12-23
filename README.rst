@@ -34,14 +34,14 @@ Example
     url="https://raw.githubusercontent.com/tompollard/data/master/primary-biliary-cirrhosis/pbc.csv"
     data=pd.read_csv(url)
 
-#. List of columns to be included in Table 1::
+#. Optionally, a list of columns to be included in Table 1::
 
     columns = ['time','age','bili','chol','albumin','copper',
            'alk.phos','ast','trig','platelet','protime',
            'status', 'ascites', 'hepato', 'spiders', 'edema', 
            'stage', 'sex', 'trt']
 
-#. List of columns containing categorical variables::
+#. Optionally, a list of columns containing categorical variables::
 
     categorical = ['status', 'ascites', 'hepato', 'spiders', 'edema', 
            'stage', 'sex']
@@ -57,7 +57,7 @@ Example
 
 #. Type the name of the instance in an interpreter::
 
-    mytable
+    mytable.tableone
 
 #. ...which prints the following table to screen::
 
@@ -152,6 +152,6 @@ Example
 
 
 
-#. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML. Files are exported by calling the ``to_format`` methods. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
+#. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML. Files are exported by calling the ``to_format`` method on the DataFrame. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
 
-    mytable.to_csv('mytable.csv')
+    mytable.tableone.to_csv('mytable.csv')
