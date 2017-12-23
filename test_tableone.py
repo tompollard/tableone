@@ -126,7 +126,7 @@ class TestTableOne(object):
         groupby = 'trt'
         nonnormal = ['bili']
         mytable = TableOne(self.data_pbc, columns, catvars, groupby, nonnormal, pval=False)
-        mytable = TableOne(self.data_pbc, columns, catvars, groupby, nonnormal, pval=True)
+        # mytable = TableOne(self.data_pbc, columns, catvars, groupby, nonnormal, pval=True)
 
     @with_setup(setup, teardown)
     def test_overall_mean_and_std_as_expected_for_cont_variable(self):
@@ -144,9 +144,9 @@ class TestTableOne(object):
     def test_overall_n_and_percent_as_expected_for_binary_cat_variable(self):
 
         categorical=['likesmarmalade']
-        table = TableOne(self.data_sample, categorical=categorical)
+        table = TableOne(self.data_sample, columns=categorical, categorical=categorical)
 
-        lm = table._cat_describe['overall']['likesmarmalade']
+        lm = table._cat_describe['overall'].loc['likesmarmalade']
         notlikefreq = lm.loc[0,'freq']
         notlikepercent = lm.loc[0,'percent']
         likefreq = lm.loc[1,'freq']
@@ -163,9 +163,9 @@ class TestTableOne(object):
         Ignore NaNs when counting the number of values and the overall percentage
         """
         categorical=['likeshoney']
-        table = TableOne(self.data_sample, categorical=categorical)
+        table = TableOne(self.data_sample, columns=categorical, categorical=categorical)
 
-        lh = table._cat_describe['overall']['likeshoney']
+        lh = table._cat_describe['overall'].loc['likeshoney']
         likefreq = lh.loc[1.0,'freq']
         likepercent = lh.loc[1.0,'percent']
 
@@ -178,9 +178,10 @@ class TestTableOne(object):
         Ensure that the package skips running statistical tests if the subgroups have zero observations
         """
         categorical=['likesmarmalade']
-        table = TableOne(self.data_sample, categorical=categorical, groupby='bear', pval=True)
+        table = TableOne(self.data_sample, columns=categorical, categorical=categorical, 
+            groupby='bear', pval=True)
 
-        assert table._significance_table.loc['likesmarmalade','testname'] == 'Not tested'
+        assert table._significance_table.loc['likesmarmalade','ptest'] == 'Not tested'
 
     @with_setup(setup, teardown)
     def test_fisher_exact_for_small_cell_count(self):
@@ -192,8 +193,8 @@ class TestTableOne(object):
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
-        assert table._significance_table.loc['group1','testname'] == 'Fisher exact'
-        assert table._significance_table.loc['group3','testname'] == 'Not tested'
+        assert table._significance_table.loc['group1','ptest'] == 'Fisher exact'
+        assert table._significance_table.loc['group3','ptest'] == 'Not tested'
 
     @with_setup(setup, teardown)
     def test_sequence_of_cont_table(self):
@@ -207,9 +208,10 @@ class TestTableOne(object):
             categorical = categorical, groupby = groupby, isnull = False)
 
         # n and weight rows are already ordered, so sorting should not alter the order
-        assert t.tableone[0][1:] == sorted(t.tableone[0][1:])
-        assert t.tableone[1][1:] == ['0.50 (0.71)', '3.50 (1.29)', '8.50 (1.87)', '15.50 (2.45)']
-        assert t.tableone[2][1:] == sorted(t.tableone[2][1:])
+        assert (t.tableone.loc['n'].values[0][1:5].astype(float) == \
+            sorted(t.tableone.loc['n'].values[0][1:5].astype(float))).any()
+        assert (t.tableone.loc['age'].values[0][1:5] == \
+            ['0.5 (0.71)', '3.5 (1.29)', '8.5 (1.87)', '15.5 (2.45)']).any()
 
 
     @with_setup(setup, teardown)
@@ -217,10 +219,10 @@ class TestTableOne(object):
         """
         Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
         """
-        categorical=['group1','group3']
-        table = TableOne(self.data_categorical, categorical=list(np.arange(10)))
+        categorical=list(np.arange(10))
+        table = TableOne(self.data_categorical, columns=categorical,categorical=categorical)
 
         # each column
         for i in np.arange(10):
             # each category should have 100 levels
-            assert table._cat_describe['overall'][i].shape[0] == 100
+            assert table._cat_describe['overall'].loc[i].shape[0] == 100

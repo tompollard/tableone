@@ -27,10 +27,12 @@ class TableOne(object):
         nonnormal (List): List of columns that contain non-normal variables (default None).
         pval (Boolean): Whether to display computed P values (default False).
         isnull (Boolean): Whether to display a count of null values (default True).
+        sort (Boolean): Order the rows alphabetically, with exception to the 'n' row
 
     """
 
-    def __init__(self, data, columns=[], categorical=[], groupby='', nonnormal=[], pval=False, isnull=True):
+    def __init__(self, data, columns=[], categorical=[], groupby='', 
+        nonnormal=[], pval=False, isnull=True, sort=True):
 
         # check input arguments
         if groupby and type(groupby) == list:
@@ -38,132 +40,130 @@ class TableOne(object):
         if nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
 
+        # if categorical not specified
+        # try to identify categorical
+
+        # if columns not specific
+        # use all columns
+
         if pval and not groupby:
             raise ValueError("If pval=True then the groupby must be specified.")
 
-        # instance variables
         self.columns = columns
         self.isnull = isnull
         self.continuous = [c for c in columns if c not in categorical + [groupby]]
         self.categorical = categorical
-        self.groupby = groupby
         self.nonnormal = nonnormal
         self.pval = pval
+        self.sort = sort
+        self.groupby = groupby
 
         if groupby:
-            self.strata = sorted(data.groupby(groupby).groups.keys())
+            self.groupkeys = sorted(data.groupby(groupby).groups.keys())
         else:
-            self.strata = ['overall']
+            self.groupkeys = ['overall']
 
         # forgive me jraffa
         if groupby:
-            self._significance_table = self.__create_significance_table(data)
+            self._significance_table = self._create_significance_table(data)
 
-        self._n_row = self.__create_n_row(data)
-
-        self._cont_describe = {}
-        self._cat_describe = {}
-        self._cat_levels = self.__get_cat_levels(data)
-
-        for s in self.strata:
-            if groupby:
-                self._cont_describe[s] = self.__create_cont_describe(data.loc[data[groupby] == s])
-                self._cat_describe[s] = self.__create_cat_describe(data.loc[data[groupby] == s])
-            else:
-                self._cont_describe[s] = self.__create_cont_describe(data)
-                self._cat_describe[s] = self.__create_cat_describe(data)
+        # create descriptive tables
+        if self.categorical:
+            self._cat_describe = self._create_cat_describe(data)
+            self._cat_table = self._create_cat_table(data)
 
         # create tables of continuous and categorical variables
-        self._cont_table = self.__create_cont_table(data)
-        self._cat_table = self.__create_cat_table(data)
+        if self.continuous:
+            self._cont_describe = self._create_cont_describe(data)
+            self._cont_table = self._create_cont_table(data)
 
         # combine continuous variables and categorical variables into table 1
-        self.tableone = self.__create_tableone()
+        self.tableone = self._create_tableone(data)
 
     def __str__(self):
-        return self.__pretty_print_table()
+        return self.tableone.to_string()
 
     def __repr__(self):
-        return self.__pretty_print_table()
+        return self.tableone.to_string() 
 
-    def __pretty_print_table(self):
-        """
-        Print formatted table to screen.
-        """
-        if self.groupby:
-            strat_str = 'Stratified by ' + '{}\n'.format(self.groupby)
-        else:
-            strat_str = 'Overall\n'
-        headers = [''] + self.strata
-
-        if self.isnull:
-            headers.append('isnull')
-
-        if self.pval:
-            headers.append('pval')
-            headers.append('testname')
-
-        table = tabulate(self.tableone, headers = headers)
-
-        return strat_str + table
-
-    def __create_cont_describe(self,data):
+    def _create_cont_describe(self,data):
         """
         Describe the continuous data.
         """
-        if self.continuous:
-            cont_describe = pd.DataFrame(index=self.continuous)
-            cont_describe['n'] = data[self.continuous].count().values
-            cont_describe['isnull'] = data[self.continuous].isnull().sum().values
-            cont_describe['mean'] = data[self.continuous].mean().values
-            cont_describe['median'] = data[self.continuous].median().values
-            cont_describe['std'] = data[self.continuous].std().values
-            cont_describe['q25'] = data[self.continuous].quantile(0.25).values
-            cont_describe['q75'] = data[self.continuous].quantile(0.75).values
-            cont_describe['min'] = data[self.continuous].min().values
-            cont_describe['max'] = data[self.continuous].max().values
-            cont_describe['skew'] = data[self.continuous].skew().values
-            cont_describe['kurt'] = data[self.continuous].kurt().values
-        else:
-            cont_describe = []
+        group_dict = {}
 
-        return cont_describe
+        for g in self.groupkeys:
+            if self.groupby:
+                d_slice = data.loc[data[self.groupby] == g]
+            else: 
+                d_slice = data
+            df = pd.DataFrame(index=self.continuous)
+            df.index.name = 'variable'
+            df = pd.concat([df,d_slice[self.continuous].count()],axis=1)
+            df = pd.concat([df,data[self.continuous].isnull().sum().rename('isnull')],axis=1)
+            df = pd.concat([df,d_slice[self.continuous].mean().rename('mean')],axis=1)
+            df = pd.concat([df,d_slice[self.continuous].median().rename('median')],axis=1)
+            df = pd.concat([df,d_slice[self.continuous].std().rename('std')],axis=1)
+            df = pd.concat([df,d_slice[self.continuous].quantile(0.25).rename('q25')],axis=1)
+            df = pd.concat([df,d_slice[self.continuous].quantile(0.75).rename('q75')],axis=1)
+            df = pd.concat([df,d_slice[self.continuous].min().rename('min')],axis=1)
+            df = pd.concat([df,d_slice[self.continuous].max().rename('max')],axis=1)
+            df['isnormal'] = np.where(~df.index.isin(self.nonnormal),1,0)
+            df['t1_summary_txt'] = np.where(df['isnormal'] == 1,'(mean (std))','(median [IQR])')
+            df['iqr'] = '[' + df['q25'].apply(round,ndigits=2).map(str) + ', ' + df['q75'].apply(round,ndigits=2).map(str) + ']'
+            df['t1_summary'] = np.where(df['isnormal'] == 1,
+                df['mean'].apply(round,ndigits=2).map(str) + ' (' + df['std'].apply(round,ndigits=2).map(str) + ')',
+                df['median'].apply(round,ndigits=2).map(str) + ' ' + df['iqr'])
+            group_dict[g] = df
 
-    def __get_cat_levels(self,data):
-        """
-        Get a full list of levels for each categorical variable
-        """
-        levels = {}
+        df_cont = pd.concat(group_dict,axis=1)
+        df_cont.index.rename('variable',inplace=True)
 
-        for v in self.categorical:
-            ds = data[v].astype('category')
-            levels[v] = ds[ds.notnull()].unique().categories.sort_values()
+        return df_cont
 
-        return levels
-
-    def __create_cat_describe(self,data):
+    def _create_cat_describe(self,data):
         """
         Describe the categorical data.
         """
-        cats = {}
+        group_dict = {}
 
-        for v in self.categorical:
-            ds = data[v].astype('category')
-            df = pd.DataFrame(index=range(len(self._cat_levels[v])))
-            df['n'] = ds.count()
-            df['isnull'] = ds.isnull().sum()
-            df['level'] = self._cat_levels[v]
-            df = df.merge(ds.value_counts(dropna=True).to_frame().rename(columns= {v:'freq'}),
-                left_on='level',right_index=True, how='left')
-            df['freq'].fillna(0,inplace=True)
-            df['percent'] = (df['freq'] / df['n']) * 100
-            # set level as index to df
-            df.set_index('level', inplace=True)
-            cats[v] = df
+        for g in self.groupkeys:
+            if self.groupby:
+                d_slice = data.loc[data[self.groupby] == g]
+            else: 
+                d_slice = data
+            cats = {}
 
-        return cats
+            for v in self.categorical:
+                ds = d_slice[v].astype('category')
+                levels = ds[ds.notnull()].unique().categories.sort_values()
+                df = pd.DataFrame(index = levels)
+                # clean later
+                # add descriptive details
+                df['n'] = ds.count()
+                df['isnull'] = data[v].isnull().sum()
+                df['level'] = levels
+                df = df.merge(ds.value_counts(dropna=True).to_frame().rename(columns= {v:'freq'}),
+                    left_on='level',right_index=True, how='left')
+                df['freq'].fillna(0,inplace=True)
+                df['percent'] = (df['freq'] / df['n']) * 100
+                # set level as index to df
+                df.set_index('level', inplace=True)
+                cats[v] = df
 
-    def __create_significance_table(self,data):
+            cats_df = pd.concat(cats)
+            cats_df.index.rename('variable',level=0, inplace=True)
+
+            cats_df['t1_summary'] = cats_df.freq.map(str) \
+                + ' (' + cats_df.percent.apply(round, ndigits=2).map(str) + ')'
+
+            group_dict[g] = cats_df
+
+        df_cat = pd.concat(group_dict,axis=1)
+
+        return df_cat
+
+    def _create_significance_table(self,data):
         """
         Create a table containing p values for significance tests. Add features of
         the distributions and the p values to the dataframe.
@@ -171,58 +171,52 @@ class TableOne(object):
 
         # list features of the variable e.g. matched, paired, n_expected
         df=pd.DataFrame(index=self.continuous+self.categorical,
-            columns=['continuous','nonnormal','min_n','pval','testname'])
+            columns=['continuous','nonnormal','min_n','pval','ptest'])
+
+        df.index.rename('variable', inplace=True)
+        df['continuous'] = np.where(df.index.isin(self.continuous),1,0)
+        df['nonnormal'] = np.where(df.index.isin(self.nonnormal),1,0)
 
         for v in self.continuous + self.categorical:
-            # is the variable continuous?
-            if v in self.categorical:
-                df.loc[v]['continuous'] = 0
-            else:
-                df.loc[v]['continuous'] = 1
-            # is the variable reported to be nonnormal?
-            if v in self.nonnormal:
-                df.loc[v]['nonnormal'] = 1
-            else:
-                df.loc[v]['nonnormal'] = 0
             # group the data for analysis
             grouped_data = []
-            for s in self.strata:
+            for s in self.groupkeys:
                 grouped_data.append(data[v][data[self.groupby]==s][data[v][data[self.groupby]==s].notnull()].values)
             # minimum n across groups
-            df.loc[v]['min_n'] = len(min(grouped_data,key=len))
+            df.loc[v,'min_n'] = len(min(grouped_data,key=len))
             if self.pval:
                 # compute p value
-                df.loc[v]['pval'],df.loc[v]['testname'] = self.__p_test(df,v,grouped_data,data)
+                df.loc[v,'pval'],df.loc[v,'ptest'] = self._p_test(df,v,grouped_data,data)
 
         return df
 
-    def __p_test(self,df,v,grouped_data,data):
+    def _p_test(self,df,v,grouped_data,data):
         """
         Compute p value
         """
 
         # default, don't test
         pval = np.nan
-        testname = 'Not tested'
+        ptest = 'Not tested'
 
         # do not test if any sub-group has no observations
         if df.loc[v]['min_n'] == 0:
             warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
-            return pval,testname
+            return pval,ptest
 
         # continuous
         if df.loc[v]['continuous'] == 1:
             if df.loc[v]['nonnormal'] == 0:
                 # normally distributed
-                testname = 'One_way_ANOVA'
+                ptest = 'One_way_ANOVA'
                 test_stat, pval = stats.f_oneway(*grouped_data)
             elif df.loc[v]['nonnormal'] == 1:
                 # non-normally distributed
-                testname = 'Kruskal-Wallis'
+                ptest = 'Kruskal-Wallis'
                 test_stat, pval = stats.kruskal(*grouped_data)
         # categorical
         elif df.loc[v]['continuous'] == 0:
-            # get the ordered observed frequencies of each level within each strata
+            # get the ordered observed frequencies of each level within each group
             all_lvls = sorted(data[v][data[v].notnull()].unique())
             grp_counts = [dict(Counter(g)) for g in grouped_data]
             # make sure that all_lvls are represented in the grp_counts
@@ -232,7 +226,7 @@ class TableOne(object):
                         d[k] = 0
 
             # now make sure that the ordered dictionaries have the same order
-            # getting messy, clean up
+            # messy, clean up
             grp_counts_ordered = list()
             for d in grp_counts:
                 d_ordered = OrderedDict()
@@ -246,161 +240,105 @@ class TableOne(object):
             if min((min(x) for x in observed)) < 5:
                 # switch to fisher exact if this is a 2x2
                 if (len(observed)==2) & (len(observed[0])==2):
-                    testname = 'Fisher exact'
+                    ptest = 'Fisher exact'
                     oddsratio, pval = stats.fisher_exact(observed)
                 else:
                     warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
-                    # otherwise, we will not test
             else:
-                testname = 'Chi-squared'
+                ptest = 'Chi-squared'
                 chi2, pval, dof, expected = stats.chi2_contingency(observed)
 
-        return pval,testname
+        return pval,ptest
 
-    def __create_cont_table(self,data):
+    def _create_cont_table(self,data):
         """
         Create a table displaying table one for continuous data.
         """
-        table = []
+        table = self._cont_describe[self.groupkeys[0]][['isnull']].copy()
+        
+        for g in self.groupkeys:
+            table[g] = self._cont_describe[g]['t1_summary']
 
-        for v in self.continuous:
-            if v in self.nonnormal:
-                row = ['{} (median [IQR])'.format(v)]
-            else:
-                row = ['{} (mean (std))'.format(v)]
-            for strata in self.strata:
-                if v in self.nonnormal:
-                    row.append("{:0.2f} [{:0.2f},{:0.2f}]".format(self._cont_describe[strata]['median'][v],
-                        self._cont_describe[strata]['q25'][v],
-                        self._cont_describe[strata]['q75'][v]))
-                else:
-                    row.append("{:0.2f} ({:0.2f})".format(self._cont_describe[strata]['mean'][v],
-                        self._cont_describe[strata]['std'][v]))
+        table['level'] = ''
+        table.set_index([table.index,'level'],inplace=True)
 
-            # add isnull values column
-            if self.isnull:
-                row.append(data[v].isnull().sum())
-
-            # add pval column
-            if self.pval:
-                row.append('{:0.3f}'.format(self._significance_table.loc[v].pval))
-                row.append('{}'.format(self._significance_table.loc[v].testname))
-
-            # stack rows to create the table
-            table.append(row)
+        # add pval column
+        if self.pval:
+            table = table.join(self._significance_table[['pval','ptest']])
+            # table['pval'] = table['pval'].round(3)
 
         return table
 
-    def __create_cat_table(self,data):
+    def _create_cat_table(self,data):
         """
         Create a table displaying table one for categorical data.
         """
-        table = []
+        table = self._cat_describe[self.groupkeys[0]][['isnull']].copy()
+        
+        for g in self.groupkeys:
+            table[g] = self._cat_describe[g]['t1_summary']
 
-        # For each variable
-        # oh dear the loops
-        for v in self.categorical:
-            row = ['{} (n (%))'.format(v)]
-            row = row + len(self.strata) * ['']
-
-            # add isnull values column
-            if self.isnull:
-                row.append(data[v].isnull().sum())
-
-            # add pval column
-            if self.pval:
-                row.append('{:0.3f}'.format(self._significance_table.loc[v].pval))
-                row.append('{}'.format(self._significance_table.loc[v].testname))
-
-            table.append(row)
-
-            # For each level within the variable
-            for level in data[v][data[v].notnull()].astype('category').unique().categories.sort_values():
-                row = ["{}".format(level)]
-                # for each strata
-                for strata in self.strata:
-                    # get data frame with info about each individual level
-                    vals = self._cat_describe[strata][v]
-                    freq = vals.loc[level, 'freq']
-                    percent = vals.loc[level, 'percent']
-
-                    row.append("{:0.0f} ({:0.2f})".format(freq,percent))
-                # stack rows to create the table
-                table.append(row)
+        # add pval column
+        if self.pval:
+            table = table.join(self._significance_table[['pval','ptest']])
+            # table['pval'] = table['pval'].round(3)
 
         return table
 
-    def __create_n_row(self,data):
-        """
-        Get n, the number of rows for each strata.
-        """
-        n = ['n']
-        if self.groupby:
-            for s in self.strata:
-                count = data[self.groupby][data[self.groupby]==s].count()
-                n.append('{:0.0f}'.format(count))
-            if self.isnull:
-                isnull = data[self.groupby].isnull().sum()
-                n.append('{:0.0f}'.format(isnull))
-        else:
-            count = len(data.index)
-            n.append("{:0.0f}".format(count))
-            if self.isnull:
-                n.append('')
-
-        if self.pval:
-            n.append('')
-
-        return n
-
-    def __create_tableone(self):
+    def _create_tableone(self,data):
         """
         Create table 1 by combining the continuous and categorical tables.
         """
-        table = [self._n_row] + self._cont_table + self._cat_table
+        if self.continuous and self.categorical:
+            table = pd.concat([self._cont_table,self._cat_table])
+        elif self.continuous:
+            table = self._cont_table
+        elif self.categorical:
+            table = self._cat_table
+
+        if self.sort:
+            table.sort_index(level='variable', inplace=True)
+
+        # round pval column
+        if self.pval:
+            table['pval'] = table['pval'].apply('{:.3f}'.format)
+
+        # inserts n row
+        n_row = pd.DataFrame(columns = ['variable','level','isnull'])
+        n_row.set_index(['variable','level'], inplace=True)
+        n_row.loc['n', ''] = None
+        table = pd.concat([n_row,table])
+
+        if self.groupkeys == ['overall']:
+            table.loc['n','overall'] = len(data.index)
+        else:
+            for g in self.groupkeys:
+                ct = data[self.groupby][data[self.groupby]==g].count()
+                table.loc['n',g] = ct
+
+        # only display data in first level row
+        dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
+        dupe_columns = ['isnull']
+        if ['pval'] in table.columns.values:
+            dupe_columns.append('pval')
+        if ['ptest'] in table.columns.values:
+            dupe_columns.append('ptest')         
+        table[dupe_columns] = table[dupe_columns].mask(dupe_mask).fillna('')
+
+        # remove isnull column if not needed
+        if not self.isnull:
+            table.drop('isnull',axis=1,inplace=True)
+
+        # replace nans with empty strings
+        table.fillna('',inplace=True)
+
+        # add name of groupby variable to column headers
+        table.rename(columns=lambda x: x if x not in self.groupkeys \
+            else '{}={}'.format(self.groupby,x), inplace=True)
+
+        # # Add header
+        # if self.groupby:
+        #     title = 'Stratified by {}'.format(self.groupby) 
+        #     pd.concat([table], keys=[title], axis= 1)
 
         return table
-
-    def to_csv(self,fn='tableone.csv'):
-        """
-        Write tableone to CSV.
-
-        Args:
-            fn (String): Filename (default 'tableone.csv')
-        """
-        with open(fn, 'w') as f:
-            writer = csv.writer(f)
-            writer.writerows(self.tableone)
-
-    def to_html(self,fn='tableone.html'):
-        """
-        Write tableone to HTML.
-
-        Args:
-            fn (String): Filename (default 'tableone.html')
-        """
-        tablefmt = 'html'
-        with open(fn, 'w') as f:
-            f.write(tabulate(self.tableone, tablefmt=tablefmt))
-
-    def to_markdown(self,fn='tableone.md'):
-        """
-        Write tableone to markdown.
-
-        Args:
-            fn (String): Filename (default 'tableone.md')
-        """
-        tablefmt = 'pipe'
-        with open(fn, 'w') as f:
-            f.write(tabulate(self.tableone, tablefmt=tablefmt))
-
-    def to_latex(self,fn='tableone.tex'):
-        """
-        Write tableone to LaTeX.
-
-        Args:
-            fn (String): Filename (default 'tableone.tex')
-        """
-        tablefmt = 'latex'
-        with open(fn, 'w') as f:
-            f.write(tabulate(self.tableone, tablefmt=tablefmt))
