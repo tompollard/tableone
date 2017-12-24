@@ -349,7 +349,8 @@ class TableOne(object):
         table.fillna('',inplace=True)
 
         # add name of groupby variable to column headers
-        table.rename(columns=lambda x: x if x not in self.groupkeys \
-            else '{}={}'.format(self.groupby,x), inplace=True)
+        if not self.groupkeys == ['overall']:
+            table.rename(columns=lambda x: x if x not in self.groupkeys \
+                else '{}={}'.format(self.groupby,x), inplace=True)
 
         return table
