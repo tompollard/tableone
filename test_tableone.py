@@ -173,17 +173,6 @@ class TestTableOne(object):
         assert abs(100-likepercent) <= 0.01
 
     @with_setup(setup, teardown)
-    def test_statistical_tests_skipped_if_subgroups_have_zero_observations(self):
-        """
-        Ensure that the package skips running statistical tests if the subgroups have zero observations
-        """
-        categorical=['likesmarmalade']
-        table = TableOne(self.data_sample, columns=categorical, categorical=categorical, 
-            groupby='bear', pval=True)
-
-        assert table._significance_table.loc['likesmarmalade','ptest'] == 'Not tested'
-
-    @with_setup(setup, teardown)
     def test_fisher_exact_for_small_cell_count(self):
         """
         Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
@@ -193,8 +182,8 @@ class TestTableOne(object):
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
-        assert table._significance_table.loc['group1','ptest'] == 'Fisher exact'
-        assert table._significance_table.loc['group3','ptest'] == 'Not tested'
+        assert table._significance_table.loc['group1','ptest'] == 'Fisher''s exact'
+        assert table._significance_table.loc['group3','ptest'] == 'Chi-squared (warning: expected count < 5)'
 
     @with_setup(setup, teardown)
     def test_sequence_of_cont_table(self):

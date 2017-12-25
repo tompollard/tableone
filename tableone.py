@@ -62,13 +62,13 @@ class TableOne(object):
         self.sort = sort
         self.groupby = groupby
 
-        if groupby:
-            self.groupkeys = sorted(data.groupby(groupby).groups.keys())
+        if self.groupby:
+            self.groupbylvls = sorted(data.groupby(groupby).groups.keys())
         else:
-            self.groupkeys = ['overall']
+            self.groupbylvls = ['overall']
 
         # forgive me jraffa
-        if groupby:
+        if self.pval:
             self._significance_table = self._create_significance_table(data)
 
         # create descriptive tables
@@ -108,7 +108,7 @@ class TableOne(object):
         """
         group_dict = {}
 
-        for g in self.groupkeys:
+        for g in self.groupbylvls:
             if self.groupby:
                 d_slice = data.loc[data[self.groupby] == g]
             else: 
@@ -143,7 +143,7 @@ class TableOne(object):
         """
         group_dict = {}
 
-        for g in self.groupkeys:
+        for g in self.groupbylvls:
             if self.groupby:
                 d_slice = data.loc[data[self.groupby] == g]
             else: 
@@ -187,82 +187,79 @@ class TableOne(object):
 
         # list features of the variable e.g. matched, paired, n_expected
         df=pd.DataFrame(index=self.continuous+self.categorical,
-            columns=['continuous','nonnormal','min_n','pval','ptest'])
+            columns=['continuous','nonnormal','min_observed','pval','ptest'])
 
         df.index.rename('variable', inplace=True)
-        df['continuous'] = np.where(df.index.isin(self.continuous),1,0)
-        df['nonnormal'] = np.where(df.index.isin(self.nonnormal),1,0)
+        df['continuous'] = np.where(df.index.isin(self.continuous),True,False)
+        df['nonnormal'] = np.where(df.index.isin(self.nonnormal),True,False)
 
-        for v in self.continuous + self.categorical:
-            # group the data for analysis
-            grouped_data = []
-            for s in self.groupkeys:
-                grouped_data.append(data[v][data[self.groupby]==s][data[v][data[self.groupby]==s].notnull()].values)
-            # minimum n across groups
-            df.loc[v,'min_n'] = len(min(grouped_data,key=len))
-            if self.pval:
-                # compute p value
-                df.loc[v,'pval'],df.loc[v,'ptest'] = self._p_test(df,v,grouped_data,data)
+        # list values for each variable, grouped by groupby levels
+        for v in df.index:
+            
+            # compute p value
+            is_continuous = df.loc[v]['continuous']
+            is_categorical = ~df.loc[v]['continuous']
+            is_normal = ~df.loc[v]['nonnormal']
+
+            # if continuous, group data into list of lists
+            if is_continuous:
+                catlevels = None
+                grouped_data = []
+                for s in self.groupbylvls:
+                    lvl_data = data[data[self.groupby]==s].dropna(subset=[v])[v]
+                    grouped_data.append(lvl_data.values)
+                min_observed = len(min(grouped_data,key=len))
+            # if categorical, create contingency table
+            elif is_categorical:
+                catlevels = sorted(data[v].astype('category').cat.categories)
+                grouped_data = pd.crosstab(data[self.groupby],data[v])
+                min_observed = grouped_data.sum(axis=1).min()
+
+            # minimum number of observations across all levels
+            df.loc[v,'min_observed'] = min_observed
+
+            # compute pvalues
+            df.loc[v,'pval'],df.loc[v,'ptest'] = self._p_test(v, 
+                grouped_data,is_continuous,is_categorical,
+                is_normal,min_observed,catlevels)
 
         return df
 
-    def _p_test(self,df,v,grouped_data,data):
+    def _p_test(self,v,grouped_data,is_continuous,is_categorical,
+            is_normal,min_observed,catlevels,
+            pval=np.nan,ptest='Not tested'):
         """
         Compute p value
         """
 
-        # default, don't test
-        pval = np.nan
-        ptest = 'Not tested'
-
         # do not test if any sub-group has no observations
-        if df.loc[v]['min_n'] == 0:
+        if min_observed == 0:
             warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
             return pval,ptest
 
         # continuous
-        if df.loc[v]['continuous'] == 1:
-            if df.loc[v]['nonnormal'] == 0:
-                # normally distributed
-                ptest = 'One_way_ANOVA'
-                test_stat, pval = stats.f_oneway(*grouped_data)
-            elif df.loc[v]['nonnormal'] == 1:
-                # non-normally distributed
-                ptest = 'Kruskal-Wallis'
-                test_stat, pval = stats.kruskal(*grouped_data)
+        if is_continuous and is_normal:
+            # normally distributed
+            ptest = 'One-way ANOVA'
+            test_stat, pval = stats.f_oneway(*grouped_data)
+        elif is_continuous and not is_normal:
+            # non-normally distributed
+            ptest = 'Kruskal-Wallis'
+            test_stat, pval = stats.kruskal(*grouped_data)
         # categorical
-        elif df.loc[v]['continuous'] == 0:
-            # get the ordered observed frequencies of each level within each group
-            all_lvls = sorted(data[v][data[v].notnull()].unique())
-            grp_counts = [dict(Counter(g)) for g in grouped_data]
-            # make sure that all_lvls are represented in the grp_counts
-            for d in grp_counts:
-                for k in all_lvls:
-                    if k not in d:
-                        d[k] = 0
-
-            # now make sure that the ordered dictionaries have the same order
-            # messy, clean up
-            grp_counts_ordered = list()
-            for d in grp_counts:
-                d_ordered = OrderedDict()
-                for k in all_lvls:
-                    d_ordered[k] = d[k]
-                grp_counts_ordered.append(d_ordered)
-
-            observed = [list(g.values()) for g in grp_counts_ordered]
-
-            # if any of the cell counts are < 5, we shouldn't use chi2
-            if min((min(x) for x in observed)) < 5:
-                # switch to fisher exact if this is a 2x2
-                if (len(observed)==2) & (len(observed[0])==2):
-                    ptest = 'Fisher exact'
-                    oddsratio, pval = stats.fisher_exact(observed)
+        elif is_categorical:
+            # default to chi-squared
+            ptest = 'Chi-squared'
+            chi2, pval, dof, expected = stats.chi2_contingency(grouped_data)
+            # if any expected cell counts are < 5, chi2 may not be valid
+            # if this is a 2x2, switch to fisher exact
+            if expected.min() < 5:
+                if grouped_data.shape == (2,2):
+                    ptest = 'Fisher''s exact'
+                    oddsratio, pval = stats.fisher_exact(grouped_data)
                 else:
+                    ptest = 'Chi-squared (warning: expected count < 5)'
                     warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
-            else:
-                ptest = 'Chi-squared'
-                chi2, pval, dof, expected = stats.chi2_contingency(observed)
 
         return pval,ptest
 
@@ -270,9 +267,9 @@ class TableOne(object):
         """
         Create a table displaying table one for continuous data.
         """
-        table = self._cont_describe[self.groupkeys[0]][['isnull']].copy()
+        table = self._cont_describe[self.groupbylvls[0]][['isnull']].copy()
         
-        for g in self.groupkeys:
+        for g in self.groupbylvls:
             table[g] = self._cont_describe[g]['t1_summary']
 
         table['level'] = ''
@@ -289,15 +286,14 @@ class TableOne(object):
         """
         Create a table displaying table one for categorical data.
         """
-        table = self._cat_describe[self.groupkeys[0]][['isnull']].copy()
+        table = self._cat_describe[self.groupbylvls[0]][['isnull']].copy()
         
-        for g in self.groupkeys:
+        for g in self.groupbylvls:
             table[g] = self._cat_describe[g]['t1_summary']
 
         # add pval column
         if self.pval:
             table = table.join(self._significance_table[['pval','ptest']])
-            # table['pval'] = table['pval'].round(3)
 
         return table
 
@@ -325,10 +321,10 @@ class TableOne(object):
         n_row.loc['n', ''] = None
         table = pd.concat([n_row,table])
 
-        if self.groupkeys == ['overall']:
+        if self.groupbylvls == ['overall']:
             table.loc['n','overall'] = len(data.index)
         else:
-            for g in self.groupkeys:
+            for g in self.groupbylvls:
                 ct = data[self.groupby][data[self.groupby]==g].count()
                 table.loc['n',g] = ct
 
@@ -349,8 +345,8 @@ class TableOne(object):
         table.fillna('',inplace=True)
 
         # add name of groupby variable to column headers
-        if not self.groupkeys == ['overall']:
-            table.rename(columns=lambda x: x if x not in self.groupkeys \
+        if not self.groupbylvls == ['overall']:
+            table.rename(columns=lambda x: x if x not in self.groupbylvls \
                 else '{}={}'.format(self.groupby,x), inplace=True)
 
         return table
