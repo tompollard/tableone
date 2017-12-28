@@ -4,13 +4,12 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 import pandas as pd
 from tabulate import tabulate
 import csv
 from scipy import stats
-from collections import Counter, OrderedDict
 import warnings
 import numpy as np
 
@@ -28,11 +27,12 @@ class TableOne(object):
         pval (Boolean): Whether to display computed P values (default False).
         isnull (Boolean): Whether to display a count of null values (default True).
         sort (Boolean): Order the rows alphabetically, with exception to the 'n' row
+        ddof (int): Degrees of freedom for standard deviation calculations (default: 1). 
 
     """
 
     def __init__(self, data, columns='autodetect', categorical='autodetect', 
-        groupby='', nonnormal=[], pval=False, isnull=True, sort=True):
+        groupby='', nonnormal=[], pval=False, isnull=True, sort=True, ddof=1):
 
         # check input arguments
         if groupby and type(groupby) == list:
@@ -61,6 +61,7 @@ class TableOne(object):
         self.pval = pval
         self.sort = sort
         self.groupby = groupby
+        self.ddof = ddof # degrees of freedom for standard deviation calculations
 
         if self.groupby:
             self.groupbylvls = sorted(data.groupby(groupby).groups.keys())
@@ -79,7 +80,9 @@ class TableOne(object):
         # create tables of continuous and categorical variables
         if self.continuous:
             self._cont_describe = self._create_cont_describe(data)
+            # self._cont_describe_NEW = self._create_cont_describe_NEW(data)
             self._cont_table = self._create_cont_table(data)
+            # self._cont_table_NEW = self._create_cont_table_NEW(data)
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
@@ -102,37 +105,41 @@ class TableOne(object):
 
         return likely_cat
 
+    def q25(self,x):
+        return np.nanpercentile(x.values,25)
+
+    def q75(self,x):
+        return np.nanpercentile(x.values,75)
+
+    def std(self,x):
+        return np.nanstd(x.values,ddof=self.ddof)
+
+    def t1_summary(self,x):
+        if x.name in self.nonnormal:
+            return '{:.2f} [{:.2f},{:.2f}]'.format(np.nanmedian(x.values), 
+                np.nanpercentile(x.values,25), np.nanpercentile(x.values,75))
+        else:
+            return '{:.2f} ({:.2f})'.format(np.nanmean(x.values), 
+                np.nanstd(x.values,ddof=self.ddof))
+
     def _create_cont_describe(self,data):
         """
         Describe the continuous data.
         """
-        group_dict = {}
+        aggfuncs = [pd.Series.count,np.mean,np.median,self.std,
+            self.q25,self.q75,min,max,self.t1_summary]
 
-        for g in self.groupbylvls:
-            if self.groupby:
-                d_slice = data.loc[data[self.groupby] == g]
-            else: 
-                d_slice = data
-            df = pd.DataFrame(index=self.continuous)
-            df.index.name = 'variable'
-            df = pd.concat([df,d_slice[self.continuous].count()],axis=1)
-            df = pd.concat([df,data[self.continuous].isnull().sum().rename('isnull')],axis=1)
-            df = pd.concat([df,d_slice[self.continuous].mean().rename('mean')],axis=1)
-            df = pd.concat([df,d_slice[self.continuous].median().rename('median')],axis=1)
-            df = pd.concat([df,d_slice[self.continuous].std().rename('std')],axis=1)
-            df = pd.concat([df,d_slice[self.continuous].quantile(0.25).rename('q25')],axis=1)
-            df = pd.concat([df,d_slice[self.continuous].quantile(0.75).rename('q75')],axis=1)
-            df = pd.concat([df,d_slice[self.continuous].min().rename('min')],axis=1)
-            df = pd.concat([df,d_slice[self.continuous].max().rename('max')],axis=1)
-            df['isnormal'] = np.where(~df.index.isin(self.nonnormal),1,0)
-            df['t1_summary_txt'] = np.where(df['isnormal'] == 1,'(mean (std))','(median [IQR])')
-            df['iqr'] = '[' + df['q25'].apply(round,ndigits=2).map(str) + ', ' + df['q75'].apply(round,ndigits=2).map(str) + ']'
-            df['t1_summary'] = np.where(df['isnormal'] == 1,
-                df['mean'].apply(round,ndigits=2).map(str) + ' (' + df['std'].apply(round,ndigits=2).map(str) + ')',
-                df['median'].apply(round,ndigits=2).map(str) + ' ' + df['iqr'])
-            group_dict[g] = df
+        if self.groupby:
+            cont_data = data[self.continuous + [self.groupby]]
+            df_cont = pd.pivot_table(cont_data,
+                columns=[self.groupby],
+                aggfunc=aggfuncs)
+        else:
+            # if no groupby, just add single group column
+            df_cont = data[self.continuous].apply(aggfuncs).T
+            df_cont.columns.name = 'overall'
+            df_cont.columns = pd.MultiIndex.from_product([df_cont.columns, ['overall']])
 
-        df_cont = pd.concat(group_dict,axis=1)
         df_cont.index.rename('variable',inplace=True)
 
         return df_cont
@@ -195,8 +202,7 @@ class TableOne(object):
 
         # list values for each variable, grouped by groupby levels
         for v in df.index:
-            
-            # compute p value
+
             is_continuous = df.loc[v]['continuous']
             is_categorical = ~df.loc[v]['continuous']
             is_normal = ~df.loc[v]['nonnormal']
@@ -232,7 +238,7 @@ class TableOne(object):
         Compute p value
         """
 
-        # do not test if any sub-group has no observations
+        # do not test if the variable has no observations in a level
         if min_observed == 0:
             warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
             return pval,ptest
@@ -265,13 +271,17 @@ class TableOne(object):
 
     def _create_cont_table(self,data):
         """
-        Create a table displaying table one for continuous data.
+        Create a table displaying tableone for continuous data.
         """
-        table = self._cont_describe[self.groupbylvls[0]][['isnull']].copy()
-        
-        for g in self.groupbylvls:
-            table[g] = self._cont_describe[g]['t1_summary']
+        # remove the t1_summary level
+        table = self._cont_describe[['t1_summary']].copy()
+        table.columns = table.columns.droplevel(level=0)
 
+        # add a column of null counts
+        nulltable = pd.DataFrame(data[self.continuous].isnull().sum().rename('isnull'))
+        table = table.join(nulltable)
+
+        # add an empty level column, for joining with cat table
         table['level'] = ''
         table.set_index([table.index,'level'],inplace=True)
 

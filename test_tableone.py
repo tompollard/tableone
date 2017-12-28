@@ -134,8 +134,8 @@ class TestTableOne(object):
         columns=['normal','nonnormal','height']
         table = TableOne(self.data_sample, columns=columns)
 
-        mean =  table._cont_describe['overall'].loc['normal']['mean']
-        std = table._cont_describe['overall'].loc['normal']['std']
+        mean =  table._cont_describe.loc['normal']['mean']['overall']
+        std = table._cont_describe.loc['normal']['std']['overall']
 
         assert abs(mean-self.mu) <= 0.02
         assert abs(std-self.sigma) <= 0.02
@@ -200,7 +200,7 @@ class TestTableOne(object):
         assert (t.tableone.loc['n'].values[0][1:5].astype(float) == \
             sorted(t.tableone.loc['n'].values[0][1:5].astype(float))).any()
         assert (t.tableone.loc['age'].values[0][1:5] == \
-            ['0.5 (0.71)', '3.5 (1.29)', '8.5 (1.87)', '15.5 (2.45)']).any()
+            ['0.50 (0.71)', '3.50 (1.29)', '8.50 (1.87)', '15.50 (2.45)']).any()
 
 
     @with_setup(setup, teardown)
