@@ -7,7 +7,6 @@ __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
 __version__ = "0.3.2"
 
 import pandas as pd
-from tabulate import tabulate
 import csv
 from scipy import stats
 import warnings
