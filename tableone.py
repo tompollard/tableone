@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 import pandas as pd
 import csv
@@ -79,9 +79,7 @@ class TableOne(object):
         # create tables of continuous and categorical variables
         if self.continuous:
             self._cont_describe = self._create_cont_describe(data)
-            # self._cont_describe_NEW = self._create_cont_describe_NEW(data)
             self._cont_table = self._create_cont_table(data)
-            # self._cont_table_NEW = self._create_cont_table_NEW(data)
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
@@ -130,14 +128,17 @@ class TableOne(object):
 
         if self.groupby:
             cont_data = data[self.continuous + [self.groupby]]
+            cont_data = cont_data.apply(pd.to_numeric, errors='ignore')
             df_cont = pd.pivot_table(cont_data,
                 columns=[self.groupby],
                 aggfunc=aggfuncs)
         else:
             # if no groupby, just add single group column
-            df_cont = data[self.continuous].apply(aggfuncs).T
+            df_cont = data[self.continuous].apply(pd.to_numeric, 
+                errors='ignore').apply(aggfuncs).T
             df_cont.columns.name = 'overall'
-            df_cont.columns = pd.MultiIndex.from_product([df_cont.columns, ['overall']])
+            df_cont.columns = pd.MultiIndex.from_product([df_cont.columns, 
+                ['overall']])
 
         df_cont.index.rename('variable',inplace=True)
 
