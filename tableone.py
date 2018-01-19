@@ -286,7 +286,6 @@ class TableOne(object):
         # add pval column
         if self.pval:
             table = table.join(self._significance_table[['pval','ptest']])
-            # table['pval'] = table['pval'].round(3)
 
         return table
 
