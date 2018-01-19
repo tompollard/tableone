@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 import pandas as pd
 import csv
@@ -39,15 +39,13 @@ class TableOne(object):
         if nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
 
-        # if categorical not specified
-        # try to identify categorical
-        if categorical == 'autodetect':
-            categorical = self._detect_categorical_columns(data)
-
-        # if columns not specified
-        # use all columns
+        # if columns not specified, use all columns
         if columns == 'autodetect':
             columns = data.columns.get_values()
+
+        # if categorical not specified, try to identify categorical
+        if categorical == 'autodetect':
+            categorical = self._detect_categorical_columns(data[columns])
 
         if pval and not groupby:
             raise ValueError("If pval=True then the groupby must be specified.")
