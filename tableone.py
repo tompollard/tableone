@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.3.5"
+__version__ = "0.4.0"
 
 import pandas as pd
 import csv
