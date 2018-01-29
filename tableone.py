@@ -28,11 +28,12 @@ class TableOne(object):
         sort (Boolean): Order the rows alphabetically, with exception to the 'n' row
         ddof (int): Degrees of freedom for standard deviation calculations (default: 1). 
         labels (Dict): Dictionary of alternative labels for variables. e.g. {'sex':'gender', 'trt':'treatment'}.
+        limit (Int): Limit to the top N most frequent categories.
     """
 
     def __init__(self, data, columns='autodetect', categorical='autodetect', 
         groupby='', nonnormal=[], pval=False, isnull=True, sort=True, ddof=1,
-        labels = None):
+        labels=None, limit=None):
 
         # check input arguments
         if groupby and type(groupby) == list:
@@ -61,6 +62,7 @@ class TableOne(object):
         self.groupby = groupby
         self.ddof = ddof # degrees of freedom for standard deviation calculations
         self.labels = labels
+        self.limit = limit
 
         if self.groupby:
             self.groupbylvls = sorted(data.groupby(groupby).groups.keys())
@@ -317,12 +319,25 @@ class TableOne(object):
         elif self.categorical:
             table = self._cat_table
 
-        if self.sort:
-            table.sort_index(level='variable', inplace=True)
-
         # round pval column
         if self.pval:
             table['pval'] = table['pval'].apply('{:.3f}'.format)
+
+        # sort the table
+        table.reset_index().set_index(['variable','level'], inplace=True)
+        table.sort_index(level='variable', inplace=True, sort_remaining=False)
+
+        # if a limit has been set on the number of categorical variables
+        # then order the variables by frequency
+        if self.limit:
+            levelcounts = data[self.categorical].nunique()
+            levelcounts = levelcounts[levelcounts >= self.limit]
+            for v,_ in levelcounts.iteritems():
+                count = data[v].value_counts().sort_values(ascending=False)
+                new_index = [(v, i) for i in count.index]
+                old_index = table.index.values.copy()
+                old_index[table.index.get_loc(v)] = new_index
+                table = table.reindex(old_index)
 
         # inserts n row
         n_row = pd.DataFrame(columns = ['variable','level','isnull'])
@@ -361,5 +376,10 @@ class TableOne(object):
         # display alternative labels if assigned
         if self.labels:
             table.rename(index=self.labels, inplace=True, level=0)
+
+        # if a limit has been set on the number of categorical variables
+        # limit the number of categorical variables that are displayed
+        if self.limit:
+            table = table.groupby('variable').head(self.limit)
 
         return table
