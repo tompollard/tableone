@@ -359,6 +359,9 @@ class TableOne(object):
             dupe_columns.append('ptest')         
         table[dupe_columns] = table[dupe_columns].mask(dupe_mask).fillna('')
 
+        # remove empty column added above
+        table.drop([''], axis=1, inplace=True)
+
         # remove isnull column if not needed
         if not self.isnull:
             table.drop('isnull',axis=1,inplace=True)

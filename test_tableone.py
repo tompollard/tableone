@@ -197,11 +197,10 @@ class TestTableOne(object):
             categorical = categorical, groupby = groupby, isnull = False)
 
         # n and weight rows are already ordered, so sorting should not alter the order
-        assert (t.tableone.loc['n'].values[0][1:5].astype(float) == \
-            sorted(t.tableone.loc['n'].values[0][1:5].astype(float))).any()
-        assert (t.tableone.loc['age'].values[0][1:5] == \
+        assert (t.tableone.loc['n'].values[0].astype(float) == \
+            sorted(t.tableone.loc['n'].values[0].astype(float))).any()
+        assert (t.tableone.loc['age'].values[0] == \
             ['0.50 (0.71)', '3.50 (1.29)', '8.50 (1.87)', '15.50 (2.45)']).any()
-
 
     @with_setup(setup, teardown)
     def test_categorical_cell_count(self):
