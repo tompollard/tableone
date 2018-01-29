@@ -25,15 +25,13 @@ class TableOne(object):
         nonnormal (List): List of columns that contain non-normal variables (default None).
         pval (Boolean): Whether to display computed P values (default False).
         isnull (Boolean): Whether to display a count of null values (default True).
-        sort (Boolean): Order the rows alphabetically, with exception to the 'n' row
         ddof (int): Degrees of freedom for standard deviation calculations (default: 1). 
         labels (Dict): Dictionary of alternative labels for variables. e.g. {'sex':'gender', 'trt':'treatment'}.
         limit (Int): Limit to the top N most frequent categories.
     """
 
     def __init__(self, data, columns='autodetect', categorical='autodetect', 
-        groupby='', nonnormal=[], pval=False, isnull=True, sort=True, ddof=1,
-        labels=None, limit=None):
+        groupby='', nonnormal=[], pval=False, isnull=True, ddof=1, labels=None, limit=None):
 
         # check input arguments
         if groupby and type(groupby) == list:
@@ -58,7 +56,7 @@ class TableOne(object):
         self.categorical = categorical
         self.nonnormal = nonnormal
         self.pval = pval
-        self.sort = sort
+        # self.sort = sort
         self.groupby = groupby
         self.ddof = ddof # degrees of freedom for standard deviation calculations
         self.labels = labels
