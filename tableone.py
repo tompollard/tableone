@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 import pandas as pd
 import csv
@@ -104,7 +104,6 @@ class TableOne(object):
             likely_flag = 1.0 * data[var].nunique()/data[var].count() < 0.05
             if likely_flag:
                  likely_cat.append(var)
-        print(likely_cat)
         return likely_cat
 
     def q25(self,x):
