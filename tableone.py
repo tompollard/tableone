@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 import pandas as pd
 import csv
@@ -94,12 +94,17 @@ class TableOne(object):
         """
         If categorical is not specified, auto-detect categorical columns
         """
-        likely_cat = []
-        for var in data.columns:
+        # assume all non-numerical and date columns are categorical
+        numeric_cols = set(data._get_numeric_data().columns.values)
+        date_cols = set(data.select_dtypes(include=[np.datetime64]).columns)
+        likely_cat = set(data.columns) - numeric_cols
+        likely_cat = list(likely_cat - date_cols)
+        # check proportion of unique values if numerical
+        for var in data._get_numeric_data().columns:
             likely_flag = 1.0 * data[var].nunique()/data[var].count() < 0.05
             if likely_flag:
                  likely_cat.append(var)
-
+        print(likely_cat)
         return likely_cat
 
     def q25(self,x):
