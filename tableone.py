@@ -58,7 +58,7 @@ class TableOne(object):
         self.pval = pval
         # self.sort = sort
         self.groupby = groupby
-        self.ddof = ddof # degrees of freedom for standard deviation calculations
+        self.ddof = ddof # degrees of freedom for standard deviation
         self.labels = labels
         self.limit = limit
 
