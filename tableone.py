@@ -159,7 +159,6 @@ class TableOne(object):
                 d_slice = data.loc[data[self.groupby] == g]
             else: 
                 d_slice = data
-            cats = {}
 
             # create a dataframe with freq, proportion
             df = d_slice[self.categorical].copy()
