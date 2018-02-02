@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 
 import pandas as pd
 import csv
@@ -161,30 +161,27 @@ class TableOne(object):
                 d_slice = data
             cats = {}
 
-            for v in self.categorical:
-                ds = d_slice[v].astype('category')
-                levels = ds[ds.notnull()].unique().categories.sort_values()
-                df = pd.DataFrame(index = levels)
-                # clean later
-                # add descriptive details
-                df['n'] = ds.count()
-                df['isnull'] = data[v].isnull().sum()
-                df['level'] = levels
-                df = df.merge(ds.value_counts(dropna=True).to_frame().rename(columns= {v:'freq'}),
-                    left_on='level',right_index=True, how='left')
-                df['freq'].fillna(0,inplace=True)
-                df['percent'] = (df['freq'] / df['n']) * 100
-                # set level as index to df
-                df.set_index('level', inplace=True)
-                cats[v] = df
+            # create a dataframe with freq, proportion
+            df = d_slice[self.categorical].copy()
+            df = df.melt().groupby(['variable','value']).size().to_frame(name='freq')
+            df.index.set_names('level', level=1, inplace=True)
+            df['percent'] = df['freq'].div(df.freq.sum(level=0),level=0)* 100
 
-            cats_df = pd.concat(cats)
-            cats_df.index.rename('variable',level=0, inplace=True)
+            # add n column, listing total non-null values for each variable
+            ct = d_slice.count().to_frame(name='n')
+            ct.index.name = 'variable'
+            df = df.join(ct)
 
-            cats_df['t1_summary'] = cats_df.freq.map(str) \
-                + ' (' + cats_df.percent.apply(round, ndigits=2).map(str) + ')'
+            # add null count
+            nulls = d_slice.isnull().sum().to_frame(name='isnull')
+            nulls.index.name = 'variable'
+            df = df.join(nulls)
 
-            group_dict[g] = cats_df
+            # add summary column
+            df['t1_summary'] = df.freq.map(str) + ' (' + df.percent.apply(round, ndigits=2).map(str) + ')'
+
+            # add to dictionary
+            group_dict[g] = df
 
         df_cat = pd.concat(group_dict,axis=1)
 
