@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.4.3"
+__version__ = "0.4.4"
 
 import pandas as pd
 import csv
@@ -369,10 +369,10 @@ class TableOne(object):
         # replace nans with empty strings
         table.fillna('',inplace=True)
 
-        # add name of groupby variable to column headers
+        # add column index
         if not self.groupbylvls == ['overall']:
-            table.rename(columns=lambda x: x if x not in self.groupbylvls \
-                else '{}={}'.format(self.groupby,x), inplace=True)
+            table.columns = pd.MultiIndex.from_product([['Grouped by {}'.format(self.groupby)], 
+                table.columns])
 
         # display alternative labels if assigned
         if self.labels:
