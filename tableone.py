@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.4.5"
+__version__ = "0.4.6"
 
 import pandas as pd
 import csv
@@ -12,6 +12,17 @@ from scipy import stats
 import warnings
 import numpy as np
 
+class InputError(Exception):
+    """Exception raised for errors in the input.
+
+    Attributes:
+        expression -- input expression in which the error occurred
+        message -- explanation of the error
+    """
+
+    def __init__(self, expression, message):
+        self.expression = expression
+        self.message = message
 
 class TableOne(object):
     """
@@ -42,6 +53,11 @@ class TableOne(object):
         # if columns not specified, use all columns
         if columns == 'autodetect':
             columns = data.columns.get_values()
+
+        # check for duplicate columns
+        if data[columns].columns.get_duplicates():
+            raise InputError(data[columns].columns.get_duplicates(), 
+                'Input contains duplicate columns')
 
         # if categorical not specified, try to identify categorical
         if categorical == 'autodetect':
