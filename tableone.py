@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.4.4"
+__version__ = "0.4.5"
 
 import pandas as pd
 import csv
@@ -158,7 +158,7 @@ class TableOne(object):
             if self.groupby:
                 d_slice = data.loc[data[self.groupby] == g]
             else: 
-                d_slice = data
+                d_slice = data.copy()
 
             # create a dataframe with freq, proportion
             df = d_slice[self.categorical].copy()
