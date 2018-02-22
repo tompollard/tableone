@@ -107,15 +107,27 @@ class TableOne(object):
         return likely_cat
 
     def q25(self,x):
+        """
+        Compute percentile (25th)
+        """
         return np.nanpercentile(x.values,25)
 
     def q75(self,x):
+        """
+        Compute percentile (75th)
+        """
         return np.nanpercentile(x.values,75)
 
     def std(self,x):
+        """
+        Compute standard deviation with ddof degrees of freedom
+        """
         return np.nanstd(x.values,ddof=self.ddof)
 
     def t1_summary(self,x):
+        """
+        Compute summary values
+        """
         if x.name in self.nonnormal:
             return '{:.2f} [{:.2f},{:.2f}]'.format(np.nanmedian(x.values), 
                 np.nanpercentile(x.values,25), np.nanpercentile(x.values,75))
