@@ -41,7 +41,7 @@ class TableOne(object):
         limit (Int): Limit to the top N most frequent categories.
     """
 
-    def __init__(self, data, columns='autodetect', categorical='autodetect', 
+    def __init__(self, data, columns=None, categorical='autodetect', 
         groupby='', nonnormal=[], pval=False, isnull=True, ddof=1, labels=None, limit=None):
 
         # check input arguments
@@ -51,7 +51,7 @@ class TableOne(object):
             nonnormal = [nonnormal]
 
         # if columns not specified, use all columns
-        if columns == 'autodetect':
+        if not columns:
             columns = data.columns.get_values()
 
         # check for duplicate columns
