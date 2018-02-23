@@ -47,6 +47,7 @@ class TableOne(object):
         # check input arguments
         if groupby and type(groupby) == list:
             groupby = groupby[0]
+
         if nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
 
@@ -60,7 +61,7 @@ class TableOne(object):
                 'Input contains duplicate columns')
 
         # if categorical not specified, try to identify categorical
-        if not categorical:
+        if not categorical and type(categorical) != list:
             categorical = self._detect_categorical_columns(data[columns])
 
         if pval and not groupby:
