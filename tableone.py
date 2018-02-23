@@ -4,7 +4,7 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.4.6"
+__version__ = "0.4.7"
 
 import pandas as pd
 import csv
@@ -41,14 +41,18 @@ class TableOne(object):
         limit (Int): Limit to the top N most frequent categories.
     """
 
-    def __init__(self, data, columns=None, categorical=None, 
-        groupby='', nonnormal=[], pval=False, isnull=True, ddof=1, labels=None, limit=None):
+    def __init__(self, data, columns=None, categorical=None, groupby=None, 
+        nonnormal=None, pval=False, isnull=True, ddof=1, labels=None, limit=None):
 
         # check input arguments
-        if groupby and type(groupby) == list:
+        if not groupby:
+            groupby = ''
+        elif groupby and type(groupby) == list:
             groupby = groupby[0]
 
-        if nonnormal and type(nonnormal) == str:
+        if not nonnormal:
+            nonnormal=[]
+        elif nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
 
         # if columns not specified, use all columns
