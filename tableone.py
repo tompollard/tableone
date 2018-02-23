@@ -41,7 +41,7 @@ class TableOne(object):
         limit (Int): Limit to the top N most frequent categories.
     """
 
-    def __init__(self, data, columns=None, categorical='autodetect', 
+    def __init__(self, data, columns=None, categorical=None, 
         groupby='', nonnormal=[], pval=False, isnull=True, ddof=1, labels=None, limit=None):
 
         # check input arguments
@@ -60,7 +60,7 @@ class TableOne(object):
                 'Input contains duplicate columns')
 
         # if categorical not specified, try to identify categorical
-        if categorical == 'autodetect':
+        if not categorical:
             categorical = self._detect_categorical_columns(data[columns])
 
         if pval and not groupby:
