@@ -4,10 +4,9 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.4.7"
+__version__ = "0.4.8"
 
 import pandas as pd
-import csv
 from scipy import stats
 import warnings
 import numpy as np
