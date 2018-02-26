@@ -4,12 +4,13 @@ inspired by the R package of the same name.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.4.8"
+__version__ = "0.4.9"
 
 import pandas as pd
 from scipy import stats
 import warnings
 import numpy as np
+from statsmodels.stats import multitest
 
 class InputError(Exception):
     """Exception raised for errors in the input.
@@ -44,7 +45,13 @@ class TableOne(object):
     nonnormal : List
         List of columns that contain non-normal variables (default: None).
     pval : Boolean
-        Whether to display computed P values (default: False).
+        Whether to display computed p-values (default: False).
+    pval_adjust : String
+        Method used to adjust p-values for multiple testing. Available methods are ::
+
+        `None` : no correction applied.
+        `bonferroni` : one-step correction
+
     isnull : Boolean
         Whether to display a count of null values (default: True).
     ddof : int
@@ -57,7 +64,8 @@ class TableOne(object):
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None, 
-        nonnormal=None, pval=False, isnull=True, ddof=1, labels=None, limit=None):
+        nonnormal=None, pval=False, pval_adjust=None, isnull=True, 
+        ddof=1, labels=None, limit=None):
 
         # check input arguments
         if not groupby:
@@ -92,6 +100,7 @@ class TableOne(object):
         self.categorical = categorical
         self.nonnormal = nonnormal
         self.pval = pval
+        self.pval_adjust = pval_adjust
         # self.sort = sort
         self.groupby = groupby
         self.ddof = ddof # degrees of freedom for standard deviation
@@ -106,6 +115,13 @@ class TableOne(object):
         # forgive me jraffa
         if self.pval:
             self._significance_table = self._create_significance_table(data)
+
+        # correct for multiple testing
+        if self.pval and self.pval_adjust:
+            alpha=0.05
+            adjusted = multitest.multipletests(self._significance_table['pval'],alpha)
+            self._significance_table['pval (adjusted)'] = adjusted[1]
+            self._significance_table['adjust method'] = self.pval_adjust
 
         # create descriptive tables
         if self.categorical:
@@ -260,7 +276,8 @@ class TableOne(object):
             df = df.join(nulls)
 
             # add summary column
-            df['t1_summary'] = df.freq.map(str) + ' (' + df.percent.apply(round, ndigits=2).map(str) + ')'
+            df['t1_summary'] = df.freq.map(str) + ' (' + df.percent.apply(round, 
+                ndigits=2).map(str) + ')'
 
             # add to dictionary
             group_dict[g] = df
@@ -406,7 +423,9 @@ class TableOne(object):
         table.set_index([table.index,'level'],inplace=True)
 
         # add pval column
-        if self.pval:
+        if self.pval and self.pval_adjust:
+            table = table.join(self._significance_table[['pval (adjusted)','ptest']])
+        elif self.pval:
             table = table.join(self._significance_table[['pval','ptest']])
 
         return table
@@ -426,7 +445,9 @@ class TableOne(object):
             table[g] = self._cat_describe[g]['t1_summary']
 
         # add pval column
-        if self.pval:
+        if self.pval and self.pval_adjust:
+            table = table.join(self._significance_table[['pval (adjusted)','ptest']])
+        elif self.pval:
             table = table.join(self._significance_table[['pval','ptest']])
 
         return table
@@ -448,7 +469,9 @@ class TableOne(object):
             table = self._cat_table
 
         # round pval column
-        if self.pval:
+        if self.pval and self.pval_adjust:
+            table['pval (adjusted)'] = table['pval (adjusted)'].apply('{:.3f}'.format)
+        elif self.pval:
             table['pval'] = table['pval'].apply('{:.3f}'.format)
 
         # sort the table
@@ -483,10 +506,11 @@ class TableOne(object):
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
         dupe_columns = ['isnull']
-        if ['pval'] in table.columns.values:
-            dupe_columns.append('pval')
-        if ['ptest'] in table.columns.values:
-            dupe_columns.append('ptest')         
+        optional_columns = ['pval','pval (adjusted)','ptest']
+        for col in optional_columns:
+            if col in table.columns.values:
+                dupe_columns.append(col)
+ 
         table[dupe_columns] = table[dupe_columns].mask(dupe_mask).fillna('')
 
         # remove empty column added above
