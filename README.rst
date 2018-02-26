@@ -18,11 +18,13 @@ available at: https://github.com/tompollard/tableone/blob/master/tableone.ipynb
 Installation
 ------------
 
-The distribution is hosted on PyPI and directly installable via pip without
-needing to clone or download this repository. To install the package from PyPI,
-run the following command in your terminal::
+To install the package with pip, run::
 
     pip install tableone
+
+To install this package with conda, run::
+    
+    conda install -c conda-forge tableone
 
 Example
 -------
