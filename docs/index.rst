@@ -10,5 +10,12 @@ See :doc:`the quickstart <quickstart>` to get started.
    :maxdepth: 1
    :caption: Getting Started
 
-   install
+   introduction
    quickstart
+   install
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Package Reference
+
+  tableone

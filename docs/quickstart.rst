@@ -16,7 +16,7 @@ Run demo
 
 The easiest way to understand what this package does is to evaluate it on data.
 
-The tableone.ipynb notebook demonstrates usage of the package. At a high level, you can use the package as follows:
+The `tableone notebook <https://github.com/tompollard/tableone/blob/master/tableone.ipynb>`_ demonstrates usage of the package. At a high level, you can use the package as follows:
 
 * Import the data into a pandas dataframe
 * Run tableone on this dataframe
