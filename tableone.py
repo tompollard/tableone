@@ -35,18 +35,22 @@ class TableOne(object):
         columns (list): List of columns in the dataset to be included
             in the final table.
         categorical (list): List of columns that contain categorical variables.
-        groupby (str): Optional column for stratifying the final table (default: None).
-        nonnormal (list): List of columns that contain non-normal variables (default: None).
+        groupby (str): Optional column for stratifying
+            the final table (default: None).
+        nonnormal (list): List of columns that contain
+            non-normal variables (default: None).
         pval (bool): Whether to display computed p-values (default: False).
-        pval_adjust (str): Method used to adjust p-values for multiple testing. Available methods are ::
+        pval_adjust (str): Method used to adjust p-values
+            for multiple testing. Available methods are ::
 
             `None` : no correction applied.
             `bonferroni` : one-step correction
 
-        isnull (bool): Whether to display a count of null values (default: True).
-        ddof (int): Degrees of freedom for standard deviation calculations (default: 1).
-        labels: Dict
-            Dictionary of alternative labels for variables.
+        isnull (bool): Whether to display a count of
+            null values (default: True).
+        ddof (int): Degrees of freedom for standard deviation calculations
+            (default: 1).
+        labels (dict): Dictionary of alternative labels for variables.
             e.g. `labels = {'sex':'gender', 'trt':'treatment'}`
         limit (int): Limit to the top N most frequent categories.
     """
@@ -175,8 +179,7 @@ class TableOne(object):
         Compute median [IQR] or mean (Std) for the input series.
 
         Args:
-            x: Pandas Series
-                Series of values to be summarised.
+            x (pandas Series): Series of values to be summarised.
         """
         if x.name in self.nonnormal:
             return '{:.2f} [{:.2f},{:.2f}]'.format(np.nanmedian(x.values),
@@ -323,8 +326,7 @@ class TableOne(object):
             is_continuous (bool): True if the variable is continuous.
             is_categorical (bool): True if the variable is categorical.
             is_normal (bool): True if the variable is normally distributed.
-            min_observed: Integer
-                Minimum number of values across groups for the variable.
+            min_observed (int): Minimum number of values across groups for the variable.
             catlevels (list): Sorted list of levels for categorical variables.
 
         Returns:
