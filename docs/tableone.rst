@@ -5,4 +5,3 @@ tableone
 TableOne
 -------------------
 .. autoclass:: TableOne
-   :members:
