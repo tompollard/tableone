@@ -73,7 +73,7 @@ class TableOne(object):
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
         nonnormal=None, pval=False, pval_adjust=None, isnull=True,
-        ddof=1, labels=None, limit=None):
+        ddof=1, labels=None, sort=False, limit=None):
 
         # check input arguments
         if not groupby:
@@ -113,7 +113,7 @@ class TableOne(object):
         self.nonnormal = nonnormal
         self.pval = pval
         self.pval_adjust = pval_adjust
-        # self.sort = sort
+        self.sort = sort
         self.groupby = groupby
         self.ddof = ddof # degrees of freedom for standard deviation
         self.labels = labels
@@ -486,9 +486,15 @@ class TableOne(object):
         elif self.pval:
             table['pval'] = table['pval'].apply('{:.3f}'.format)
 
-        # sort the table
+        # sort the table rows
         table.reset_index().set_index(['variable','level'], inplace=True)
-        table.sort_index(level='variable', inplace=True, sort_remaining=False)
+        if self.sort:
+            # alphabetical
+            newindex = sorted(table.index.values)
+        else:
+            # sort by the columns argument
+            newindex = sorted(table.index.values,key=lambda x: self.columns.index(x[0]))
+        table = table.reindex(newindex)
 
         # if a limit has been set on the number of categorical variables
         # then order the variables by frequency
