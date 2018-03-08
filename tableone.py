@@ -62,13 +62,6 @@ class TableOne(object):
     ----------
     tableone : dataframe
         Summary of the data (i.e., the "Table 1").
-    groupbylvls : list
-        Name of each group the data is summarized within (default: ['overall']).
-
-    Raises
-    ----------
-    InputError
-        If the dataframe contains duplicate columns.
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
