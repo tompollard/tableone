@@ -14,16 +14,11 @@ import numpy as np
 from statsmodels.stats import multitest
 
 class InputError(Exception):
-    """Exception raised for errors in the input.
-
-    Arguments:
-        expression: Input expression in which the error occurred.
-        message: Explanation of the error.
     """
+    Exception raised for errors in the input.
+    """
+    pass
 
-    def __init__(self, expression, message):
-        self.expression = expression
-        self.message = message
 
 class TableOne(object):
     """
@@ -42,7 +37,7 @@ class TableOne(object):
     nonnormal : list, optional
         List of columns that contain non-normal variables (default: None).
     pval : bool, optional
-        Whether to display computed p-values (default: False).
+        Display computed p-values (default: False).
     pval_adjust : str, optional
         Method used to adjust p-values for multiple testing.
         Available methods are ::
@@ -51,12 +46,15 @@ class TableOne(object):
         `bonferroni` : one-step correction
 
     isnull : bool, optional
-        Whether to display a count of null values (default: True).
+        Display a count of null values (default: True).
     ddof : int, optional
         Degrees of freedom for standard deviation calculations (default: 1).
     labels : dict, optional
         Dictionary of alternative labels for variables.
         e.g. `labels = {'sex':'gender', 'trt':'treatment'}`
+    sort: Boolean
+        Sort the rows alphabetically. Default (False) retains the input order 
+        of columns.
     limit : int, optional
         Limit to the top N most frequent categories.
 
@@ -92,19 +90,23 @@ class TableOne(object):
         if not columns:
             columns = data.columns.get_values()
 
+        # check that the columns exist in the dataframe
+        if not set(columns).issubset(data.columns):
+            notfound = list(set(columns) - set(data.columns))
+            raise InputError('Columns not found in dataset: {}'.format(notfound))
+
         # check for duplicate columns
         if data[columns].columns.get_duplicates():
-            raise InputError(data[columns].columns.get_duplicates(),
-                'Input contains duplicate columns')
+            raise InputError('Input contains duplicate columns: {}'.format())
 
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
             categorical = self._detect_categorical_columns(data[columns])
 
         if pval and not groupby:
-            raise ValueError("If pval=True then the groupby must be specified.")
+            raise InputError("If pval=True then the groupby must be specified.")
 
-        self.columns = columns
+        self.columns = list(columns)
         self.isnull = isnull
         self.continuous = [c for c in columns if c not in categorical + [groupby]]
         self.categorical = categorical
