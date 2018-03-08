@@ -13,6 +13,7 @@ See :doc:`the quickstart <quickstart>` to get started.
 
    quickstart
    install
+   contributing
 
 .. toctree::
   :maxdepth: 1
