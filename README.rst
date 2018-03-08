@@ -12,8 +12,12 @@ TableOne
 
 tableone is a package for creating "Table 1" summary statistics for a patient 
 population. It was inspired by the R package of the same name by Yoshida and 
-Bohn. A demo Jupyter Notebook is available at: 
-https://github.com/tompollard/tableone/blob/master/tableone.ipynb
+Bohn.
+
+Documentation
+-------------
+
+For documentation, see: http://tableone.readthedocs.io/en/latest/. An executable demonstration of the package is available as a Jupyter Notebook: https://github.com/tompollard/tableone/blob/master/tableone.ipynb
 
 Installation
 ------------
