@@ -1,6 +1,3 @@
-.. TableOne documentation master file, created by
-   sphinx-quickstart on Fri Feb 23 05:58:52 2018.
-
 TableOne documentation!
 ====================================
 
