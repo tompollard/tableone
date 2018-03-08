@@ -29,30 +29,48 @@ class TableOne(object):
     """
     Create a tableone instance.
 
-    Args:
-        data (pandas DataFrame): The dataset to be summarised.
-            Rows are observations, columns are variables.
-        columns (list): List of columns in the dataset to be included
-            in the final table.
-        categorical (list): List of columns that contain categorical variables.
-        groupby (str): Optional column for stratifying
-            the final table (default: None).
-        nonnormal (list): List of columns that contain
-            non-normal variables (default: None).
-        pval (bool): Whether to display computed p-values (default: False).
-        pval_adjust (str): Method used to adjust p-values
-            for multiple testing. Available methods are ::
+    Parameters
+    ----------
+    data : pandas DataFrame
+        The dataset to be summarised. Rows are observations, columns are variables.
+    columns : list, optional
+        List of columns in the dataset to be included in the final table.
+    categorical : list, optional
+        List of columns that contain categorical variables.
+    groupby : str, optional
+        Optional column for stratifying the final table (default: None).
+    nonnormal : list, optional
+        List of columns that contain non-normal variables (default: None).
+    pval : bool, optional
+        Whether to display computed p-values (default: False).
+    pval_adjust : str, optional
+        Method used to adjust p-values for multiple testing.
+        Available methods are ::
 
-            `None` : no correction applied.
-            `bonferroni` : one-step correction
+        `None` : no correction applied.
+        `bonferroni` : one-step correction
 
-        isnull (bool): Whether to display a count of
-            null values (default: True).
-        ddof (int): Degrees of freedom for standard deviation calculations
-            (default: 1).
-        labels (dict): Dictionary of alternative labels for variables.
-            e.g. `labels = {'sex':'gender', 'trt':'treatment'}`
-        limit (int): Limit to the top N most frequent categories.
+    isnull : bool, optional
+        Whether to display a count of null values (default: True).
+    ddof : int, optional
+        Degrees of freedom for standard deviation calculations (default: 1).
+    labels : dict, optional
+        Dictionary of alternative labels for variables.
+        e.g. `labels = {'sex':'gender', 'trt':'treatment'}`
+    limit : int, optional
+        Limit to the top N most frequent categories.
+
+    Attributes
+    ----------
+    tableone : dataframe
+        Summary of the data (i.e., the "Table 1").
+    groupbylvls : list
+        Name of each group the data is summarized within (default: ['overall']).
+
+    Raises
+    ----------
+    InputError
+        If the dataframe contains duplicate columns.
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
@@ -138,11 +156,15 @@ class TableOne(object):
         """
         Detect categorical columns if they are not specified.
 
-        Args:
-            data (pandas DataFrame): The input dataset.
+        Parameters
+        ----------
+            data : pandas DataFrame
+                The input dataset.
 
-        Returns:
-            likely_cat (list): List of variables that appear to be categorical.
+        Returns
+        ----------
+            likely_cat : list
+                List of variables that appear to be categorical.
         """
         # assume all non-numerical and date columns are categorical
         numeric_cols = set(data._get_numeric_data().columns.values)
@@ -178,8 +200,10 @@ class TableOne(object):
         """
         Compute median [IQR] or mean (Std) for the input series.
 
-        Args:
-            x (pandas Series): Series of values to be summarised.
+        Parameters
+        ----------
+            x : pandas Series
+                Series of values to be summarised.
         """
         if x.name in self.nonnormal:
             return '{:.2f} [{:.2f},{:.2f}]'.format(np.nanmedian(x.values),
@@ -192,11 +216,15 @@ class TableOne(object):
         """
         Describe the continuous data.
 
-        Args:
-            data (pandas DataFrame): The input dataset.
+        Parameters
+        ----------
+            data : pandas DataFrame
+                The input dataset.
 
-        Returns:
-            df_cat (pandas DataFrame): Summarise the continuous variables.
+        Returns
+        ----------
+            df_cat : pandas DataFrame
+                Summarise the continuous variables.
         """
         aggfuncs = [pd.Series.count,np.mean,np.median,self.std,
             self.q25,self.q75,min,max,self.t1_summary]
@@ -223,11 +251,15 @@ class TableOne(object):
         """
         Describe the categorical data.
 
-        Args:
-            data (pandas DataFrame): The input dataset.
+        Parameters
+        ----------
+            data : pandas DataFrame
+                The input dataset.
 
-        Returns:
-            df_cat (pandas DataFrame): Summarise the categorical variables.
+        Returns
+        ----------
+            df_cat : pandas DataFrame
+                Summarise the categorical variables.
         """
         group_dict = {}
 
@@ -269,11 +301,15 @@ class TableOne(object):
         Create a table containing p-values for significance tests. Add features of
         the distributions and the p-values to the dataframe.
 
-        Args:
-            data (pandas DataFrame): The input dataset.
+        Parameters
+        ----------
+            data : pandas DataFrame
+                The input dataset.
 
-        Returns:
-            df (pandas DataFrame): A table containing the p-values, test name, etc.
+        Returns
+        ----------
+            df : pandas DataFrame
+                A table containing the p-values, test name, etc.
         """
         # list features of the variable e.g. matched, paired, n_expected
         df=pd.DataFrame(index=self.continuous+self.categorical,
@@ -320,18 +356,29 @@ class TableOne(object):
         """
         Compute p-values.
 
-        Args:
-            v (str): Name of the variable to be tested.
-            grouped_data (list): List of lists of values to be tested.
-            is_continuous (bool): True if the variable is continuous.
-            is_categorical (bool): True if the variable is categorical.
-            is_normal (bool): True if the variable is normally distributed.
-            min_observed (int): Minimum number of values across groups for the variable.
-            catlevels (list): Sorted list of levels for categorical variables.
+        Parameters
+        ----------
+            v : str
+                Name of the variable to be tested.
+            grouped_data : list
+                List of lists of values to be tested.
+            is_continuous : bool
+                True if the variable is continuous.
+            is_categorical : bool
+                True if the variable is categorical.
+            is_normal : bool
+                True if the variable is normally distributed.
+            min_observed : int
+                Minimum number of values across groups for the variable.
+            catlevels : list
+                Sorted list of levels for categorical variables.
 
-        Returns:
-            pval (float): The computed p-value.
-            ptest (str): The name of the test used to compute the p-value.
+        Returns
+        ----------
+            pval : float
+                The computed p-value.
+            ptest : str
+                The name of the test used to compute the p-value.
         """
         # do not test if the variable has no observations in a level
         if min_observed == 0:
@@ -368,8 +415,10 @@ class TableOne(object):
         """
         Create tableone for continuous data.
 
-        Returns:
-            table (pandas DataFrame): A table summarising the continuous variables.
+        Returns
+        ----------
+        table : pandas DataFrame
+            A table summarising the continuous variables.
         """
         # remove the t1_summary level
         table = self._cont_describe[['t1_summary']].copy()
@@ -395,8 +444,10 @@ class TableOne(object):
         """
         Create table one for categorical data.
 
-        Returns:
-            table (pandas DataFrame): A table summarising the categorical variables.
+        Returns
+        ----------
+        table : pandas DataFrame
+            A table summarising the categorical variables.
         """
         table = self._cat_describe[self.groupbylvls[0]][['isnull']].copy()
 
@@ -415,8 +466,10 @@ class TableOne(object):
         """
         Create table 1 by combining the continuous and categorical tables.
 
-        Returns:
-            table (pandas DataFrame): The complete table one.
+        Returns
+        ----------
+        table : pandas DataFrame
+            The complete table one.
         """
         if self.continuous and self.categorical:
             table = pd.concat([self._cont_table,self._cat_table])
