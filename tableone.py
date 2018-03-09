@@ -218,7 +218,7 @@ class TableOne(object):
 
         Returns
         ----------
-            df_cat : pandas DataFrame
+            df_cont : pandas DataFrame
                 Summarise the continuous variables.
         """
         aggfuncs = [pd.Series.count,np.mean,np.median,self._std,
