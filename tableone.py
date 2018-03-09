@@ -173,25 +173,25 @@ class TableOne(object):
                  likely_cat.append(var)
         return likely_cat
 
-    def q25(self,x):
+    def _q25(self,x):
         """
         Compute percentile (25th)
         """
         return np.nanpercentile(x.values,25)
 
-    def q75(self,x):
+    def _q75(self,x):
         """
         Compute percentile (75th)
         """
         return np.nanpercentile(x.values,75)
 
-    def std(self,x):
+    def _std(self,x):
         """
         Compute standard deviation with ddof degrees of freedom
         """
         return np.nanstd(x.values,ddof=self.ddof)
 
-    def t1_summary(self,x):
+    def _t1_summary(self,x):
         """
         Compute median [IQR] or mean (Std) for the input series.
 
@@ -221,8 +221,8 @@ class TableOne(object):
             df_cat : pandas DataFrame
                 Summarise the continuous variables.
         """
-        aggfuncs = [pd.Series.count,np.mean,np.median,self.std,
-            self.q25,self.q75,min,max,self.t1_summary]
+        aggfuncs = [pd.Series.count,np.mean,np.median,self._std,
+            self._q25,self._q75,min,max,self._t1_summary]
 
         if self.groupby:
             cont_data = data[self.continuous + [self.groupby]]
