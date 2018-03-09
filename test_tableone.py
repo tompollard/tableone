@@ -134,8 +134,8 @@ class TestTableOne(object):
         columns=['normal','nonnormal','height']
         table = TableOne(self.data_sample, columns=columns)
 
-        mean =  table._cont_describe.loc['normal']['mean']['overall']
-        std = table._cont_describe.loc['normal']['std']['overall']
+        mean =  table.cont_describe.loc['normal']['mean']['overall']
+        std = table.cont_describe.loc['normal']['std']['overall']
 
         assert abs(mean-self.mu) <= 0.02
         assert abs(std-self.sigma) <= 0.02
@@ -146,7 +146,7 @@ class TestTableOne(object):
         categorical=['likesmarmalade']
         table = TableOne(self.data_sample, columns=categorical, categorical=categorical)
 
-        lm = table._cat_describe['overall'].loc['likesmarmalade']
+        lm = table.cat_describe['overall'].loc['likesmarmalade']
         notlikefreq = lm.loc[0,'freq']
         notlikepercent = lm.loc[0,'percent']
         likefreq = lm.loc[1,'freq']
@@ -165,7 +165,7 @@ class TestTableOne(object):
         categorical=['likeshoney']
         table = TableOne(self.data_sample, columns=categorical, categorical=categorical)
 
-        lh = table._cat_describe['overall'].loc['likeshoney']
+        lh = table.cat_describe['overall'].loc['likeshoney']
         likefreq = lh.loc[1.0,'freq']
         likepercent = lh.loc[1.0,'percent']
 
@@ -213,4 +213,4 @@ class TestTableOne(object):
         # each column
         for i in np.arange(10):
             # each category should have 100 levels
-            assert table._cat_describe['overall'].loc[i].shape[0] == 100
+            assert table.cat_describe['overall'].loc[i].shape[0] == 100
