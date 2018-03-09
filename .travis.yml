@@ -5,11 +5,13 @@
 branches:
   only:
   - master
+  - dev
 
 # Set the language
 language: python
 python:
     - "2.7"
+    - "3.5"
 
 addons:
   apt:
@@ -24,7 +26,7 @@ before_install:
 
 # command to install dependencies
 install:
-  - pip install numpy scipy matplotlib pandas sympy nose
+  - pip install numpy scipy matplotlib pandas sympy nose statsmodels
   - pip install .
 
 # command to run tests
