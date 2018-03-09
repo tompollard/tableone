@@ -99,44 +99,44 @@ class TableOne(object):
         if pval and not groupby:
             raise InputError("If pval=True then the groupby must be specified.")
 
-        self.columns = list(columns)
-        self.isnull = isnull
-        self.continuous = [c for c in columns if c not in categorical + [groupby]]
-        self.categorical = categorical
-        self.nonnormal = nonnormal
-        self.pval = pval
-        self.pval_adjust = pval_adjust
-        self.sort = sort
-        self.groupby = groupby
-        self.ddof = ddof # degrees of freedom for standard deviation
-        self.labels = labels
-        self.limit = limit
+        self._columns = list(columns)
+        self._isnull = isnull
+        self._continuous = [c for c in columns if c not in categorical + [groupby]]
+        self._categorical = categorical
+        self._nonnormal = nonnormal
+        self._pval = pval
+        self._pval_adjust = pval_adjust
+        self._sort = sort
+        self._groupby = groupby
+        self._ddof = ddof # degrees of freedom for standard deviation
+        self._labels = labels
+        self._limit = limit
 
-        if self.groupby:
-            self.groupbylvls = sorted(data.groupby(groupby).groups.keys())
+        if self._groupby:
+            self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
         else:
-            self.groupbylvls = ['overall']
+            self._groupbylvls = ['overall']
 
         # forgive me jraffa
-        if self.pval:
+        if self._pval:
             self._significance_table = self._create_significance_table(data)
 
         # correct for multiple testing
-        if self.pval and self.pval_adjust:
+        if self._pval and self._pval_adjust:
             alpha=0.05
             adjusted = multitest.multipletests(self._significance_table['pval'],alpha)
             self._significance_table['pval (adjusted)'] = adjusted[1]
-            self._significance_table['adjust method'] = self.pval_adjust
+            self._significance_table['adjust method'] = self._pval_adjust
 
         # create descriptive tables
-        if self.categorical:
-            self._cat_describe = self._create_cat_describe(data)
-            self._cat_table = self._create_cat_table(data)
+        if self._categorical:
+            self.cat_describe = self._create_cat_describe(data)
+            self.cat_table = self._create_cat_table(data)
 
         # create tables of continuous and categorical variables
-        if self.continuous:
-            self._cont_describe = self._create_cont_describe(data)
-            self._cont_table = self._create_cont_table(data)
+        if self._continuous:
+            self.cont_describe = self._create_cont_describe(data)
+            self.cont_table = self._create_cont_table(data)
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
@@ -189,7 +189,7 @@ class TableOne(object):
         """
         Compute standard deviation with ddof degrees of freedom
         """
-        return np.nanstd(x.values,ddof=self.ddof)
+        return np.nanstd(x.values,ddof=self._ddof)
 
     def _t1_summary(self,x):
         """
@@ -200,12 +200,12 @@ class TableOne(object):
             x : pandas Series
                 Series of values to be summarised.
         """
-        if x.name in self.nonnormal:
+        if x.name in self._nonnormal:
             return '{:.2f} [{:.2f},{:.2f}]'.format(np.nanmedian(x.values),
                 np.nanpercentile(x.values,25), np.nanpercentile(x.values,75))
         else:
             return '{:.2f} ({:.2f})'.format(np.nanmean(x.values),
-                np.nanstd(x.values,ddof=self.ddof))
+                np.nanstd(x.values,ddof=self._ddof))
 
     def _create_cont_describe(self,data):
         """
@@ -224,21 +224,26 @@ class TableOne(object):
         aggfuncs = [pd.Series.count,np.mean,np.median,self._std,
             self._q25,self._q75,min,max,self._t1_summary]
 
-        if self.groupby:
-            cont_data = data[self.continuous + [self.groupby]]
+        if self._groupby:
+            cont_data = data[self._continuous + [self._groupby]]
             cont_data = cont_data.apply(pd.to_numeric, errors='ignore')
             df_cont = pd.pivot_table(cont_data,
-                columns=[self.groupby],
+                columns=[self._groupby],
                 aggfunc=aggfuncs)
         else:
             # if no groupby, just add single group column
-            df_cont = data[self.continuous].apply(pd.to_numeric,
+            df_cont = data[self._continuous].apply(pd.to_numeric,
                 errors='ignore').apply(aggfuncs).T
             df_cont.columns.name = 'overall'
             df_cont.columns = pd.MultiIndex.from_product([df_cont.columns,
                 ['overall']])
 
         df_cont.index.rename('variable',inplace=True)
+
+        # remove prefix underscore from column names (e.g. _std -> std)
+        agg_rename = df_cont.columns.levels[0]
+        agg_rename = [x[1:] if x[0]=='_' else x for x in agg_rename]
+        df_cont.columns.set_levels(agg_rename, level=0, inplace=True)
 
         return df_cont
 
@@ -258,14 +263,14 @@ class TableOne(object):
         """
         group_dict = {}
 
-        for g in self.groupbylvls:
-            if self.groupby:
-                d_slice = data.loc[data[self.groupby] == g]
+        for g in self._groupbylvls:
+            if self._groupby:
+                d_slice = data.loc[data[self._groupby] == g]
             else:
                 d_slice = data.copy()
 
             # create a dataframe with freq, proportion
-            df = d_slice[self.categorical].copy()
+            df = d_slice[self._categorical].copy()
             df = df.melt().groupby(['variable','value']).size().to_frame(name='freq')
             df.index.set_names('level', level=1, inplace=True)
             df['percent'] = df['freq'].div(df.freq.sum(level=0),level=0)* 100
@@ -307,12 +312,12 @@ class TableOne(object):
                 A table containing the p-values, test name, etc.
         """
         # list features of the variable e.g. matched, paired, n_expected
-        df=pd.DataFrame(index=self.continuous+self.categorical,
+        df=pd.DataFrame(index=self._continuous+self._categorical,
             columns=['continuous','nonnormal','min_observed','pval','ptest'])
 
         df.index.rename('variable', inplace=True)
-        df['continuous'] = np.where(df.index.isin(self.continuous),True,False)
-        df['nonnormal'] = np.where(df.index.isin(self.nonnormal),True,False)
+        df['continuous'] = np.where(df.index.isin(self._continuous),True,False)
+        df['nonnormal'] = np.where(df.index.isin(self._nonnormal),True,False)
 
         # list values for each variable, grouped by groupby levels
         for v in df.index:
@@ -325,14 +330,14 @@ class TableOne(object):
             if is_continuous:
                 catlevels = None
                 grouped_data = []
-                for s in self.groupbylvls:
-                    lvl_data = data[data[self.groupby]==s].dropna(subset=[v])[v]
+                for s in self._groupbylvls:
+                    lvl_data = data[data[self._groupby]==s].dropna(subset=[v])[v]
                     grouped_data.append(lvl_data.values)
                 min_observed = len(min(grouped_data,key=len))
             # if categorical, create contingency table
             elif is_categorical:
                 catlevels = sorted(data[v].astype('category').cat.categories)
-                grouped_data = pd.crosstab(data[self.groupby],data[v])
+                grouped_data = pd.crosstab(data[self._groupby],data[v])
                 min_observed = grouped_data.sum(axis=1).min()
 
             # minimum number of observations across all levels
@@ -416,11 +421,11 @@ class TableOne(object):
             A table summarising the continuous variables.
         """
         # remove the t1_summary level
-        table = self._cont_describe[['t1_summary']].copy()
+        table = self.cont_describe[['t1_summary']].copy()
         table.columns = table.columns.droplevel(level=0)
 
         # add a column of null counts
-        nulltable = pd.DataFrame(data[self.continuous].isnull().sum().rename('isnull'))
+        nulltable = pd.DataFrame(data[self._continuous].isnull().sum().rename('isnull'))
         table = table.join(nulltable)
 
         # add an empty level column, for joining with cat table
@@ -428,9 +433,9 @@ class TableOne(object):
         table.set_index([table.index,'level'],inplace=True)
 
         # add pval column
-        if self.pval and self.pval_adjust:
+        if self._pval and self._pval_adjust:
             table = table.join(self._significance_table[['pval (adjusted)','ptest']])
-        elif self.pval:
+        elif self._pval:
             table = table.join(self._significance_table[['pval','ptest']])
 
         return table
@@ -444,15 +449,15 @@ class TableOne(object):
         table : pandas DataFrame
             A table summarising the categorical variables.
         """
-        table = self._cat_describe[self.groupbylvls[0]][['isnull']].copy()
+        table = self.cat_describe[self._groupbylvls[0]][['isnull']].copy()
 
-        for g in self.groupbylvls:
-            table[g] = self._cat_describe[g]['t1_summary']
+        for g in self._groupbylvls:
+            table[g] = self.cat_describe[g]['t1_summary']
 
         # add pval column
-        if self.pval and self.pval_adjust:
+        if self._pval and self._pval_adjust:
             table = table.join(self._significance_table[['pval (adjusted)','ptest']])
-        elif self.pval:
+        elif self._pval:
             table = table.join(self._significance_table[['pval','ptest']])
 
         return table
@@ -466,34 +471,34 @@ class TableOne(object):
         table : pandas DataFrame
             The complete table one.
         """
-        if self.continuous and self.categorical:
-            table = pd.concat([self._cont_table,self._cat_table])
-        elif self.continuous:
-            table = self._cont_table
-        elif self.categorical:
-            table = self._cat_table
+        if self._continuous and self._categorical:
+            table = pd.concat([self.cont_table,self.cat_table])
+        elif self._continuous:
+            table = self.cont_table
+        elif self._categorical:
+            table = self.cat_table
 
         # round pval column
-        if self.pval and self.pval_adjust:
+        if self._pval and self._pval_adjust:
             table['pval (adjusted)'] = table['pval (adjusted)'].apply('{:.3f}'.format)
-        elif self.pval:
+        elif self._pval:
             table['pval'] = table['pval'].apply('{:.3f}'.format)
 
         # sort the table rows
         table.reset_index().set_index(['variable','level'], inplace=True)
-        if self.sort:
+        if self._sort:
             # alphabetical
             new_index = sorted(table.index.values)
         else:
             # sort by the columns argument
-            new_index = sorted(table.index.values,key=lambda x: self.columns.index(x[0]))
+            new_index = sorted(table.index.values,key=lambda x: self._columns.index(x[0]))
         table = table.reindex(new_index)
 
         # if a limit has been set on the number of categorical variables
         # then re-order the variables by frequency
-        if self.limit:
-            levelcounts = data[self.categorical].nunique()
-            levelcounts = levelcounts[levelcounts >= self.limit]
+        if self._limit:
+            levelcounts = data[self._categorical].nunique()
+            levelcounts = levelcounts[levelcounts >= self._limit]
             for v,_ in levelcounts.iteritems():
                 count = data[v].value_counts().sort_values(ascending=False)
                 new_index = [(v, i) for i in count.index]
@@ -510,11 +515,11 @@ class TableOne(object):
         n_row.loc['n', ''] = None
         table = pd.concat([n_row,table])
 
-        if self.groupbylvls == ['overall']:
+        if self._groupbylvls == ['overall']:
             table.loc['n','overall'] = len(data.index)
         else:
-            for g in self.groupbylvls:
-                ct = data[self.groupby][data[self.groupby]==g].count()
+            for g in self._groupbylvls:
+                ct = data[self._groupby][data[self._groupby]==g].count()
                 table.loc['n',g] = ct
 
         # only display data in first level row
@@ -531,24 +536,24 @@ class TableOne(object):
         table.drop([''], axis=1, inplace=True)
 
         # remove isnull column if not needed
-        if not self.isnull:
+        if not self._isnull:
             table.drop('isnull',axis=1,inplace=True)
 
         # replace nans with empty strings
         table.fillna('',inplace=True)
 
         # add column index
-        if not self.groupbylvls == ['overall']:
-            table.columns = pd.MultiIndex.from_product([['Grouped by {}'.format(self.groupby)],
+        if not self._groupbylvls == ['overall']:
+            table.columns = pd.MultiIndex.from_product([['Grouped by {}'.format(self._groupby)],
                 table.columns])
 
         # display alternative labels if assigned
-        if self.labels:
-            table.rename(index=self.labels, inplace=True, level=0)
+        if self._labels:
+            table.rename(index=self._labels, inplace=True, level=0)
 
         # if a limit has been set on the number of categorical variables
         # limit the number of categorical variables that are displayed
-        if self.limit:
-            table = table.groupby('variable').head(self.limit)
+        if self._limit:
+            table = table.groupby('variable').head(self._limit)
 
         return table
