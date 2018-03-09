@@ -5,7 +5,7 @@ This class contains a number of utilities for summarizing the data using commonl
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 import pandas as pd
 from scipy import stats
@@ -483,23 +483,26 @@ class TableOne(object):
         table.reset_index().set_index(['variable','level'], inplace=True)
         if self.sort:
             # alphabetical
-            newindex = sorted(table.index.values)
+            new_index = sorted(table.index.values)
         else:
             # sort by the columns argument
-            newindex = sorted(table.index.values,key=lambda x: self.columns.index(x[0]))
-        table = table.reindex(newindex)
+            new_index = sorted(table.index.values,key=lambda x: self.columns.index(x[0]))
+        table = table.reindex(new_index)
 
         # if a limit has been set on the number of categorical variables
-        # then order the variables by frequency
+        # then re-order the variables by frequency
         if self.limit:
             levelcounts = data[self.categorical].nunique()
             levelcounts = levelcounts[levelcounts >= self.limit]
             for v,_ in levelcounts.iteritems():
                 count = data[v].value_counts().sort_values(ascending=False)
                 new_index = [(v, i) for i in count.index]
-                old_index = table.index.values.copy()
-                old_index[table.index.get_loc(v)] = new_index
-                table = table.reindex(old_index)
+                # restructure to match orig_index
+                new_index_array=np.empty((len(new_index),), dtype=object)
+                new_index_array[:]=[tuple(i) for i in new_index]
+                orig_index = table.index.values.copy()
+                orig_index[table.index.get_loc(v)] = new_index_array
+                table = table.reindex(orig_index)
 
         # inserts n row
         n_row = pd.DataFrame(columns = ['variable','level','isnull'])
