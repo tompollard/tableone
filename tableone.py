@@ -351,8 +351,7 @@ class TableOne(object):
         return df
 
     def _p_test(self,v,grouped_data,is_continuous,is_categorical,
-            is_normal,min_observed,catlevels,
-            pval=np.nan,ptest='Not tested'):
+            is_normal,min_observed,catlevels):
         """
         Compute p-values.
 
@@ -380,6 +379,11 @@ class TableOne(object):
             ptest : str
                 The name of the test used to compute the p-value.
         """
+
+        # no test by default
+        pval=np.nan
+        ptest='Not tested'
+        
         # do not test if the variable has no observations in a level
         if min_observed == 0:
             warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
