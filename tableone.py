@@ -147,6 +147,9 @@ class TableOne(object):
     def __repr__(self):
         return self.tableone.to_string()
 
+    def _repr_html_(self):
+        return self.tableone._repr_html_()
+
     def _detect_categorical_columns(self,data):
         """
         Detect categorical columns if they are not specified.
