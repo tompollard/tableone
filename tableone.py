@@ -141,59 +141,21 @@ class TableOne(object):
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
 
+        # wrap dataframe methods
+        self._repr_html_ = self.tableone._repr_html_
+        self.head = self.tableone.head
+        self.tail = self.tableone.tail
+        self.to_csv = self.tableone.to_csv
+        self.to_excel = self.tableone.to_excel
+        self.to_html = self.tableone.to_html
+        self.to_json = self.tableone.to_json
+        self.to_latex = self.tableone.to_latex
+
     def __str__(self):
         return self.tableone.to_string()
 
     def __repr__(self):
         return self.tableone.to_string()
-
-    def _repr_html_(self):
-        """
-        Render the object as a dataframe table in IPython.
-        """
-        return self.tableone._repr_html_()
-
-    def to_csv(self,*args,**kwargs):
-        """
-        Wraps the Dataframe `to_csv` method.
-        """
-        return self.tableone.to_csv(*args,**kwargs)
-
-    def to_excel(self,*args,**kwargs):
-        """
-        Wraps the Dataframe `to_excel` method.
-        """
-        return self.tableone.to_excel(*args,**kwargs)
-
-    def to_html(self,*args,**kwargs):
-        """
-        Wraps the Dataframe `to_html` method.
-        """
-        return self.tableone.to_html(*args,**kwargs)
-
-    def to_json(self,*args,**kwargs):
-        """
-        Wraps the Dataframe `to_json` method.
-        """
-        return self.tableone.to_json(*args,**kwargs)
-
-    def to_latex(self,*args,**kwargs):
-        """
-        Wraps the Dataframe `to_latex` method.
-        """
-        return self.tableone.to_latex(*args,**kwargs)
-
-    def head(self,*args,**kwargs):
-        """
-        Wraps the Dataframe `head` method.
-        """
-        return self.tableone.head(*args,**kwargs)
-
-    def tail(self,*args,**kwargs):
-        """
-        Wraps the Dataframe `tail` method.
-        """
-        return self.tableone.tail(*args,**kwargs)
 
     def _detect_categorical_columns(self,data):
         """
