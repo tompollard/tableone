@@ -165,6 +165,12 @@ class TableOne(object):
     def to_latex(self,*args,**kwargs):
         return self.tableone.to_latex(*args,**kwargs)
 
+    def head(self,*args,**kwargs):
+        return self.tableone.head(*args,**kwargs)
+
+    def tail(self,*args,**kwargs):
+        return self.tableone.tail(*args,**kwargs)
+
     def _detect_categorical_columns(self,data):
         """
         Detect categorical columns if they are not specified.
