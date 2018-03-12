@@ -150,6 +150,21 @@ class TableOne(object):
     def _repr_html_(self):
         return self.tableone._repr_html_()
 
+    def to_csv(self,*args,**kwargs):
+        return self.tableone.to_csv(*args,**kwargs)
+
+    def to_excel(self,*args,**kwargs):
+        return self.tableone.to_excel(*args,**kwargs)
+
+    def to_html(self,*args,**kwargs):
+        return self.tableone.to_html(*args,**kwargs)
+
+    def to_json(self,*args,**kwargs):
+        return self.tableone.to_json(*args,**kwargs)
+
+    def to_latex(self,*args,**kwargs):
+        return self.tableone.to_latex(*args,**kwargs)
+
     def _detect_categorical_columns(self,data):
         """
         Detect categorical columns if they are not specified.
