@@ -52,7 +52,7 @@ class TableOne(object):
     labels : dict, optional
         Dictionary of alternative labels for variables.
         e.g. `labels = {'sex':'gender', 'trt':'treatment'}`
-    sort : bool
+    sort : bool, optional
         Sort the rows alphabetically. Default (False) retains the input order
         of columns.
     limit : int, optional
