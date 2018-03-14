@@ -232,3 +232,24 @@ class TestTableOne(object):
         dist_3_peak = modality.generate_data(peaks=3, n=[10000, 10000, 10000])
         t3=modality.hartigan_diptest(dist_3_peak)
         assert t3 < 0.05
+
+    @with_setup(setup, teardown)
+    def test_limit_of_categorical_data(self):
+        """
+        Tests the `limit` keyword arg, which limits the number of categories presented
+        """
+        data_pbc = self.data_pbc
+        # 6 categories of age based on decade
+        data_pbc['age_group'] = data_pbc['age'].map(lambda x: int(x/10))
+
+        # limit
+        columns = ['age_group', 'age', 'sex', 'albumin', 'ast']
+        categorical = ['age_group', 'sex']
+
+        # test it limits to 3
+        table = TableOne(data_pbc, columns=columns, categorical=categorical, limit=3)
+        assert table.tableone.loc['age_group',:].shape[0] == 3
+
+        # test other categories are not affected if limit > num categories
+        assert table.tableone.loc['sex',:].shape[0] == 2
+
