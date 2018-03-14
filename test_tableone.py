@@ -370,3 +370,26 @@ class TestTableOne(object):
         assert table.tableone.columns.levels[1][-1] == 'ptest'
         assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
         table
+
+    @with_setup(setup, teardown)
+    def test_label_dictionary_input(self):
+        """
+        Test output columns in TableOne are always in the same order
+        """
+        df = self.data_pbc.copy()
+        columns = ['age', 'albumin', 'ast', 'trt']
+        categorical = ['trt']
+        groupby = 'sex'
+
+        labels = {'sex': 'gender', 'trt': 'treatment', 'ast': 'Aspartate Aminotransferase'}
+
+        table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, labels=labels)
+
+        # check the header column is updated (groupby variable)
+        assert table.tableone.columns.levels[0][0] == 'Grouped by gender'
+
+        # check the categorical rows are updated
+        assert 'treatment' in table.tableone.index.levels[0]
+
+        # check the continuous rows are updated
+        assert 'Aspartate Aminotransferase' in table.tableone.index.levels[0]

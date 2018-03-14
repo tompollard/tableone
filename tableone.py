@@ -564,8 +564,14 @@ class TableOne(object):
 
         # add column index
         if not self._groupbylvls == ['overall']:
-            table.columns = pd.MultiIndex.from_product([['Grouped by {}'.format(self._groupby)],
-                table.columns])
+            # rename groupby variable if requested
+            c = self._groupby
+            if self._labels:
+                if self._groupby in self._labels:
+                    c = self._labels[self._groupby]
+
+            c = 'Grouped by {}'.format(c)
+            table.columns = pd.MultiIndex.from_product([[c], table.columns])
 
         # display alternative labels if assigned
         if self._labels:
