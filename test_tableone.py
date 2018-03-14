@@ -393,3 +393,30 @@ class TestTableOne(object):
 
         # check the continuous rows are updated
         assert 'Aspartate Aminotransferase' in table.tableone.index.levels[0]
+
+
+    @with_setup(setup, teardown)
+    def test_tableone_row_sort(self):
+        """
+        Test sort functionality of TableOne
+        """
+        df = self.data_pbc.copy()
+        columns = ['hepato', 'spiders', 'edema', 'age', 'albumin', 'ast']
+        groupby = 'sex'
+
+        table = TableOne(df, columns=columns)
+
+        # a call to .index.levels[0] automatically sorts the levels
+        # instead, call values and use pd.unique as it preserves order
+        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+
+        # default should not sort
+        for i, c in enumerate(columns):
+            # i+1 because we skip the first row, 'n'
+            assert tableone_rows[i+1] == c
+
+        table = TableOne(df, columns=columns, sort=True)
+        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+        for i, c in enumerate(np.sort(columns)):
+            # i+1 because we skip the first row, 'n'
+            assert tableone_rows[i+1] == c
