@@ -5,7 +5,7 @@ from tableone import InputError
 from nose.tools import with_setup, assert_raises, assert_equal
 import numpy as np
 import modality
-# import warnings
+import warnings
 
 class TestTableOne(object):
     """
@@ -24,6 +24,7 @@ class TestTableOne(object):
         self.data_small = self.create_small_dataset()
         self.data_groups = self.create_another_dataset(n = 20)
         self.data_categorical = self.create_categorical_dataset()
+        self.data_mixed = self.create_mixed_datatypes_dataset()
 
     def create_pbc_dataset(self):
         """
@@ -108,6 +109,19 @@ class TestTableOne(object):
         data = data.reshape(n_cat*n_obs_per_cat, n_col)
         return pd.DataFrame(data)
 
+    def create_mixed_datatypes_dataset(self, n=20):
+        """
+        create a dataframe with mixed datatypes in the same column
+        """
+        data_mixed = pd.DataFrame(index=range(n))
+
+        data_mixed['string data'] = 'a'
+
+        mu, sigma = 50, 5
+        data_mixed['mixed numeric data'] = np.random.normal(mu, sigma, n)
+        data_mixed.loc[1, 'mixed numeric data'] = 'could not measure'
+        return data_mixed
+
     def teardown(self):
         """
         tear down test fixtures
@@ -185,7 +199,7 @@ class TestTableOne(object):
     @with_setup(setup, teardown)
     def test_with_data_as_only_input_argument(self):
         """
-        Test with a simple dataset that a table generated with no pre-specified columns 
+        Test with a simple dataset that a table generated with no pre-specified columns
         returns the same results as a table generated with specified columns
         """
         table_no_args = TableOne(self.data_groups)
@@ -281,7 +295,6 @@ class TestTableOne(object):
         # test other categories are not affected if limit > num categories
         assert table.tableone.loc['sex',:].shape[0] == 2
 
-    @with_setup(setup, teardown)
     def test_input_data_not_modified(self):
         """
         Test to check the input dataframe is not modified by the package
@@ -298,46 +311,46 @@ class TestTableOne(object):
 
         # groupby
         df_groupby = self.data_groups.copy()
-        table_groupby = TableOne(df_groupby, columns = ['group','age','weight'], 
+        table_groupby = TableOne(df_groupby, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'])
-        assert (df_groupby['group'] == df_orig['group']).all()    
+        assert (df_groupby['group'] == df_orig['group']).all()
 
         # sorted
         df_sorted = self.data_groups.copy()
-        table_sorted = TableOne(df_sorted, columns = ['group','age','weight'], 
+        table_sorted = TableOne(df_sorted, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], sort=True)
-        assert (df_sorted['group'] == df_orig['group']).all()  
+        assert (df_sorted['group'] == df_orig['group']).all()
 
         # pval
         df_pval = self.data_groups.copy()
-        table_pval = TableOne(df_pval, columns = ['group','age','weight'], 
+        table_pval = TableOne(df_pval, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], sort=True, pval=True)
-        assert (df_pval['group'] == df_orig['group']).all()  
+        assert (df_pval['group'] == df_orig['group']).all()
 
         # pval_adjust
         df_pval_adjust = self.data_groups.copy()
-        table_pval_adjust = TableOne(df_pval_adjust, columns = ['group','age','weight'], 
-            categorical = ['group'], groupby=['group'], sort=True, pval=True, 
+        table_pval_adjust = TableOne(df_pval_adjust, columns = ['group','age','weight'],
+            categorical = ['group'], groupby=['group'], sort=True, pval=True,
             pval_adjust='bonferroni')
-        assert (df_pval_adjust['group'] == df_orig['group']).all()  
+        assert (df_pval_adjust['group'] == df_orig['group']).all()
 
-        # labels 
+        # labels
         df_labels = self.data_groups.copy()
-        table_labels = TableOne(df_labels, columns = ['group','age','weight'], 
+        table_labels = TableOne(df_labels, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], labels={'age':'age, years'})
-        assert (df_labels['group'] == df_orig['group']).all()  
+        assert (df_labels['group'] == df_orig['group']).all()
 
         # limit
         df_limit = self.data_groups.copy()
-        table_limit = TableOne(df_limit, columns = ['group','age','weight'], 
+        table_limit = TableOne(df_limit, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], limit=2)
-        assert (df_limit['group'] == df_orig['group']).all()  
+        assert (df_limit['group'] == df_orig['group']).all()
 
         # nonnormal
         df_nonnormal = self.data_groups.copy()
-        table_nonnormal = TableOne(df_nonnormal, columns = ['group','age','weight'], 
+        table_nonnormal = TableOne(df_nonnormal, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], nonnormal=['age'])
-        assert (df_nonnormal['group'] == df_orig['group']).all()         
+        assert (df_nonnormal['group'] == df_orig['group']).all()
 
         # warnings.simplefilter("default")
 
@@ -445,3 +458,45 @@ class TestTableOne(object):
         for i, c in enumerate(np.sort(columns)):
             # i+1 because we skip the first row, 'n'
             assert tableone_rows[i+1] == c
+
+    @with_setup(setup, teardown)
+    def test_mixed_data_forced_to_numeric(self):
+        """
+        Test case with one column with mixed data that is specified as cont
+        """
+        columns = ['mixed numeric data']
+        table = TableOne(self.data_mixed, columns=columns, categorical=[])
+
+        assert table.tableone.loc[('mixed numeric data',''), 'isnull'] == 1
+
+
+    @with_setup(setup, teardown)
+    def test_string_data_as_continuous_error(self):
+        """
+        Test raising an error when continuous columns contain non-numeric data
+        """
+        try:
+            # Trigger the categorical warning
+            table = TableOne(self.data_mixed, categorical=[])
+        except InputError as e:
+            assert e.args[0].startswith("The following continuous column(s) have non-numeric values")
+        except:
+            # unexpected error - raise it
+            raise
+
+    @with_setup(setup, teardown)
+    def test_input_data_not_modified(self):
+        """
+        Test to ensure the input dataframe is not modified by the package
+        """
+        df_orig = self.data_groups.copy()
+        df = self.data_groups.copy()
+
+        # turn off warnings for this test
+        warnings.simplefilter("ignore")
+
+        table = TableOne(df, columns=['group'], categorical=[])
+
+        assert (df['group'] == df_orig['group']).all()
+
+        warnings.simplefilter("default")
