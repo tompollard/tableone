@@ -576,4 +576,25 @@ class TableOne(object):
         if self._limit:
             table = table.groupby('variable').head(self._limit)
 
+        # re-order the columns in a consistent fashion
+        if self._groupby:
+            cols = table.columns.levels[1].values
+        else:
+            cols = table.columns.values
+
+        if 'isnull' in cols:
+            cols = ['isnull'] + [x for x in cols if x != 'isnull']
+
+        # iterate through each optional column
+        # if they exist, put them at the end of the dataframe
+        # ensures the last 3 columns will be in the same order as optional_columns
+        for col in optional_columns:
+            if col in cols:
+                cols = [x for x in cols if x != col] + [col]
+
+        if self._groupby:
+            table = table.reindex(cols, axis=1, level=1)
+        else:
+            table = table.reindex(cols, axis=1)
+
         return table

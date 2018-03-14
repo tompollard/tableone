@@ -346,3 +346,27 @@ class TestTableOne(object):
 
             with assert_raises(InputError):
                 table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust=pval_adjust)
+
+    @with_setup(setup, teardown)
+    def test_tableone_columns_in_consistent_order(self):
+        """
+        Test output columns in TableOne are always in the same order
+        """
+        df = self.data_pbc.copy()
+        columns = ['age', 'albumin', 'ast']
+        groupby = 'sex'
+
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
+
+        assert table.tableone.columns.levels[1][0] == 'isnull'
+        assert table.tableone.columns.levels[1][-1] == 'ptest'
+        assert table.tableone.columns.levels[1][-2] == 'pval'
+
+        df.loc[df['sex']=='f', 'sex'] = 'q'
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='bonferroni')
+
+
+        assert table.tableone.columns.levels[1][0] == 'isnull'
+        assert table.tableone.columns.levels[1][-1] == 'ptest'
+        assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
+        table
