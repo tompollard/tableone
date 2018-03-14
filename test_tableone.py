@@ -1,8 +1,11 @@
 import pandas as pd
+import tableone
 from tableone import TableOne
-from nose.tools import with_setup
+from tableone import InputError
+from nose.tools import with_setup, assert_raises, assert_equal
 import numpy as np
 import modality
+# import warnings
 
 class TestTableOne(object):
     """
@@ -253,3 +256,93 @@ class TestTableOne(object):
         # test other categories are not affected if limit > num categories
         assert table.tableone.loc['sex',:].shape[0] == 2
 
+    @with_setup(setup, teardown)
+    def test_input_data_not_modified(self):
+        """
+        Test to check the input dataframe is not modified by the package
+        """
+        df_orig = self.data_groups.copy()
+
+        # turn off warnings for this test
+        # warnings.simplefilter("ignore")
+
+        # no input arguments
+        df_no_args = self.data_groups.copy()
+        table_no_args = TableOne(df_no_args)
+        assert (df_no_args['group'] == df_orig['group']).all()
+
+        # groupby
+        df_groupby = self.data_groups.copy()
+        table_groupby = TableOne(df_groupby, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'])
+        assert (df_groupby['group'] == df_orig['group']).all()    
+
+        # sorted
+        df_sorted = self.data_groups.copy()
+        table_sorted = TableOne(df_sorted, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], sort=True)
+        assert (df_sorted['group'] == df_orig['group']).all()  
+
+        # pval
+        df_pval = self.data_groups.copy()
+        table_pval = TableOne(df_pval, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], sort=True, pval=True)
+        assert (df_pval['group'] == df_orig['group']).all()  
+
+        # pval_adjust
+        df_pval_adjust = self.data_groups.copy()
+        table_pval_adjust = TableOne(df_pval_adjust, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], sort=True, pval=True, 
+            pval_adjust='bonferroni')
+        assert (df_pval_adjust['group'] == df_orig['group']).all()  
+
+        # labels 
+        df_labels = self.data_groups.copy()
+        table_labels = TableOne(df_labels, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], labels={'age':'age, years'})
+        assert (df_labels['group'] == df_orig['group']).all()  
+
+        # limit
+        df_limit = self.data_groups.copy()
+        table_limit = TableOne(df_limit, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], limit=2)
+        assert (df_limit['group'] == df_orig['group']).all()  
+
+        # nonnormal
+        df_sorted = self.data_groups.copy()
+        table_sorted = TableOne(df_sorted, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], nonnormal=['age'])
+        assert (df_sorted['group'] == df_orig['group']).all()         
+
+        # warnings.simplefilter("default")
+
+    @with_setup(setup, teardown)
+    def test_groupby_with_group_named_isnull(self):
+        """
+        Test case with a group having the same name as a column in TableOne
+        """
+        df = self.data_pbc.copy()
+
+        columns = ['age', 'albumin', 'ast']
+        groupby = 'sex'
+        group_levels = df[groupby].unique()
+
+        # collect the possible column names
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
+        tableone_columns = list(table.tableone.columns.levels[1])
+
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='b')
+        tableone_columns = tableone_columns + list(table.tableone.columns.levels[1])
+        tableone_columns = np.unique(tableone_columns)
+        tableone_columns = [c for c in tableone_columns if c not in group_levels]
+
+        for c in tableone_columns:
+            # for each output column name in tableone, try them as a group
+            df.loc[0:20,'sex'] = c
+            if 'adjust' in c:
+                pval_adjust='b'
+            else:
+                pval_adjust=None
+
+            with assert_raises(InputError):
+                table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust=pval_adjust)

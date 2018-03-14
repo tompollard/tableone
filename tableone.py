@@ -112,8 +112,14 @@ class TableOne(object):
         self._labels = labels
         self._limit = limit
 
+        # output column names that cannot be contained in a groupby
+        self._reserved_columns = ['isnull', 'pval', 'ptest', 'pval (adjusted)']
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
+            # check that the group levels do not include reserved words
+            for level in self._groupbylvls:
+                if level in self._reserved_columns:
+                    raise InputError('Group level contained "{}", a reserved keyword for tableone.'.format(level))
         else:
             self._groupbylvls = ['overall']
 
