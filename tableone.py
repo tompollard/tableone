@@ -130,7 +130,8 @@ class TableOne(object):
         # correct for multiple testing
         if self._pval and self._pval_adjust:
             alpha=0.05
-            adjusted = multitest.multipletests(self._significance_table['pval'],alpha)
+            adjusted = multitest.multipletests(self._significance_table['pval'],
+                alpha=alpha, method=self._pval_adjust)
             self._significance_table['pval (adjusted)'] = adjusted[1]
             self._significance_table['adjust method'] = self._pval_adjust
 
