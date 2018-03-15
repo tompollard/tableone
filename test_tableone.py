@@ -500,3 +500,108 @@ class TestTableOne(object):
         assert (df['group'] == df_orig['group']).all()
 
         warnings.simplefilter("default")
+
+    @with_setup(setup, teardown)
+    def test_groupby_with_group_named_isnull(self):
+        """
+        Test case with a group having the same name as a column in TableOne
+        """
+        df = self.data_pbc.copy()
+
+        columns = ['age', 'albumin', 'ast']
+        groupby = 'sex'
+        group_levels = df[groupby].unique()
+
+        # collect the possible column names
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
+        tableone_columns = list(table.tableone.columns.levels[1])
+
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='b')
+        tableone_columns = tableone_columns + list(table.tableone.columns.levels[1])
+        tableone_columns = np.unique(tableone_columns)
+        tableone_columns = [c for c in tableone_columns if c not in group_levels]
+
+        for c in tableone_columns:
+            # for each output column name in tableone, try them as a group
+            df.loc[0:20,'sex'] = c
+            if 'adjust' in c:
+                pval_adjust='b'
+            else:
+                pval_adjust=None
+
+            with assert_raises(InputError):
+                table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust=pval_adjust)
+
+    @with_setup(setup, teardown)
+    def test_tableone_columns_in_consistent_order(self):
+        """
+        Test output columns in TableOne are always in the same order
+        """
+        df = self.data_pbc.copy()
+        columns = ['age', 'albumin', 'ast']
+        groupby = 'sex'
+
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
+
+        assert table.tableone.columns.levels[1][0] == 'isnull'
+        assert table.tableone.columns.levels[1][-1] == 'ptest'
+        assert table.tableone.columns.levels[1][-2] == 'pval'
+
+        df.loc[df['sex']=='f', 'sex'] = 'q'
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='bonferroni')
+
+
+        assert table.tableone.columns.levels[1][0] == 'isnull'
+        assert table.tableone.columns.levels[1][-1] == 'ptest'
+        assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
+        table
+
+    @with_setup(setup, teardown)
+    def test_label_dictionary_input(self):
+        """
+        Test output columns in TableOne are always in the same order
+        """
+        df = self.data_pbc.copy()
+        columns = ['age', 'albumin', 'ast', 'trt']
+        categorical = ['trt']
+        groupby = 'sex'
+
+        labels = {'sex': 'gender', 'trt': 'treatment', 'ast': 'Aspartate Aminotransferase'}
+
+        table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, labels=labels)
+
+        # check the header column is updated (groupby variable)
+        assert table.tableone.columns.levels[0][0] == 'Grouped by gender'
+
+        # check the categorical rows are updated
+        assert 'treatment' in table.tableone.index.levels[0]
+
+        # check the continuous rows are updated
+        assert 'Aspartate Aminotransferase' in table.tableone.index.levels[0]
+
+
+    @with_setup(setup, teardown)
+    def test_tableone_row_sort(self):
+        """
+        Test sort functionality of TableOne
+        """
+        df = self.data_pbc.copy()
+        columns = ['hepato', 'spiders', 'edema', 'age', 'albumin', 'ast']
+        groupby = 'sex'
+
+        table = TableOne(df, columns=columns)
+
+        # a call to .index.levels[0] automatically sorts the levels
+        # instead, call values and use pd.unique as it preserves order
+        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+
+        # default should not sort
+        for i, c in enumerate(columns):
+            # i+1 because we skip the first row, 'n'
+            assert tableone_rows[i+1] == c
+
+        table = TableOne(df, columns=columns, sort=True)
+        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+        for i, c in enumerate(np.sort(columns)):
+            # i+1 because we skip the first row, 'n'
+            assert tableone_rows[i+1] == c
