@@ -339,7 +339,8 @@ class TableOne(object):
 
         if self._groupby:
             # add the groupby column back
-            cont_data = cont_data.merge(data[[self._groupby]], left_index=True, right_index=True)
+            cont_data = cont_data.merge(data[[self._groupby]],
+                left_index=True, right_index=True)
 
             # group and aggregate data
             df_cont = pd.pivot_table(cont_data,
@@ -379,12 +380,12 @@ class TableOne(object):
 
         for g in self._groupbylvls:
             if self._groupby:
-                d_slice = data.loc[data[self._groupby] == g]
+                d_slice = data.loc[data[self._groupby] == g, self._categorical]
             else:
-                d_slice = data.copy()
+                d_slice = data[self._categorical].copy()
 
             # create a dataframe with freq, proportion
-            df = d_slice[self._categorical].copy()
+            df = d_slice.copy()
             df = df.melt().groupby(['variable','value']).size().to_frame(name='freq')
             df.index.set_names('level', level=1, inplace=True)
             df['percent'] = df['freq'].div(df.freq.sum(level=0),level=0)* 100
@@ -397,6 +398,13 @@ class TableOne(object):
             # add null count
             nulls = d_slice.isnull().sum().to_frame(name='isnull')
             nulls.index.name = 'variable'
+            # only save null count to the first category for each variable
+            # do this by extracting the first category from the df row index
+            levels = df.reset_index()[['variable','level']].groupby('variable').first()
+            # add this category to the nulls table
+            nulls = nulls.join(levels)
+            nulls.set_index('level', append=True, inplace=True)
+            # join nulls to categorical
             df = df.join(nulls)
 
             # add summary column
@@ -407,6 +415,9 @@ class TableOne(object):
             group_dict[g] = df
 
         df_cat = pd.concat(group_dict,axis=1)
+        # ensure the groups are the 2nd level of the column index
+        if df_cat.columns.nlevels>1:
+            df_cat = df_cat.swaplevel(0, 1, axis=1).sort_index(axis=1,level=0)
 
         return df_cat
 
@@ -570,10 +581,14 @@ class TableOne(object):
         table : pandas DataFrame
             A table summarising the categorical variables.
         """
-        table = self.cat_describe[self._groupbylvls[0]][['isnull']].copy()
+        table = self.cat_describe['isnull'].copy()
+        # if there are _groupby levels, `table` has multiple columns
+        # each column is named according to the group
+        # to ensure one column is named isnull, we rename it here
+        table.rename(columns={table.columns[0]: 'isnull'}, inplace=True)
 
         for g in self._groupbylvls:
-            table[g] = self.cat_describe[g]['t1_summary']
+            table[g] = self.cat_describe['t1_summary'][g]
 
         # add pval column
         if self._pval and self._pval_adjust:

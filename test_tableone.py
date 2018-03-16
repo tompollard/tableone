@@ -170,7 +170,9 @@ class TestTableOne(object):
         categorical=['likesmarmalade']
         table = TableOne(self.data_sample, columns=categorical, categorical=categorical)
 
-        lm = table.cat_describe['overall'].loc['likesmarmalade']
+        lm = table.cat_describe.loc['likesmarmalade']
+        # drop 2nd level for convenience
+        lm.columns = lm.columns.droplevel(level=1)
         notlikefreq = lm.loc[0,'freq']
         notlikepercent = lm.loc[0,'percent']
         likefreq = lm.loc[1,'freq']
@@ -189,7 +191,9 @@ class TestTableOne(object):
         categorical=['likeshoney']
         table = TableOne(self.data_sample, columns=categorical, categorical=categorical)
 
-        lh = table.cat_describe['overall'].loc['likeshoney']
+        lh = table.cat_describe.loc['likeshoney']
+        # drop 2nd level for convenience
+        lh.columns = lh.columns.droplevel(level=1)
         likefreq = lh.loc[1.0,'freq']
         likepercent = lh.loc[1.0,'percent']
 
@@ -248,15 +252,17 @@ class TestTableOne(object):
     @with_setup(setup, teardown)
     def test_categorical_cell_count(self):
         """
-        Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
+        Check the categorical cell counts are correct
         """
         categorical=list(np.arange(10))
         table = TableOne(self.data_categorical, columns=categorical,categorical=categorical)
-
+        df = table.cat_describe
+        # drop 'overall' level of column index
+        df.columns = df.columns.droplevel(level=1)
         # each column
         for i in np.arange(10):
             # each category should have 100 levels
-            assert table.cat_describe['overall'].loc[i].shape[0] == 100
+            assert df.loc[i].shape[0] == 100
 
     @with_setup(setup, teardown)
     def test_hartigan_diptest_for_modality(self):
