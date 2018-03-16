@@ -534,7 +534,7 @@ class TableOne(object):
             # if this is a 2x2, switch to fisher exact
             if expected.min() < 5:
                 if grouped_data.shape == (2,2):
-                    ptest = 'Fisher''s exact'
+                    ptest = "Fisher's exact"
                     oddsratio, pval = stats.fisher_exact(grouped_data)
                 else:
                     ptest = 'Chi-squared (warning: expected count < 5)'

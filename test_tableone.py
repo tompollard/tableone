@@ -229,7 +229,7 @@ class TestTableOne(object):
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
-        assert table._significance_table.loc['group1','ptest'] == 'Fisher''s exact'
+        assert table._significance_table.loc['group1','ptest'] == "Fisher's exact"
         assert table._significance_table.loc['group3','ptest'] == 'Chi-squared (warning: expected count < 5)'
 
     @with_setup(setup, teardown)
