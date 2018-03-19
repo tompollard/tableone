@@ -2,6 +2,7 @@ import pandas as pd
 from tableone import TableOne
 from nose.tools import with_setup
 import numpy as np
+import modality
 
 class TestTableOne(object):
     """
@@ -214,3 +215,20 @@ class TestTableOne(object):
         for i in np.arange(10):
             # each category should have 100 levels
             assert table.cat_describe['overall'].loc[i].shape[0] == 100
+
+    @with_setup(setup, teardown)
+    def test_hartigan_diptest_for_modality(self):
+        """
+        Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
+        """
+        dist_1_peak = modality.generate_data(peaks=1, n=[10000])
+        t1=modality.hartigan_diptest(dist_1_peak)
+        assert t1 > 0.95
+
+        dist_2_peak = modality.generate_data(peaks=2, n=[10000, 10000])
+        t2=modality.hartigan_diptest(dist_2_peak)
+        assert t2 < 0.05
+
+        dist_3_peak = modality.generate_data(peaks=3, n=[10000, 10000, 10000])
+        t3=modality.hartigan_diptest(dist_3_peak)
+        assert t3 < 0.05
