@@ -309,10 +309,10 @@ class TestTableOne(object):
         assert (df_limit['group'] == df_orig['group']).all()  
 
         # nonnormal
-        df_sorted = self.data_groups.copy()
-        table_sorted = TableOne(df_sorted, columns = ['group','age','weight'], 
+        df_nonnormal = self.data_groups.copy()
+        table_nonnormal = TableOne(df_nonnormal, columns = ['group','age','weight'], 
             categorical = ['group'], groupby=['group'], nonnormal=['age'])
-        assert (df_sorted['group'] == df_orig['group']).all()         
+        assert (df_nonnormal['group'] == df_orig['group']).all()         
 
         # warnings.simplefilter("default")
 
