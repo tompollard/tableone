@@ -52,7 +52,7 @@ class TableOne(object):
     labels : dict, optional
         Dictionary of alternative labels for variables.
         e.g. `labels = {'sex':'gender', 'trt':'treatment'}`
-    sort : bool
+    sort : bool, optional
         Sort the rows alphabetically. Default (False) retains the input order
         of columns.
     limit : int, optional
@@ -112,8 +112,14 @@ class TableOne(object):
         self._labels = labels
         self._limit = limit
 
+        # output column names that cannot be contained in a groupby
+        self._reserved_columns = ['isnull', 'pval', 'ptest', 'pval (adjusted)']
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
+            # check that the group levels do not include reserved words
+            for level in self._groupbylvls:
+                if level in self._reserved_columns:
+                    raise InputError('Group level contained "{}", a reserved keyword for tableone.'.format(level))
         else:
             self._groupbylvls = ['overall']
 
@@ -124,7 +130,8 @@ class TableOne(object):
         # correct for multiple testing
         if self._pval and self._pval_adjust:
             alpha=0.05
-            adjusted = multitest.multipletests(self._significance_table['pval'],alpha)
+            adjusted = multitest.multipletests(self._significance_table['pval'],
+                alpha=alpha, method=self._pval_adjust)
             self._significance_table['pval (adjusted)'] = adjusted[1]
             self._significance_table['adjust method'] = self._pval_adjust
 
@@ -558,8 +565,14 @@ class TableOne(object):
 
         # add column index
         if not self._groupbylvls == ['overall']:
-            table.columns = pd.MultiIndex.from_product([['Grouped by {}'.format(self._groupby)],
-                table.columns])
+            # rename groupby variable if requested
+            c = self._groupby
+            if self._labels:
+                if self._groupby in self._labels:
+                    c = self._labels[self._groupby]
+
+            c = 'Grouped by {}'.format(c)
+            table.columns = pd.MultiIndex.from_product([[c], table.columns])
 
         # display alternative labels if assigned
         if self._labels:
@@ -569,5 +582,26 @@ class TableOne(object):
         # limit the number of categorical variables that are displayed
         if self._limit:
             table = table.groupby('variable').head(self._limit)
+
+        # re-order the columns in a consistent fashion
+        if self._groupby:
+            cols = table.columns.levels[1].values
+        else:
+            cols = table.columns.values
+
+        if 'isnull' in cols:
+            cols = ['isnull'] + [x for x in cols if x != 'isnull']
+
+        # iterate through each optional column
+        # if they exist, put them at the end of the dataframe
+        # ensures the last 3 columns will be in the same order as optional_columns
+        for col in optional_columns:
+            if col in cols:
+                cols = [x for x in cols if x != col] + [col]
+
+        if self._groupby:
+            table = table.reindex(cols, axis=1, level=1)
+        else:
+            table = table.reindex(cols, axis=1)
 
         return table

@@ -1,8 +1,11 @@
 import pandas as pd
+import tableone
 from tableone import TableOne
-from nose.tools import with_setup
+from tableone import InputError
+from nose.tools import with_setup, assert_raises, assert_equal
 import numpy as np
 import modality
+# import warnings
 
 class TestTableOne(object):
     """
@@ -232,3 +235,188 @@ class TestTableOne(object):
         dist_3_peak = modality.generate_data(peaks=3, n=[10000, 10000, 10000])
         t3=modality.hartigan_diptest(dist_3_peak)
         assert t3 < 0.05
+
+    @with_setup(setup, teardown)
+    def test_limit_of_categorical_data(self):
+        """
+        Tests the `limit` keyword arg, which limits the number of categories presented
+        """
+        data_pbc = self.data_pbc
+        # 6 categories of age based on decade
+        data_pbc['age_group'] = data_pbc['age'].map(lambda x: int(x/10))
+
+        # limit
+        columns = ['age_group', 'age', 'sex', 'albumin', 'ast']
+        categorical = ['age_group', 'sex']
+
+        # test it limits to 3
+        table = TableOne(data_pbc, columns=columns, categorical=categorical, limit=3)
+        assert table.tableone.loc['age_group',:].shape[0] == 3
+
+        # test other categories are not affected if limit > num categories
+        assert table.tableone.loc['sex',:].shape[0] == 2
+
+    @with_setup(setup, teardown)
+    def test_input_data_not_modified(self):
+        """
+        Test to check the input dataframe is not modified by the package
+        """
+        df_orig = self.data_groups.copy()
+
+        # turn off warnings for this test
+        # warnings.simplefilter("ignore")
+
+        # no input arguments
+        df_no_args = self.data_groups.copy()
+        table_no_args = TableOne(df_no_args)
+        assert (df_no_args['group'] == df_orig['group']).all()
+
+        # groupby
+        df_groupby = self.data_groups.copy()
+        table_groupby = TableOne(df_groupby, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'])
+        assert (df_groupby['group'] == df_orig['group']).all()    
+
+        # sorted
+        df_sorted = self.data_groups.copy()
+        table_sorted = TableOne(df_sorted, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], sort=True)
+        assert (df_sorted['group'] == df_orig['group']).all()  
+
+        # pval
+        df_pval = self.data_groups.copy()
+        table_pval = TableOne(df_pval, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], sort=True, pval=True)
+        assert (df_pval['group'] == df_orig['group']).all()  
+
+        # pval_adjust
+        df_pval_adjust = self.data_groups.copy()
+        table_pval_adjust = TableOne(df_pval_adjust, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], sort=True, pval=True, 
+            pval_adjust='bonferroni')
+        assert (df_pval_adjust['group'] == df_orig['group']).all()  
+
+        # labels 
+        df_labels = self.data_groups.copy()
+        table_labels = TableOne(df_labels, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], labels={'age':'age, years'})
+        assert (df_labels['group'] == df_orig['group']).all()  
+
+        # limit
+        df_limit = self.data_groups.copy()
+        table_limit = TableOne(df_limit, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], limit=2)
+        assert (df_limit['group'] == df_orig['group']).all()  
+
+        # nonnormal
+        df_nonnormal = self.data_groups.copy()
+        table_nonnormal = TableOne(df_nonnormal, columns = ['group','age','weight'], 
+            categorical = ['group'], groupby=['group'], nonnormal=['age'])
+        assert (df_nonnormal['group'] == df_orig['group']).all()         
+
+        # warnings.simplefilter("default")
+
+    @with_setup(setup, teardown)
+    def test_groupby_with_group_named_isnull(self):
+        """
+        Test case with a group having the same name as a column in TableOne
+        """
+        df = self.data_pbc.copy()
+
+        columns = ['age', 'albumin', 'ast']
+        groupby = 'sex'
+        group_levels = df[groupby].unique()
+
+        # collect the possible column names
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
+        tableone_columns = list(table.tableone.columns.levels[1])
+
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='b')
+        tableone_columns = tableone_columns + list(table.tableone.columns.levels[1])
+        tableone_columns = np.unique(tableone_columns)
+        tableone_columns = [c for c in tableone_columns if c not in group_levels]
+
+        for c in tableone_columns:
+            # for each output column name in tableone, try them as a group
+            df.loc[0:20,'sex'] = c
+            if 'adjust' in c:
+                pval_adjust='b'
+            else:
+                pval_adjust=None
+
+            with assert_raises(InputError):
+                table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust=pval_adjust)
+
+    @with_setup(setup, teardown)
+    def test_tableone_columns_in_consistent_order(self):
+        """
+        Test output columns in TableOne are always in the same order
+        """
+        df = self.data_pbc.copy()
+        columns = ['age', 'albumin', 'ast']
+        groupby = 'sex'
+
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
+
+        assert table.tableone.columns.levels[1][0] == 'isnull'
+        assert table.tableone.columns.levels[1][-1] == 'ptest'
+        assert table.tableone.columns.levels[1][-2] == 'pval'
+
+        df.loc[df['sex']=='f', 'sex'] = 'q'
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='bonferroni')
+
+
+        assert table.tableone.columns.levels[1][0] == 'isnull'
+        assert table.tableone.columns.levels[1][-1] == 'ptest'
+        assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
+        table
+
+    @with_setup(setup, teardown)
+    def test_label_dictionary_input(self):
+        """
+        Test output columns in TableOne are always in the same order
+        """
+        df = self.data_pbc.copy()
+        columns = ['age', 'albumin', 'ast', 'trt']
+        categorical = ['trt']
+        groupby = 'sex'
+
+        labels = {'sex': 'gender', 'trt': 'treatment', 'ast': 'Aspartate Aminotransferase'}
+
+        table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, labels=labels)
+
+        # check the header column is updated (groupby variable)
+        assert table.tableone.columns.levels[0][0] == 'Grouped by gender'
+
+        # check the categorical rows are updated
+        assert 'treatment' in table.tableone.index.levels[0]
+
+        # check the continuous rows are updated
+        assert 'Aspartate Aminotransferase' in table.tableone.index.levels[0]
+
+
+    @with_setup(setup, teardown)
+    def test_tableone_row_sort(self):
+        """
+        Test sort functionality of TableOne
+        """
+        df = self.data_pbc.copy()
+        columns = ['hepato', 'spiders', 'edema', 'age', 'albumin', 'ast']
+        groupby = 'sex'
+
+        table = TableOne(df, columns=columns)
+
+        # a call to .index.levels[0] automatically sorts the levels
+        # instead, call values and use pd.unique as it preserves order
+        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+
+        # default should not sort
+        for i, c in enumerate(columns):
+            # i+1 because we skip the first row, 'n'
+            assert tableone_rows[i+1] == c
+
+        table = TableOne(df, columns=columns, sort=True)
+        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+        for i, c in enumerate(np.sort(columns)):
+            # i+1 because we skip the first row, 'n'
+            assert tableone_rows[i+1] == c
