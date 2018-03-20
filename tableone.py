@@ -178,7 +178,8 @@ class TableOne(object):
         when interpreting the summary statistics.
         """
         warnings = {}
-        msg = '<br />'
+        end_of_line = '<br />'
+        msg = ''.format(end_of_line)
 
         # generate warnings for continuous variables
         if self._continuous:
@@ -197,7 +198,7 @@ class TableOne(object):
 
         # create the warning string
         for n,k in enumerate(sorted(warnings)):
-            msg += '[{}] {}: {}.<br />'.format(n+1,k,', '.join(warnings[k]))
+            msg += '[{}] {}: {}.{}'.format(n+1,k,', '.join(warnings[k]), end_of_line)
 
         return msg
 
