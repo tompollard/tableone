@@ -12,6 +12,7 @@ from scipy import stats
 import warnings
 import numpy as np
 from statsmodels.stats import multitest
+import modality
 
 class InputError(Exception):
     """
@@ -57,6 +58,9 @@ class TableOne(object):
         of columns.
     limit : int, optional
         Limit to the top N most frequent categories.
+    remarks : bool, optional
+        Add remarks on the appropriateness of the summary measures and the
+        statistical tests (default: True).
 
     Attributes
     ----------
@@ -66,7 +70,7 @@ class TableOne(object):
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
         nonnormal=None, pval=False, pval_adjust=None, isnull=True,
-        ddof=1, labels=None, sort=False, limit=None):
+        ddof=1, labels=None, sort=False, limit=None, remarks=True):
 
         # check input arguments
         if not groupby:
@@ -111,6 +115,7 @@ class TableOne(object):
         self._ddof = ddof # degrees of freedom for standard deviation
         self._labels = labels
         self._limit = limit
+        self._remarks = remarks
 
         # output column names that cannot be contained in a groupby
         self._reserved_columns = ['isnull', 'pval', 'ptest', 'pval (adjusted)']
@@ -147,9 +152,9 @@ class TableOne(object):
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
+        self._warnings = self._generate_remark_str()
 
         # wrap dataframe methods
-        self._repr_html_ = self.tableone._repr_html_
         self.head = self.tableone.head
         self.tail = self.tableone.tail
         self.to_csv = self.tableone.to_csv
@@ -163,6 +168,38 @@ class TableOne(object):
 
     def __repr__(self):
         return self.tableone.to_string()
+
+    def _repr_html_(self): 
+        return self.tableone._repr_html_() + self._warnings
+
+    def _generate_remark_str(self):
+        """
+        Generate a series of remarks that the user should consider
+        when interpreting the summary statistics.
+        """
+        warnings = {}
+        msg = '<br />'
+
+        # generate warnings for continuous variables
+        if self._continuous:
+            # highlight far outliers
+            outlier_mask = self.cont_describe.far_outliers > 1
+            outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].dropna().index)
+            if outlier_vars:
+                warnings['Warning, Tukey test indicates far outliers in'] = outlier_vars
+
+            # highlight possible multimodal distributions
+            # using hartigan's dip test
+            modal_mask = self.cont_describe.diptest < 0.05
+            modal_vars = list(self.cont_describe.diptest[modal_mask].dropna().index)
+            if modal_vars:
+                warnings['Warning, Hartigan''s Dip Test reports possible multimodal distributions for'] = modal_vars
+
+        # create the warning string
+        for n,k in enumerate(sorted(warnings)):
+            msg += '[{}] {}: {}.<br />'.format(n+1,k,', '.join(warnings[k]))
+
+        return msg
 
     def _detect_categorical_columns(self,data):
         """
@@ -208,6 +245,51 @@ class TableOne(object):
         """
         return np.nanstd(x.values,ddof=self._ddof)
 
+    def _diptest(self,x):
+        """
+        Compute Hartigan Dip Test for modality.
+
+        p < 0.05 suggests possible multimodality.
+        """
+        return modality.hartigan_diptest(x.values)
+
+    def _tukey(self,x,threshold):
+        """
+        Count outliers according to Tukey's rule.
+
+        Where Q1 is the lower quartile and Q3 is the upper quartile,
+        an outlier is an observation outside of the range:
+
+        [Q1 - k(Q3 - Q1), Q3 + k(Q3 - Q1)]
+
+        k = 1.5 indicates an outlier
+        k = 3.0 indicates an outlier that is "far out"
+        """
+        vals = x.values[~np.isnan(x.values)]
+        try:
+            q1, q3 = np.percentile(vals, [25, 75])
+            iqr = q3 - q1
+            low_bound = q1 - (iqr * threshold)
+            high_bound = q3 + (iqr * threshold)
+            outliers = np.where((vals > high_bound) | (vals < low_bound))
+        except:
+            outliers = []
+        return outliers
+
+    def _outliers(self,x):
+        """
+        Compute number of outliers
+        """
+        outliers = self._tukey(x, threshold = 1.5)
+        return np.size(outliers)
+
+    def _far_outliers(self,x):
+        """
+        Compute number of "far out" outliers
+        """
+        outliers = self._tukey(x, threshold = 3.0)
+        return np.size(outliers)
+
     def _t1_summary(self,x):
         """
         Compute median [IQR] or mean (Std) for the input series.
@@ -239,7 +321,8 @@ class TableOne(object):
                 Summarise the continuous variables.
         """
         aggfuncs = [pd.Series.count,np.mean,np.median,self._std,
-            self._q25,self._q75,min,max,self._t1_summary]
+            self._q25,self._q75,min,max,self._t1_summary,self._diptest,
+            self._outliers, self._far_outliers]
 
         if self._groupby:
             cont_data = data[self._continuous + [self._groupby]]

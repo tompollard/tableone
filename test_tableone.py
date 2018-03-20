@@ -16,80 +16,84 @@ class TestTableOne(object):
         """
         set up test fixtures
         """
-
-        # set random seed
         seed = 12345
         np.random.seed(seed)
 
-        self.create_pbc_dataset()
-        self.create_sample_dataset(n = 10000)
-        self.create_small_dataset()
-        self.create_another_dataset(n = 20)
-        self.create_categorical_dataset()
+        self.data_pbc = self.create_pbc_dataset()
+        self.data_sample = self.create_sample_dataset(n = 10000)
+        self.data_small = self.create_small_dataset()
+        self.data_groups = self.create_another_dataset(n = 20)
+        self.data_categorical = self.create_categorical_dataset()
 
     def create_pbc_dataset(self):
         """
         create pbc dataset
         """
         url="https://raw.githubusercontent.com/tompollard/data/master/primary-biliary-cirrhosis/pbc.csv"
-        self.data_pbc=pd.read_csv(url)
+        return pd.read_csv(url)
 
     def create_sample_dataset(self, n):
         """
         create sample dataset
         """
-        self.data_sample = pd.DataFrame(index=range(n))
+        data_sample = pd.DataFrame(index=range(n))
 
-        self.mu, self.sigma = 10, 1
-        self.data_sample['normal'] = np.random.normal(self.mu, self.sigma, n)
-        self.data_sample['nonnormal'] = np.random.noncentral_chisquare(20,nonc=2,size=n)
+        mu, sigma = 10, 1
+        data_sample['normal'] = np.random.normal(mu, sigma, n)
+        data_sample['nonnormal'] = np.random.noncentral_chisquare(20,nonc=2,size=n)
 
         bears = ['Winnie','Paddington','Baloo','Blossom']
-        self.data_sample['bear'] = np.random.choice(bears, n, p=[0.5, 0.1, 0.1, 0.3])
+        data_sample['bear'] = np.random.choice(bears, n, p=[0.5, 0.1, 0.1, 0.3])
 
-        self.data_sample['likeshoney'] = np.nan
-        self.data_sample.loc[self.data_sample['bear'] == 'Winnie', 'likeshoney'] = 1
-        self.data_sample.loc[self.data_sample['bear'] == 'Baloo', 'likeshoney'] = 1
+        data_sample['likeshoney'] = np.nan
+        data_sample.loc[data_sample['bear'] == 'Winnie', 'likeshoney'] = 1
+        data_sample.loc[data_sample['bear'] == 'Baloo', 'likeshoney'] = 1
 
-        self.data_sample['likesmarmalade'] = 0
-        self.data_sample.loc[self.data_sample['bear'] == 'Paddington', 'likesmarmalade'] = 1
+        data_sample['likesmarmalade'] = 0
+        data_sample.loc[data_sample['bear'] == 'Paddington', 'likesmarmalade'] = 1
 
-        self.data_sample['height'] = 0
-        self.data_sample.loc[self.data_sample['bear'] == 'Winnie', 'height'] = 6
-        self.data_sample.loc[self.data_sample['bear'] == 'Paddington', 'height'] = 4
-        self.data_sample.loc[self.data_sample['bear'] == 'Baloo', 'height'] = 20
-        self.data_sample.loc[self.data_sample['bear'] == 'Blossom', 'height'] = 7
+        data_sample['height'] = 0
+        data_sample.loc[data_sample['bear'] == 'Winnie', 'height'] = 6
+        data_sample.loc[data_sample['bear'] == 'Paddington', 'height'] = 4
+        data_sample.loc[data_sample['bear'] == 'Baloo', 'height'] = 20
+        data_sample.loc[data_sample['bear'] == 'Blossom', 'height'] = 7
 
-        self.data_sample['fictional'] = 0
-        self.data_sample.loc[self.data_sample['bear'] == 'Winnie', 'fictional'] = 1
-        self.data_sample.loc[self.data_sample['bear'] == 'Paddington', 'fictional'] = 1
-        self.data_sample.loc[self.data_sample['bear'] == 'Baloo', 'fictional'] = 1
-        self.data_sample.loc[self.data_sample['bear'] == 'Blossom', 'fictional'] = 1
+        data_sample['fictional'] = 0
+        data_sample.loc[data_sample['bear'] == 'Winnie', 'fictional'] = 1
+        data_sample.loc[data_sample['bear'] == 'Paddington', 'fictional'] = 1
+        data_sample.loc[data_sample['bear'] == 'Baloo', 'fictional'] = 1
+        data_sample.loc[data_sample['bear'] == 'Blossom', 'fictional'] = 1
+
+        return data_sample
 
     def create_small_dataset(self):
         """
         create small dataset
         """
-        self.data_small = pd.DataFrame(index=range(10))
-        self.data_small['group1'] = 0
-        self.data_small.loc[0:4, 'group1'] = 1
-        self.data_small['group2'] = 0
-        self.data_small.loc[2:7, 'group2'] = 1
-        self.data_small['group3'] = 0
-        self.data_small.loc[1:2, 'group3'] = 1
-        self.data_small.loc[3:7, 'group3'] = 2
+        data_small = pd.DataFrame(index=range(10))
+        data_small['group1'] = 0
+        data_small.loc[0:4, 'group1'] = 1
+        data_small['group2'] = 0
+        data_small.loc[2:7, 'group2'] = 1
+        data_small['group3'] = 0
+        data_small.loc[1:2, 'group3'] = 1
+        data_small.loc[3:7, 'group3'] = 2
+
+        return data_small
 
     def create_another_dataset(self, n):
         """
         create another dataset
         """
-        self.data_groups = pd.DataFrame(index=range(n))
-        self.data_groups['group'] = 'group1'
-        self.data_groups.loc[ 2:6, 'group'] = 'group2'
-        self.data_groups.loc[ 6:12, 'group'] = 'group3'
-        self.data_groups.loc[12: n, 'group'] = 'group4'
-        self.data_groups['age'] = range(n)
-        self.data_groups['weight'] = [x+100 for x in range(n)]
+        data_groups = pd.DataFrame(index=range(n))
+        data_groups['group'] = 'group1'
+        data_groups.loc[ 2:6, 'group'] = 'group2'
+        data_groups.loc[ 6:12, 'group'] = 'group3'
+        data_groups.loc[12: n, 'group'] = 'group4'
+        data_groups['age'] = range(n)
+        data_groups['weight'] = [x+100 for x in range(n)]
+
+        return data_groups
 
     def create_categorical_dataset(self, n_cat=100, n_obs_per_cat=1000, n_col=10):
         """
@@ -102,8 +106,7 @@ class TestTableOne(object):
         data = np.mod(data,n_cat*n_col)
         # reshape intro a matrix
         data = data.reshape(n_cat*n_obs_per_cat, n_col)
-
-        self.data_categorical = pd.DataFrame(data)
+        return pd.DataFrame(data)
 
     def teardown(self):
         """
@@ -141,8 +144,11 @@ class TestTableOne(object):
         mean =  table.cont_describe.loc['normal']['mean']['overall']
         std = table.cont_describe.loc['normal']['std']['overall']
 
-        assert abs(mean-self.mu) <= 0.02
-        assert abs(std-self.sigma) <= 0.02
+        print(self.data_sample.mean())
+        print(self.data_sample.std())
+
+        assert abs(mean-self.data_sample.normal.mean()) <= 0.02
+        assert abs(std-self.data_sample.normal.std()) <= 0.02
 
     @with_setup(setup, teardown)
     def test_overall_n_and_percent_as_expected_for_binary_cat_variable(self):
@@ -175,6 +181,25 @@ class TestTableOne(object):
 
         assert likefreq == 5993
         assert abs(100-likepercent) <= 0.01
+
+    @with_setup(setup, teardown)
+    def test_with_data_as_only_input_argument(self):
+        """
+        Test with a simple dataset that a table generated with no pre-specified columns 
+        returns the same results as a table generated with specified columns
+        """
+        table_no_args = TableOne(self.data_groups)
+
+        columns = ['group','age','weight']
+        categorical=['group']
+        table_with_args = TableOne(self.data_groups, columns=columns, categorical=categorical)
+
+        assert table_no_args._columns == table_with_args._columns
+        assert table_no_args._categorical == table_with_args._categorical
+        assert table_no_args._remarks == table_with_args._remarks
+        assert (table_no_args.tableone.columns == table_with_args.tableone.columns).all()
+        assert (table_no_args.tableone['overall'].values == table_with_args.tableone['overall'].values).all()
+        assert (table_no_args.tableone == table_with_args.tableone).all().all()
 
     @with_setup(setup, teardown)
     def test_fisher_exact_for_small_cell_count(self):
