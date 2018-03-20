@@ -1,8 +1,8 @@
 
 # ###################################### #
 #                                        #
-# Author: Kerstin Johnsson               #
 # Updated by: Tom Pollard (2018.03.19)   #
+# Author: Kerstin Johnsson               #
 # License: MIT License                   #
 # Available from:                        #
 # https://github.com/kjohnsson/modality  #
@@ -33,6 +33,36 @@ def generate_data(peaks=2, n=None, mu=None, std=None):
         dists.append(tmp)
     data = np.concatenate(dists)
     return data
+
+def hartigan_diptest(data):
+    '''
+        P-value according to Hartigan's dip test for unimodality.
+        The dip is computed using the function
+        dip_and_closest_unimodal_from_cdf. From this the p-value is
+        interpolated using a table imported from the R package diptest.
+
+        References:
+            Hartigan and Hartigan (1985): The dip test of unimodality.
+            The Annals of Statistics. 13(1).
+
+        Input:
+            data    -   one-dimensional data set.
+
+        Value:
+            p-value for the test.
+    '''
+    
+    try:
+      p = pval_hartigan(data[~np.isnan(data)])
+    except:
+      p = np.nan
+
+    return p
+
+def pval_hartigan(data):
+    xF, yF = cum_distr(data)
+    dip = dip_from_cdf(xF, yF)
+    return dip_pval_tabinterpol(dip, len(data))
 
 def cum_distr(data, w=None):
     if w is None:
@@ -807,9 +837,11 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
 
         if plotting:
             mxpt = np.argmax(yF[L:(L0+1)] - gipl)
-            bax.plot([xF[L:][mxpt], xF[L:][mxpt]], [yF[L:][mxpt]+d/2, gipl[mxpt]+d/2], '+', color='red')
+            bax.plot([xF[L:][mxpt], xF[L:][mxpt]], [yF[L:][mxpt]+d/2, 
+              gipl[mxpt]+d/2], '+', color='red')
             mxpt = np.argmax(hipl - yF[U0:(U+1)])
-            bax.plot([xF[U0:][mxpt], xF[U0:][mxpt]], [yF[U0:][mxpt]-d/2, hipl[mxpt]-d/2], '+', color='red')
+            bax.plot([xF[U0:][mxpt], xF[U0:][mxpt]], [yF[U0:][mxpt]-d/2, 
+              hipl[mxpt]-d/2], '+', color='red')
             i += 1
 
         # Change modal interval
@@ -929,7 +961,8 @@ def least_concave_majorant_sorted(x, y, eps=1e-12):
             icurr += 2 + np.argmax(q)
             i.append(icurr)
         else:
-            print("x[icurr] = {}, x[icurr+1] = {}, x[icurr+2] = {}".format(x[icurr], x[icurr+1], x[icurr+2]))
+            print("x[icurr] = {}, x[icurr+1] = {}, x[icurr+2] = {}".format(x[icurr], 
+              x[icurr+1], x[icurr+2]))
             raise ValueError('Maximum two copies of each x-value allowed')
 
     return np.array(i)
@@ -1128,29 +1161,3 @@ class RefStudentt(object):
     def sample(self, n):
         dof = 2*self.beta-1
         return 1./np.sqrt(dof)*np.random.standard_t(dof, n)
-
-def hartigan_diptest(data):
-    '''
-        P-value according to Hartigan's dip test for unimodality.
-        The dip is computed using the function
-        dip_and_closest_unimodal_from_cdf. From this the p-value is
-        interpolated using a table imported from the R package diptest.
-
-        References:
-            Hartigan and Hartigan (1985): The dip test of unimodality.
-            The Annals of Statistics. 13(1).
-
-        Input:
-            data    -   one-dimensional data set.
-
-        Value:
-            p-value for the test.
-    '''
-    return pval_hartigan(data)
-
-def pval_hartigan(data):
-    xF, yF = cum_distr(data)
-    dip = dip_from_cdf(xF, yF)
-    return dip_pval_tabinterpol(dip, len(data))
-
-
