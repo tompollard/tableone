@@ -152,7 +152,7 @@ class TableOne(object):
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
-        self._warnings = self._generate_remark_str()
+        self._remarks_str = self._generate_remark_str()
 
         # wrap dataframe methods
         self.head = self.tableone.head
@@ -170,7 +170,7 @@ class TableOne(object):
         return self.tableone.to_string()
 
     def _repr_html_(self): 
-        return self.tableone._repr_html_() + self._warnings
+        return self.tableone._repr_html_() + self._remarks_str
 
     def _generate_remark_str(self):
         """
