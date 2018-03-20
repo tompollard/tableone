@@ -45,15 +45,12 @@ Example
 
 #. Optionally, a list of columns to be included in Table 1::
 
-    columns = ['time','age','bili','chol','albumin','copper',
-           'alk.phos','ast','trig','platelet','protime',
-           'status', 'ascites', 'hepato', 'spiders', 'edema', 
-           'stage', 'sex', 'trt']
+    columns = ['age','bili','albumin','ast','platelet','protime',
+           'ascites','hepato','spiders','edema','sex', 'trt']
 
 #. Optionally, a list of columns containing categorical variables::
 
-    categorical = ['status', 'ascites', 'hepato', 'spiders', 'edema', 
-           'stage', 'sex']
+    categorical = ['ascites','hepato','edema','sex','spiders','trt']
 
 #. Optionally, a categorical variable for stratification and a list of non-normal variables::
 
@@ -66,7 +63,7 @@ Example
 
 #. Type the name of the instance in an interpreter::
 
-    mytable.tableone
+    mytable
 
 #. ...which prints the following table to screen::
 
@@ -163,4 +160,4 @@ Example
 
 #. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML. Files are exported by calling the ``to_format`` method on the DataFrame. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
 
-    mytable.tableone.to_csv('mytable.csv')
+    mytable.to_csv('mytable.csv')

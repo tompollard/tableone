@@ -152,7 +152,7 @@ class TableOne(object):
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
-        self._warnings = self._generate_remark_str()
+        # self._remarks_str = self._generate_remark_str()
 
         # wrap dataframe methods
         self.head = self.tableone.head
@@ -167,18 +167,18 @@ class TableOne(object):
         return self.tableone.to_string()
 
     def __repr__(self):
-        return self.tableone.to_string()
+        return self.tableone.to_string() + self._generate_remark_str('\n')
 
     def _repr_html_(self): 
-        return self.tableone._repr_html_() + self._warnings
+        return self.tableone._repr_html_() + self._generate_remark_str('<br />')
 
-    def _generate_remark_str(self):
+    def _generate_remark_str(self, end_of_line = '\n'):
         """
         Generate a series of remarks that the user should consider
         when interpreting the summary statistics.
         """
         warnings = {}
-        msg = '<br />'
+        msg = '{}'.format(end_of_line)
 
         # generate warnings for continuous variables
         if self._continuous:
@@ -197,7 +197,7 @@ class TableOne(object):
 
         # create the warning string
         for n,k in enumerate(sorted(warnings)):
-            msg += '[{}] {}: {}.<br />'.format(n+1,k,', '.join(warnings[k]))
+            msg += '[{}] {}: {}.{}'.format(n+1,k,', '.join(warnings[k]), end_of_line)
 
         return msg
 
