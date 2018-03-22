@@ -11,7 +11,7 @@
 
 import numpy as np 
 from scipy.special import beta as betafun
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from scipy.optimize import brentq
 import os
 import pandas as pd
@@ -742,10 +742,10 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
     if (yF[1:]-yF[:-1] < -eps).any():
         raise ValueError('Need sorted y-values to compute dip')
 
-    if plotting:
-        Nplot = 5
-        bfig = plt.figure(figsize=(12, 3))
-        i = 1  # plot index
+    # if plotting:
+    #     Nplot = 5
+    #     bfig = plt.figure(figsize=(12, 3))
+    #     i = 1  # plot index
 
     D = 0  # lower bound for dip*2
 
@@ -787,22 +787,22 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         imaxdiffh = np.argmax(hdiff)
         d = max(gdiff[imaxdiffg], hdiff[imaxdiffh])
 
-        # Plot current GCM and LCM.
-        if plotting:
-            if i > Nplot:
-                bfig = plt.figure(figsize=(12, 3))
-                i = 1
-            bax = bfig.add_subplot(1, Nplot, i)
-            bax.plot(xF, yF, color='red')
-            bax.plot(xF, yF-d/2, color='black')
-            bax.plot(xF, yF+d/2, color='black')
-            bax.plot(xF[iG], yF[iG]+d/2, color='blue')
-            bax.plot(xF[iH], yF[iH]-d/2, color='blue')
+        # # Plot current GCM and LCM.
+        # if plotting:
+        #     if i > Nplot:
+        #         bfig = plt.figure(figsize=(12, 3))
+        #         i = 1
+        #     bax = bfig.add_subplot(1, Nplot, i)
+        #     bax.plot(xF, yF, color='red')
+        #     bax.plot(xF, yF-d/2, color='black')
+        #     bax.plot(xF, yF+d/2, color='black')
+        #     bax.plot(xF[iG], yF[iG]+d/2, color='blue')
+        #     bax.plot(xF[iH], yF[iH]-d/2, color='blue')
 
-        if d <= D:
-            if verbose:
-                print("Difference in modal interval smaller than current dip")
-            break
+        # if d <= D:
+        #     if verbose:
+        #         print("Difference in modal interval smaller than current dip")
+        #     break
 
         # Find new modal interval so that largest difference is at endpoint
         # and set d to largest distance between current GCM and LCM.
@@ -816,12 +816,12 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         iGfin = np.hstack([iGfin, iG[(iG <= L0)*(iG > L)]])
         iHfin = np.hstack([iH[(iH >= U0)*(iH < U)], iHfin])
 
-        # Plot new modal interval
-        if plotting:
-            ymin, ymax = bax.get_ylim()
-            bax.axvline(xF[L0], ymin, ymax, color='orange')
-            bax.axvline(xF[U0], ymin, ymax, color='red')
-            bax.set_xlim(xF[L]-.1*(xF[U]-xF[L]), xF[U]+.1*(xF[U]-xF[L]))
+        # # Plot new modal interval
+        # if plotting:
+        #     ymin, ymax = bax.get_ylim()
+        #     bax.axvline(xF[L0], ymin, ymax, color='orange')
+        #     bax.axvline(xF[U0], ymin, ymax, color='red')
+        #     bax.set_xlim(xF[L]-.1*(xF[U]-xF[L]), xF[U]+.1*(xF[U]-xF[L]))
 
         # Compute new lower bound for dip*2
         # i.e. largest difference outside modal interval
@@ -835,14 +835,14 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
                 print("Modal interval zero length")
             break
 
-        if plotting:
-            mxpt = np.argmax(yF[L:(L0+1)] - gipl)
-            bax.plot([xF[L:][mxpt], xF[L:][mxpt]], [yF[L:][mxpt]+d/2, 
-              gipl[mxpt]+d/2], '+', color='red')
-            mxpt = np.argmax(hipl - yF[U0:(U+1)])
-            bax.plot([xF[U0:][mxpt], xF[U0:][mxpt]], [yF[U0:][mxpt]-d/2, 
-              hipl[mxpt]-d/2], '+', color='red')
-            i += 1
+        # if plotting:
+        #     mxpt = np.argmax(yF[L:(L0+1)] - gipl)
+        #     bax.plot([xF[L:][mxpt], xF[L:][mxpt]], [yF[L:][mxpt]+d/2, 
+        #       gipl[mxpt]+d/2], '+', color='red')
+        #     mxpt = np.argmax(hipl - yF[U0:(U+1)])
+        #     bax.plot([xF[U0:][mxpt], xF[U0:][mxpt]], [yF[U0:][mxpt]-d/2, 
+        #       hipl[mxpt]-d/2], '+', color='red')
+        #     i += 1
 
         # Change modal interval
         L = L0
@@ -853,18 +853,18 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
                 print("Difference in modal interval smaller than new dip")
             break
 
-    if plotting:
+    # if plotting:
 
-        # Add modal interval to figure
-        bax.axvline(xF[L0], ymin, ymax, color='green', linestyle='dashed')
-        bax.axvline(xF[U0], ymin, ymax, color='green', linestyle='dashed')
+    #     # Add modal interval to figure
+    #     bax.axvline(xF[L0], ymin, ymax, color='green', linestyle='dashed')
+    #     bax.axvline(xF[U0], ymin, ymax, color='green', linestyle='dashed')
 
-        ## Plot unimodal function (not distribution function)
-        bfig = plt.figure()
-        bax = bfig.add_subplot(1, 1, 1)
-        bax.plot(xF, yF, color='red')
-        bax.plot(xF, yF-D/2, color='black')
-        bax.plot(xF, yF+D/2, color='black')
+    #     ## Plot unimodal function (not distribution function)
+    #     bfig = plt.figure()
+    #     bax = bfig.add_subplot(1, 1, 1)
+    #     bax.plot(xF, yF, color='red')
+    #     bax.plot(xF, yF-D/2, color='black')
+    #     bax.plot(xF, yF+D/2, color='black')
 
     # Find string position in modal interval
     iM = np.arange(iGfin[-1], iHfin[0]+1)
@@ -887,19 +887,19 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         iM = iM[iM <= mode]
         iM_convex = iM[greatest_convex_minorant_sorted(xF[iM], yF[iM])]
 
-    if plotting:
+    # if plotting:
 
-        bax.plot(xF[np.hstack([iGfin, iM_convex, iM_concave, iHfin])],
-                 np.hstack([yF[iGfin] + D/2, yF[iM_convex] + D/2,
-                            yM_lower[iMM_concave], yF[iHfin] - D/2]), color='blue')
-        #bax.plot(xF[iM], yM_lower, color='orange')
+    #     bax.plot(xF[np.hstack([iGfin, iM_convex, iM_concave, iHfin])],
+    #              np.hstack([yF[iGfin] + D/2, yF[iM_convex] + D/2,
+    #                         yM_lower[iMM_concave], yF[iHfin] - D/2]), color='blue')
+    #     #bax.plot(xF[iM], yM_lower, color='orange')
 
-        ## Plot unimodal distribution function
-        bfig = plt.figure()
-        bax = bfig.add_subplot(1, 1, 1)
-        bax.plot(xF, yF, color='red')
-        bax.plot(xF, yF-D/2, color='black')
-        bax.plot(xF, yF+D/2, color='black')
+    #     ## Plot unimodal distribution function
+    #     bfig = plt.figure()
+    #     bax = bfig.add_subplot(1, 1, 1)
+    #     bax.plot(xF, yF, color='red')
+    #     bax.plot(xF, yF-D/2, color='black')
+    #     bax.plot(xF, yF+D/2, color='black')
 
     # Find string position in modal interval
     iM = np.arange(iGfin[-1], iHfin[0]+1)
@@ -934,10 +934,10 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
     xU = np.hstack([xU_start, xU, xU_end])
     yU = np.hstack([0, yU, 1])
 
-    if plotting:
-        bax.plot(xU, yU, color='blue')
-        #bax.plot(xF[iM], yM_lower, color='orange')
-        plt.show()
+    # if plotting:
+    #     bax.plot(xU, yU, color='blue')
+    #     #bax.plot(xF[iM], yM_lower, color='orange')
+    #     plt.show()
 
     return D/2, (xU, yU)
 
@@ -995,12 +995,12 @@ class KernelDensityDerivative(object):
     def score_samples(self, x):
         return self.evaluate(x)
 
-    def plot(self, ax=None):
-        x = self.h*np.linspace(np.min(self.datah)-5, np.max(self.datah)+5, 200)
-        y = self.evaluate(x)
-        if ax is None:
-            fig, ax = plt.subplots()
-        ax.plot(x, y)
+    # def plot(self, ax=None):
+    #     x = self.h*np.linspace(np.min(self.datah)-5, np.max(self.datah)+5, 200)
+    #     y = self.evaluate(x)
+    #     if ax is None:
+    #         fig, ax = plt.subplots()
+    #     ax.plot(x, y)
 
 
 def silverman_bandwidth(data, deriv_order=0):
