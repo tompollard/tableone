@@ -169,7 +169,7 @@ class TableOne(object):
     def __repr__(self):
         return self.tableone.to_string() + self._generate_remark_str('\n')
 
-    def _repr_html_(self): 
+    def _repr_html_(self):
         return self.tableone._repr_html_() + self._generate_remark_str('<br />')
 
     def _generate_remark_str(self, end_of_line = '\n'):
@@ -184,14 +184,14 @@ class TableOne(object):
         if self._continuous:
             # highlight far outliers
             outlier_mask = self.cont_describe.far_outliers > 1
-            outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].dropna().index)
+            outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].dropna(how='all').index)
             if outlier_vars:
                 warnings['Warning, Tukey test indicates far outliers in'] = outlier_vars
 
             # highlight possible multimodal distributions
             # using hartigan's dip test
             modal_mask = self.cont_describe.diptest < 0.05
-            modal_vars = list(self.cont_describe.diptest[modal_mask].dropna().index)
+            modal_vars = list(self.cont_describe.diptest[modal_mask].dropna(how='all').index)
             if modal_vars:
                 warnings['Warning, Hartigan''s Dip Test reports possible multimodal distributions for'] = modal_vars
 
@@ -483,7 +483,7 @@ class TableOne(object):
         # no test by default
         pval=np.nan
         ptest='Not tested'
-        
+
         # do not test if the variable has no observations in a level
         if min_observed == 0:
             warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
