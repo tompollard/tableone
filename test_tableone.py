@@ -320,18 +320,24 @@ class TestTableOne(object):
         table_groupby = TableOne(df_groupby, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'])
         assert (df_groupby['group'] == df_orig['group']).all()
+        assert (df_groupby['age'] == df_orig['age']).all()
+        assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # sorted
         df_sorted = self.data_groups.copy()
         table_sorted = TableOne(df_sorted, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], sort=True)
         assert (df_sorted['group'] == df_orig['group']).all()
+        assert (df_groupby['age'] == df_orig['age']).all()
+        assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # pval
         df_pval = self.data_groups.copy()
         table_pval = TableOne(df_pval, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], sort=True, pval=True)
         assert (df_pval['group'] == df_orig['group']).all()
+        assert (df_groupby['age'] == df_orig['age']).all()
+        assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # pval_adjust
         df_pval_adjust = self.data_groups.copy()
@@ -339,24 +345,32 @@ class TestTableOne(object):
             categorical = ['group'], groupby=['group'], sort=True, pval=True,
             pval_adjust='bonferroni')
         assert (df_pval_adjust['group'] == df_orig['group']).all()
+        assert (df_groupby['age'] == df_orig['age']).all()
+        assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # labels
         df_labels = self.data_groups.copy()
         table_labels = TableOne(df_labels, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], labels={'age':'age, years'})
         assert (df_labels['group'] == df_orig['group']).all()
+        assert (df_groupby['age'] == df_orig['age']).all()
+        assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # limit
         df_limit = self.data_groups.copy()
         table_limit = TableOne(df_limit, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], limit=2)
         assert (df_limit['group'] == df_orig['group']).all()
+        assert (df_groupby['age'] == df_orig['age']).all()
+        assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # nonnormal
         df_nonnormal = self.data_groups.copy()
         table_nonnormal = TableOne(df_nonnormal, columns = ['group','age','weight'],
             categorical = ['group'], groupby=['group'], nonnormal=['age'])
         assert (df_nonnormal['group'] == df_orig['group']).all()
+        assert (df_groupby['age'] == df_orig['age']).all()
+        assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # warnings.simplefilter("default")
 
