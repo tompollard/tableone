@@ -581,14 +581,11 @@ class TableOne(object):
         table : pandas DataFrame
             A table summarising the categorical variables.
         """
-        table = self.cat_describe['isnull'].copy()
-        # if there are _groupby levels, `table` has multiple columns
-        # each column is named according to the group
-        # to ensure one column is named isnull, we rename it here
-        table.rename(columns={table.columns[0]: 'isnull'}, inplace=True)
-
-        for g in self._groupbylvls:
-            table[g] = self.cat_describe['t1_summary'][g]
+        table = self.cat_describe['t1_summary'].copy()
+        # add the total count of null values across all levels
+        isnull = data[self._categorical].isnull().sum().to_frame(name='isnull')
+        isnull.index.rename('variable', inplace=True)
+        table = table.join(isnull)
 
         # add pval column
         if self._pval and self._pval_adjust:

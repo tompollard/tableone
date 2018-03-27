@@ -601,7 +601,9 @@ class TestTableOne(object):
 
     @with_setup(setup, teardown)
     def test_check_null_counts_are_correct(self):
-
+        """
+        Test that the isnull column is correctly reporting number of nulls
+        """
         columns = ['age','bili','albumin','ast','platelet','protime',
                    'ascites','hepato','spiders', 'edema','sex','trt']
         categorical = ['ascites','hepato','edema','sex','spiders','trt']
