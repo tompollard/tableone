@@ -597,3 +597,36 @@ class TestTableOne(object):
         for i, c in enumerate(np.sort(columns)):
             # i+1 because we skip the first row, 'n'
             assert tableone_rows[i+1] == c
+
+
+    @with_setup(setup, teardown)
+    def test_check_null_counts_are_correct(self):
+
+        columns = ['age','bili','albumin','ast','platelet','protime',
+                   'ascites','hepato','spiders', 'edema','sex','trt']
+        categorical = ['ascites','hepato','edema','sex','spiders','trt']
+        groupby = 'trt'
+
+        # test when not grouping
+        table = TableOne(self.data_pbc, columns, categorical)
+
+        # get isnull column only
+        isnull = table.tableone.iloc[:,0]
+        for i, v in enumerate(isnull):
+            # skip empty rows by checking value is not a string
+            if 'float' in str(type(v)):
+                # check each null count is correct
+                col = isnull.index[i][0]
+                assert self.data_pbc[col].isnull().sum() == v
+
+        # test when grouping by a variable
+        grouped_table = TableOne(self.data_pbc, columns, categorical, groupby)
+
+        # get isnull column only
+        isnull = grouped_table.tableone.iloc[:,0]
+        for i, v in enumerate(isnull):
+            # skip empty rows by checking value is not a string
+            if 'float' in str(type(v)):
+                # check each null count is correct
+                col = isnull.index[i][0]
+                assert self.data_pbc[col].isnull().sum() == v

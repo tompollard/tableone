@@ -511,7 +511,7 @@ class TableOne(object):
         # no test by default
         pval=np.nan
         ptest='Not tested'
-        
+
         # do not test if the variable has no observations in a level
         if min_observed == 0:
             warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
@@ -557,8 +557,7 @@ class TableOne(object):
         table.columns = table.columns.droplevel(level=0)
 
         # add a column of null counts as 1-count() from previous function
-        nulltable = (data.shape[0] - self.cont_describe[['count']].sum(axis=1))
-        nulltable = nulltable.to_frame(name='isnull')
+        nulltable = data[self._continuous].isnull().sum().to_frame(name='isnull')
         table = table.join(nulltable)
 
         # add an empty level column, for joining with cat table
