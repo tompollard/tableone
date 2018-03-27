@@ -480,17 +480,6 @@ class TestTableOne(object):
             assert tableone_rows[i+1] == c
 
     @with_setup(setup, teardown)
-    def test_mixed_data_forced_to_numeric(self):
-        """
-        Test case with one column with mixed data that is specified as cont
-        """
-        columns = ['mixed numeric data']
-        table = TableOne(self.data_mixed, columns=columns, categorical=[])
-
-        assert table.tableone.loc[('mixed numeric data',''), 'isnull'] == 1
-
-
-    @with_setup(setup, teardown)
     def test_string_data_as_continuous_error(self):
         """
         Test raising an error when continuous columns contain non-numeric data
@@ -503,23 +492,6 @@ class TestTableOne(object):
         except:
             # unexpected error - raise it
             raise
-
-    @with_setup(setup, teardown)
-    def test_input_data_not_modified(self):
-        """
-        Test to ensure the input dataframe is not modified by the package
-        """
-        df_orig = self.data_groups.copy()
-        df = self.data_groups.copy()
-
-        # turn off warnings for this test
-        warnings.simplefilter("ignore")
-
-        table = TableOne(df, columns=['group'], categorical=[])
-
-        assert (df['group'] == df_orig['group']).all()
-
-        warnings.simplefilter("default")
 
     @with_setup(setup, teardown)
     def test_groupby_with_group_named_isnull(self):
