@@ -93,8 +93,9 @@ class TableOne(object):
             raise InputError('Columns not found in dataset: {}'.format(notfound))
 
         # check for duplicate columns
-        if data[columns].columns.get_duplicates():
-            raise InputError('Input contains duplicate columns: {}'.format())
+        dups = data[columns].columns.get_duplicates()
+        if dups:
+            raise InputError('Input contains duplicate columns: {}'.format(dups))
 
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
@@ -324,16 +325,31 @@ class TableOne(object):
             self._q25,self._q75,min,max,self._t1_summary,self._diptest,
             self._outliers, self._far_outliers]
 
+        # coerce continuous data to numeric
+        cont_data = data[self._continuous].apply(pd.to_numeric, errors='coerce')
+        # check all data in each continuous column is numeric
+        bad_cols = cont_data.count() != data[self._continuous].count()
+        bad_cols = cont_data.columns[bad_cols]
+        if len(bad_cols)>0:
+            raise InputError("""The following continuous column(s) have non-numeric values: {}.
+            Either specify the column(s) as categorical or remove the non-numeric values.""".format(bad_cols.values))
+
+        # check for coerced column containing all NaN to warn user
+        for column in cont_data.columns[cont_data.count() == 0]:
+            self._non_continuous_warning(column)
+
         if self._groupby:
-            cont_data = data[self._continuous + [self._groupby]]
-            cont_data = cont_data.apply(pd.to_numeric, errors='ignore')
+            # add the groupby column back
+            cont_data = cont_data.merge(data[[self._groupby]],
+                left_index=True, right_index=True)
+
+            # group and aggregate data
             df_cont = pd.pivot_table(cont_data,
                 columns=[self._groupby],
                 aggfunc=aggfuncs)
         else:
             # if no groupby, just add single group column
-            df_cont = data[self._continuous].apply(pd.to_numeric,
-                errors='ignore').apply(aggfuncs).T
+            df_cont = cont_data.apply(aggfuncs).T
             df_cont.columns.name = 'overall'
             df_cont.columns = pd.MultiIndex.from_product([df_cont.columns,
                 ['overall']])
@@ -365,12 +381,12 @@ class TableOne(object):
 
         for g in self._groupbylvls:
             if self._groupby:
-                d_slice = data.loc[data[self._groupby] == g]
+                d_slice = data.loc[data[self._groupby] == g, self._categorical]
             else:
-                d_slice = data.copy()
+                d_slice = data[self._categorical].copy()
 
             # create a dataframe with freq, proportion
-            df = d_slice[self._categorical].copy()
+            df = d_slice.copy()
             df = df.melt().groupby(['variable','value']).size().to_frame(name='freq')
             df.index.set_names('level', level=1, inplace=True)
             df['percent'] = df['freq'].div(df.freq.sum(level=0),level=0)* 100
@@ -383,6 +399,13 @@ class TableOne(object):
             # add null count
             nulls = d_slice.isnull().sum().to_frame(name='isnull')
             nulls.index.name = 'variable'
+            # only save null count to the first category for each variable
+            # do this by extracting the first category from the df row index
+            levels = df.reset_index()[['variable','level']].groupby('variable').first()
+            # add this category to the nulls table
+            nulls = nulls.join(levels)
+            nulls.set_index('level', append=True, inplace=True)
+            # join nulls to categorical
             df = df.join(nulls)
 
             # add summary column
@@ -393,6 +416,9 @@ class TableOne(object):
             group_dict[g] = df
 
         df_cat = pd.concat(group_dict,axis=1)
+        # ensure the groups are the 2nd level of the column index
+        if df_cat.columns.nlevels>1:
+            df_cat = df_cat.swaplevel(0, 1, axis=1).sort_index(axis=1,level=0)
 
         return df_cat
 
@@ -421,7 +447,6 @@ class TableOne(object):
 
         # list values for each variable, grouped by groupby levels
         for v in df.index:
-
             is_continuous = df.loc[v]['continuous']
             is_categorical = ~df.loc[v]['continuous']
             is_normal = ~df.loc[v]['nonnormal']
@@ -431,7 +456,10 @@ class TableOne(object):
                 catlevels = None
                 grouped_data = []
                 for s in self._groupbylvls:
-                    lvl_data = data[data[self._groupby]==s].dropna(subset=[v])[v]
+                    lvl_data = data.loc[data[self._groupby]==s, v]
+                    # coerce to numeric and drop non-numeric data
+                    lvl_data = lvl_data.apply(pd.to_numeric, errors='coerce').dropna()
+                    # append to overall group data
                     grouped_data.append(lvl_data.values)
                 min_observed = len(min(grouped_data,key=len))
             # if categorical, create contingency table
@@ -507,7 +535,7 @@ class TableOne(object):
             # if this is a 2x2, switch to fisher exact
             if expected.min() < 5:
                 if grouped_data.shape == (2,2):
-                    ptest = 'Fisher''s exact'
+                    ptest = "Fisher's exact"
                     oddsratio, pval = stats.fisher_exact(grouped_data)
                 else:
                     ptest = 'Chi-squared (warning: expected count < 5)'
@@ -528,8 +556,8 @@ class TableOne(object):
         table = self.cont_describe[['t1_summary']].copy()
         table.columns = table.columns.droplevel(level=0)
 
-        # add a column of null counts
-        nulltable = pd.DataFrame(data[self._continuous].isnull().sum().rename('isnull'))
+        # add a column of null counts as 1-count() from previous function
+        nulltable = data[self._continuous].isnull().sum().to_frame(name='isnull')
         table = table.join(nulltable)
 
         # add an empty level column, for joining with cat table
@@ -553,10 +581,11 @@ class TableOne(object):
         table : pandas DataFrame
             A table summarising the categorical variables.
         """
-        table = self.cat_describe[self._groupbylvls[0]][['isnull']].copy()
-
-        for g in self._groupbylvls:
-            table[g] = self.cat_describe[g]['t1_summary']
+        table = self.cat_describe['t1_summary'].copy()
+        # add the total count of null values across all levels
+        isnull = data[self._categorical].isnull().sum().to_frame(name='isnull')
+        isnull.index.rename('variable', inplace=True)
+        table = table.join(isnull)
 
         # add pval column
         if self._pval and self._pval_adjust:
@@ -688,3 +717,7 @@ class TableOne(object):
             table = table.reindex(cols, axis=1)
 
         return table
+
+    # warnings
+    def _non_continuous_warning(self, c):
+        warnings.warn('"{}" has all non-numeric values. Consider including it in the list of categorical variables.'.format(c), RuntimeWarning, stacklevel=2)
