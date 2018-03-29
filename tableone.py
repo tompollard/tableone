@@ -196,6 +196,14 @@ class TableOne(object):
             if modal_vars:
                 warnings['Warning, Hartigan''s Dip Test reports possible multimodal distributions for'] = modal_vars
 
+            # highlight possible multimodal distributions
+            # using hartigan's dip test
+            modal_mask = self.cont_describe.normaltest < 0.001
+            modal_vars = list(self.cont_describe.normaltest[modal_mask].dropna(how='all').index)
+            if modal_vars:
+                warnings['Warning, test for normality reports non-normal distributions for'] = modal_vars
+
+
         # create the warning string
         for n,k in enumerate(sorted(warnings)):
             msg += '[{}] {}: {}.{}'.format(n+1,k,', '.join(warnings[k]), end_of_line)
@@ -253,6 +261,16 @@ class TableOne(object):
         p < 0.05 suggests possible multimodality.
         """
         return modality.hartigan_diptest(x.values)
+
+    def _normaltest(self,x):
+        """
+        Compute test for normal distribution.
+
+        Null hypothesis: x comes from a normal distribution
+        p < alpha suggests the null hypothesis can be rejected.    
+        """
+        stat,p = stats.normaltest(x.values, nan_policy='omit')
+        return p
 
     def _tukey(self,x,threshold):
         """
@@ -323,7 +341,7 @@ class TableOne(object):
         """
         aggfuncs = [pd.Series.count,np.mean,np.median,self._std,
             self._q25,self._q75,min,max,self._t1_summary,self._diptest,
-            self._outliers, self._far_outliers]
+            self._outliers,self._far_outliers,self._normaltest]
 
         # coerce continuous data to numeric
         cont_data = data[self._continuous].apply(pd.to_numeric, errors='coerce')
