@@ -138,10 +138,8 @@ class TestTableOne(object):
 
     @with_setup(setup, teardown)
     def test_hello_travis(self):
-
         x = 'hello'
         y = 'travis'
-
         assert x != y
 
     @with_setup(setup, teardown)
@@ -341,7 +339,7 @@ class TestTableOne(object):
 
     def test_input_data_not_modified(self):
         """
-        Test to check the input dataframe is not modified by the package
+        Check the input dataframe is not modified by the package
         """
         df_orig = self.data_groups.copy()
 
@@ -451,8 +449,8 @@ class TestTableOne(object):
         """
         df = self.data_pn.copy()
 
-        columns = ['Age', 'SysABP', 'Height', 'Weight', 'death']
-        groupby = 'death'
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU']
+        groupby = 'ICU'
         group_levels = df[groupby].unique()
 
         # collect the possible column names
@@ -466,7 +464,7 @@ class TestTableOne(object):
 
         for c in tableone_columns:
             # for each output column name in tableone, try them as a group
-            df.loc[0:20,'death'] = c
+            df.loc[0:20,'ICU'] = c
             if 'adjust' in c:
                 pval_adjust='b'
             else:
@@ -476,61 +474,10 @@ class TestTableOne(object):
                 table = TableOne(df, columns=columns, groupby=groupby, pval=True, 
                     pval_adjust=pval_adjust)
 
-
-    @with_setup(setup, teardown)
-    def test_tableone_columns_in_consistent_order_pbc(self):
-        """
-        Test output columns in TableOne are always in the same order
-        """
-        df = self.data_pbc.copy()
-        columns = ['age', 'albumin', 'ast']
-        groupby = 'sex'
-
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
-
-        assert table.tableone.columns.levels[1][0] == 'isnull'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval'
-
-        df.loc[df['sex']=='f', 'sex'] = 'q'
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True, 
-            pval_adjust='bonferroni')
-
-
-        assert table.tableone.columns.levels[1][0] == 'isnull'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
-        table
-
-    @with_setup(setup, teardown)
-    def test_tableone_columns_in_consistent_order_pn(self):
-        """
-        Test output columns in TableOne are always in the same order
-        """
-        df = self.data_pn.copy()
-        columns = ['Age', 'SysABP', 'Height', 'Weight','death']
-        groupby = 'death'
-
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
-
-        assert table.tableone.columns.levels[1][0] == 'isnull'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval'
-
-        df.loc[df['death']=='0', 'death'] = 'q'
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True, 
-            pval_adjust='bonferroni')
-
-
-        assert table.tableone.columns.levels[1][0] == 'isnull'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
-        table
-
     @with_setup(setup, teardown)
     def test_label_dictionary_input_pbc(self):
         """
-        Test output columns in TableOne are always in the same order
+        Test columns and rows are relabelled with the label argument
         """
         df = self.data_pbc.copy()
         columns = ['age', 'albumin', 'ast', 'trt']
@@ -553,7 +500,7 @@ class TestTableOne(object):
     @with_setup(setup, teardown)
     def test_label_dictionary_input_pn(self):
         """
-        Test output columns in TableOne are always in the same order
+        Test columns and rows are relabelled with the label argument
         """
         df = self.data_pn.copy()
         columns = ['Age', 'ICU','death']
@@ -605,9 +552,7 @@ class TestTableOne(object):
         Test sort functionality of TableOne
         """
         df = self.data_pn.copy()
-        columns = ['hepato', 'spiders', 'edema', 'age', 'albumin', 'ast']
-        groupby = 'sex'
-
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         table = TableOne(df, columns=columns)
 
         # a call to .index.levels[0] automatically sorts the levels
@@ -638,71 +583,6 @@ class TestTableOne(object):
         except:
             # unexpected error - raise it
             raise
-
-    @with_setup(setup, teardown)
-    def test_groupby_with_group_named_isnull_pbc(self):
-        """
-        Test case with a group having the same name as a column in TableOne
-        """
-        df = self.data_pbc.copy()
-
-        columns = ['age', 'albumin', 'ast']
-        groupby = 'sex'
-        group_levels = df[groupby].unique()
-
-        # collect the possible column names
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
-        tableone_columns = list(table.tableone.columns.levels[1])
-
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='b')
-        tableone_columns = tableone_columns + list(table.tableone.columns.levels[1])
-        tableone_columns = np.unique(tableone_columns)
-        tableone_columns = [c for c in tableone_columns if c not in group_levels]
-
-        for c in tableone_columns:
-            # for each output column name in tableone, try them as a group
-            df.loc[0:20,'sex'] = c
-            if 'adjust' in c:
-                pval_adjust='b'
-            else:
-                pval_adjust=None
-
-            with assert_raises(InputError):
-                table = TableOne(df, columns=columns, groupby=groupby, pval=True, 
-                    pval_adjust=pval_adjust)
-
-    @with_setup(setup, teardown)
-    def test_groupby_with_group_named_isnull_pn(self):
-        """
-        Test case with a group having the same name as a column in TableOne
-        """
-        df = self.data_pbc.copy()
-
-        columns = ['age', 'albumin', 'ast']
-        groupby = 'sex'
-        group_levels = df[groupby].unique()
-
-        # collect the possible column names
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
-        tableone_columns = list(table.tableone.columns.levels[1])
-
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='b')
-        tableone_columns = tableone_columns + list(table.tableone.columns.levels[1])
-        tableone_columns = np.unique(tableone_columns)
-        tableone_columns = [c for c in tableone_columns if c not in group_levels]
-
-        for c in tableone_columns:
-            # for each output column name in tableone, try them as a group
-            df.loc[0:20,'sex'] = c
-            if 'adjust' in c:
-                pval_adjust='b'
-            else:
-                pval_adjust=None
-
-            with assert_raises(InputError):
-                table = TableOne(df, columns=columns, groupby=groupby, pval=True, 
-                    pval_adjust=pval_adjust)
-
 
     @with_setup(setup, teardown)
     def test_tableone_columns_in_consistent_order_pbc(self):
@@ -752,104 +632,6 @@ class TestTableOne(object):
         assert table.tableone.columns.levels[1][-1] == 'ptest'
         assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
         table
-
-    @with_setup(setup, teardown)
-    def test_label_dictionary_input_pbc(self):
-        """
-        Test output columns in TableOne are always in the same order
-        """
-        df = self.data_pbc.copy()
-        columns = ['age', 'albumin', 'ast', 'trt']
-        categorical = ['trt']
-        groupby = 'sex'
-
-        labels = {'sex': 'gender', 'trt': 'treatment', 
-        'ast': 'Aspartate Aminotransferase'}
-
-        table = TableOne(df, columns=columns, categorical=categorical, 
-            groupby=groupby, labels=labels)
-
-        # check the header column is updated (groupby variable)
-        assert table.tableone.columns.levels[0][0] == 'Grouped by gender'
-
-        # check the categorical rows are updated
-        assert 'treatment' in table.tableone.index.levels[0]
-
-        # check the continuous rows are updated
-        assert 'Aspartate Aminotransferase' in table.tableone.index.levels[0]
-
-    @with_setup(setup, teardown)
-    def test_label_dictionary_input_pn(self):
-        """
-        Test output columns in TableOne are always in the same order
-        """
-        df = self.data_pn.copy()
-        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
-        categorical = ['ICU', 'death']
-        groupby = ['death']
-
-        labels = {'Age': 'Age, years', 'death': 'Mortality', 
-        'ICU': 'Intensive Care Unit'}
-
-        table = TableOne(df, columns=columns, categorical=categorical, 
-            groupby=groupby, labels=labels)
-
-        # check the header column is updated (groupby variable)
-        assert table.tableone.columns.levels[0][0] == 'Grouped by Mortality'
-
-        # check the categorical rows are updated
-        assert 'Intensive Care Unit' in table.tableone.index.levels[0]
-
-        # check the continuous rows are updated
-        assert 'Age, years' in table.tableone.index.levels[0]
-
-    @with_setup(setup, teardown)
-    def test_tableone_row_sort_pbc(self):
-        """
-        Test sort functionality of TableOne
-        """
-        df = self.data_pbc.copy()
-        columns = ['hepato', 'spiders', 'edema', 'age', 'albumin', 'ast']
-        table = TableOne(df, columns=columns)
-
-        # a call to .index.levels[0] automatically sorts the levels
-        # instead, call values and use pd.unique as it preserves order
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
-
-        # default should not sort
-        for i, c in enumerate(columns):
-            # i+1 because we skip the first row, 'n'
-            assert tableone_rows[i+1] == c
-
-        table = TableOne(df, columns=columns, sort=True)
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
-        for i, c in enumerate(np.sort(columns)):
-            # i+1 because we skip the first row, 'n'
-            assert tableone_rows[i+1] == c
-
-    @with_setup(setup, teardown)
-    def test_tableone_row_sort_pn(self):
-        """
-        Test sort functionality of TableOne
-        """
-        df = self.data_pn.copy()
-        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
-        table = TableOne(df, columns=columns)
-
-        # a call to .index.levels[0] automatically sorts the levels
-        # instead, call values and use pd.unique as it preserves order
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
-
-        # default should not sort
-        for i, c in enumerate(columns):
-            # i+1 because we skip the first row, 'n'
-            assert tableone_rows[i+1] == c
-
-        table = TableOne(df, columns=columns, sort=True)
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
-        for i, c in enumerate(np.sort(columns)):
-            # i+1 because we skip the first row, 'n'
-            assert tableone_rows[i+1] == c
 
     @with_setup(setup, teardown)
     def test_check_null_counts_are_correct_pbc(self):
