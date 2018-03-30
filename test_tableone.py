@@ -18,21 +18,12 @@ class TestTableOne(object):
         """
         seed = 12345
         np.random.seed(seed)
-
-        self.data_pbc = self.create_pbc_dataset()
         self.data_pn = self.create_pn_dataset()
         self.data_sample = self.create_sample_dataset(n = 10000)
         self.data_small = self.create_small_dataset()
         self.data_groups = self.create_another_dataset(n = 20)
         self.data_categorical = self.create_categorical_dataset()
         self.data_mixed = self.create_mixed_datatypes_dataset()
-
-    def create_pbc_dataset(self):
-        """
-        create pbc dataset
-        """
-        url="https://raw.githubusercontent.com/tompollard/data/master/primary-biliary-cirrhosis/pbc.csv"
-        return pd.read_csv(url)
 
     def create_pn_dataset(self):
         """
@@ -141,19 +132,6 @@ class TestTableOne(object):
         x = 'hello'
         y = 'travis'
         assert x != y
-
-    @with_setup(setup, teardown)
-    def test_examples_used_in_the_readme_run_without_raising_error_pbc(self):
-
-        columns = ['time','age','bili','chol','albumin','copper',
-            'alk.phos','ast','trig','platelet','protime',
-            'status', 'ascites', 'hepato', 'spiders', 'edema',
-            'stage', 'sex']
-        catvars = ['status', 'ascites', 'hepato', 'spiders', 'edema','stage', 'sex']
-        groupby = 'trt'
-        nonnormal = ['bili']
-        mytable = TableOne(self.data_pbc, columns, catvars, groupby, nonnormal, pval=False)
-        # mytable = TableOne(self.data_pbc, columns, catvars, groupby, nonnormal, pval=True)
 
     @with_setup(setup, teardown)
     def test_examples_used_in_the_readme_run_without_raising_error_pn(self):
@@ -298,26 +276,6 @@ class TestTableOne(object):
         assert t3 < 0.05
 
     @with_setup(setup, teardown)
-    def test_limit_of_categorical_data_pbc(self):
-        """
-        Tests the `limit` keyword arg, which limits the number of categories presented
-        """
-        data_pbc = self.data_pbc.copy()
-        # 6 categories of age based on decade
-        data_pbc['age_group'] = data_pbc['age'].map(lambda x: int(x/10))
-
-        # limit
-        columns = ['age_group', 'age', 'sex', 'albumin', 'ast']
-        categorical = ['age_group', 'sex']
-
-        # test it limits to 3
-        table = TableOne(data_pbc, columns=columns, categorical=categorical, limit=3)
-        assert table.tableone.loc['age_group',:].shape[0] == 3
-
-        # test other categories are not affected if limit > num categories
-        assert table.tableone.loc['sex',:].shape[0] == 2
-
-    @with_setup(setup, teardown)
     def test_limit_of_categorical_data_pn(self):
         """
         Tests the `limit` keyword arg, which limits the number of categories presented
@@ -411,38 +369,6 @@ class TestTableOne(object):
         # warnings.simplefilter("default")
 
     @with_setup(setup, teardown)
-    def test_groupby_with_group_named_isnull_pbc(self):
-        """
-        Test case with a group having the same name as a column in TableOne
-        """
-        df = self.data_pbc.copy()
-
-        columns = ['age', 'albumin', 'ast']
-        groupby = 'sex'
-        group_levels = df[groupby].unique()
-
-        # collect the possible column names
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
-        tableone_columns = list(table.tableone.columns.levels[1])
-
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='b')
-        tableone_columns = tableone_columns + list(table.tableone.columns.levels[1])
-        tableone_columns = np.unique(tableone_columns)
-        tableone_columns = [c for c in tableone_columns if c not in group_levels]
-
-        for c in tableone_columns:
-            # for each output column name in tableone, try them as a group
-            df.loc[0:20,'sex'] = c
-            if 'adjust' in c:
-                pval_adjust='b'
-            else:
-                pval_adjust=None
-
-            with assert_raises(InputError):
-                table = TableOne(df, columns=columns, groupby=groupby, pval=True, 
-                    pval_adjust=pval_adjust)
-
-    @with_setup(setup, teardown)
     def test_groupby_with_group_named_isnull_pn(self):
         """
         Test case with a group having the same name as a column in TableOne
@@ -475,29 +401,6 @@ class TestTableOne(object):
                     pval_adjust=pval_adjust)
 
     @with_setup(setup, teardown)
-    def test_label_dictionary_input_pbc(self):
-        """
-        Test columns and rows are relabelled with the label argument
-        """
-        df = self.data_pbc.copy()
-        columns = ['age', 'albumin', 'ast', 'trt']
-        categorical = ['trt']
-        groupby = 'sex'
-
-        labels = {'sex': 'gender', 'trt': 'treatment', 'ast': 'Aspartate Aminotransferase'}
-
-        table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, labels=labels)
-
-        # check the header column is updated (groupby variable)
-        assert table.tableone.columns.levels[0][0] == 'Grouped by gender'
-
-        # check the categorical rows are updated
-        assert 'treatment' in table.tableone.index.levels[0]
-
-        # check the continuous rows are updated
-        assert 'Aspartate Aminotransferase' in table.tableone.index.levels[0]
-
-    @with_setup(setup, teardown)
     def test_label_dictionary_input_pn(self):
         """
         Test columns and rows are relabelled with the label argument
@@ -519,32 +422,6 @@ class TestTableOne(object):
 
         # check the continuous rows are updated
         assert 'Age, years' in table.tableone.index.levels[0]
-
-    @with_setup(setup, teardown)
-    def test_tableone_row_sort_pbc(self):
-        """
-        Test sort functionality of TableOne
-        """
-        df = self.data_pbc.copy()
-        columns = ['hepato', 'spiders', 'edema', 'age', 'albumin', 'ast']
-        groupby = 'sex'
-
-        table = TableOne(df, columns=columns)
-
-        # a call to .index.levels[0] automatically sorts the levels
-        # instead, call values and use pd.unique as it preserves order
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
-
-        # default should not sort
-        for i, c in enumerate(columns):
-            # i+1 because we skip the first row, 'n'
-            assert tableone_rows[i+1] == c
-
-        table = TableOne(df, columns=columns, sort=True)
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
-        for i, c in enumerate(np.sort(columns)):
-            # i+1 because we skip the first row, 'n'
-            assert tableone_rows[i+1] == c
 
     @with_setup(setup, teardown)
     def test_tableone_row_sort_pn(self):
@@ -585,30 +462,6 @@ class TestTableOne(object):
             raise
 
     @with_setup(setup, teardown)
-    def test_tableone_columns_in_consistent_order_pbc(self):
-        """
-        Test output columns in TableOne are always in the same order
-        """
-        df = self.data_pbc.copy()
-        columns = ['age', 'albumin', 'ast']
-        groupby = 'sex'
-
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
-
-        assert table.tableone.columns.levels[1][0] == 'isnull'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval'
-
-        df.loc[df['sex']=='f', 'sex'] = 'q'
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True, 
-            pval_adjust='bonferroni')
-
-        assert table.tableone.columns.levels[1][0] == 'isnull'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
-        table
-
-    @with_setup(setup, teardown)
     def test_tableone_columns_in_consistent_order_pn(self):
         """
         Test output columns in TableOne are always in the same order
@@ -632,40 +485,6 @@ class TestTableOne(object):
         assert table.tableone.columns.levels[1][-1] == 'ptest'
         assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
         table
-
-    @with_setup(setup, teardown)
-    def test_check_null_counts_are_correct_pbc(self):
-        """
-        Test that the isnull column is correctly reporting number of nulls
-        """
-        columns = ['age','bili','albumin','ast','platelet','protime',
-                   'ascites','hepato','spiders', 'edema','sex','trt']
-        categorical = ['ascites','hepato','edema','sex','spiders','trt']
-        groupby = 'trt'
-
-        # test when not grouping
-        table = TableOne(self.data_pbc, columns, categorical)
-
-        # get isnull column only
-        isnull = table.tableone.iloc[:,0]
-        for i, v in enumerate(isnull):
-            # skip empty rows by checking value is not a string
-            if 'float' in str(type(v)):
-                # check each null count is correct
-                col = isnull.index[i][0]
-                assert self.data_pbc[col].isnull().sum() == v
-
-        # test when grouping by a variable
-        grouped_table = TableOne(self.data_pbc, columns, categorical, groupby)
-
-        # get isnull column only
-        isnull = grouped_table.tableone.iloc[:,0]
-        for i, v in enumerate(isnull):
-            # skip empty rows by checking value is not a string
-            if 'float' in str(type(v)):
-                # check each null count is correct
-                col = isnull.index[i][0]
-                assert self.data_pbc[col].isnull().sum() == v
 
     @with_setup(setup, teardown)
     def test_check_null_counts_are_correct_pn(self):
