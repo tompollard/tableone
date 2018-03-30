@@ -24,6 +24,9 @@ The `tableone notebook <https://github.com/tompollard/tableone/blob/master/table
 
 Additional options include:
 
-* specifying a subset of columns
-* specifying the data type (categorical, numerical)
-* calculating p-values (warning: none of these p-values are adjusted for multiple hypothesis testing)
+* Select a subset of columns
+* Specify the data type (e.g. `categorical`, `numerical`, `nonnormal`)
+* Compute p-values, and adjusting for multiple testing (e.g. with the Bonferroni correction)
+* Provide a list of alternative labels for variables
+* Limit the output of categorical variables to the top N rows.
+* Display remarks relating to the appopriateness of summary measures (for example, computing tests for multimodality and normality).
