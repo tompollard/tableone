@@ -210,7 +210,8 @@ class TestTableOne(object):
         assert table_no_args._categorical == table_with_args._categorical
         assert table_no_args._remarks == table_with_args._remarks
         assert (table_no_args.tableone.columns == table_with_args.tableone.columns).all()
-        assert (table_no_args.tableone['overall'].values == table_with_args.tableone['overall'].values).all()
+        assert (table_no_args.tableone['overall'].values == \
+            table_with_args.tableone['overall'].values).all()
         assert (table_no_args.tableone == table_with_args.tableone).all().all()
 
     @with_setup(setup, teardown)
@@ -219,12 +220,14 @@ class TestTableOne(object):
         Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
         """
         categorical=['group1','group3']
-        table = TableOne(self.data_small, categorical=categorical, groupby='group2', pval=True)
+        table = TableOne(self.data_small, categorical=categorical, groupby='group2', 
+            pval=True)
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
         assert table._significance_table.loc['group1','ptest'] == "Fisher's exact"
-        assert table._significance_table.loc['group3','ptest'] == 'Chi-squared (warning: expected count < 5)'
+        assert table._significance_table.loc['group3','ptest'] == \
+            'Chi-squared (warning: expected count < 5)'
 
     @with_setup(setup, teardown)
     def test_sequence_of_cont_table(self):
@@ -410,9 +413,11 @@ class TestTableOne(object):
         categorical = ['death','ICU']
         groupby = 'death'
 
-        labels = {'death': 'mortality', 'Age': 'Age, years', 'ICU': 'Intensive Care Unit'}
+        labels = {'death': 'mortality', 'Age': 'Age, years', 
+        'ICU': 'Intensive Care Unit'}
 
-        table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, labels=labels)
+        table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, 
+            labels=labels)
 
         # check the header column is updated (groupby variable)
         assert table.tableone.columns.levels[0][0] == 'Grouped by mortality'
@@ -456,7 +461,8 @@ class TestTableOne(object):
             # Trigger the categorical warning
             table = TableOne(self.data_mixed, categorical=[])
         except InputError as e:
-            assert e.args[0].startswith("The following continuous column(s) have non-numeric values")
+            starts_str = "The following continuous column(s) have non-numeric values"
+            assert e.args[0].startswith(starts_str)
         except:
             # unexpected error - raise it
             raise
@@ -519,4 +525,3 @@ class TestTableOne(object):
                 # check each null count is correct
                 col = isnull.index[i][0]
                 assert self.data_pn[col].isnull().sum() == v
-
