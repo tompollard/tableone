@@ -5,10 +5,15 @@ TableOne
     :target: https://travis-ci.org/tompollard/tableone
 
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.837898.svg
-   :target: https://doi.org/10.5281/zenodo.837898
+    :target: https://doi.org/10.5281/zenodo.837898
 
 .. image:: https://anaconda.org/conda-forge/tableone/badges/installer/conda.svg
-   :target: https://conda.anaconda.org/conda-forge
+    :target: https://conda.anaconda.org/conda-forge
+
+.. image:: https://readthedocs.org/projects/tableone/badge/?version=latest
+    :target: http://tableone.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+                
 
 tableone is a package for creating "Table 1" summary statistics for a patient 
 population. It was inspired by the R package of the same name by Yoshida and 
