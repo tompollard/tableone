@@ -18,19 +18,18 @@ class TestTableOne(object):
         """
         seed = 12345
         np.random.seed(seed)
-
-        self.data_pbc = self.create_pbc_dataset()
+        self.data_pn = self.create_pn_dataset()
         self.data_sample = self.create_sample_dataset(n = 10000)
         self.data_small = self.create_small_dataset()
         self.data_groups = self.create_another_dataset(n = 20)
         self.data_categorical = self.create_categorical_dataset()
         self.data_mixed = self.create_mixed_datatypes_dataset()
 
-    def create_pbc_dataset(self):
+    def create_pn_dataset(self):
         """
-        create pbc dataset
+        create pn dataset
         """
-        url="https://raw.githubusercontent.com/tompollard/data/master/primary-biliary-cirrhosis/pbc.csv"
+        url="https://raw.githubusercontent.com/tompollard/tableone/master/data/pn2012_demo.csv"
         return pd.read_csv(url)
 
     def create_sample_dataset(self, n):
@@ -130,24 +129,19 @@ class TestTableOne(object):
 
     @with_setup(setup, teardown)
     def test_hello_travis(self):
-
         x = 'hello'
         y = 'travis'
-
         assert x != y
 
     @with_setup(setup, teardown)
-    def test_examples_used_in_the_readme_run_without_raising_error(self):
+    def test_examples_used_in_the_readme_run_without_raising_error_pn(self):
 
-        columns = ['time','age','bili','chol','albumin','copper',
-            'alk.phos','ast','trig','platelet','protime',
-            'status', 'ascites', 'hepato', 'spiders', 'edema',
-            'stage', 'sex']
-        catvars = ['status', 'ascites', 'hepato', 'spiders', 'edema','stage', 'sex']
-        groupby = 'trt'
-        nonnormal = ['bili']
-        mytable = TableOne(self.data_pbc, columns, catvars, groupby, nonnormal, pval=False)
-        # mytable = TableOne(self.data_pbc, columns, catvars, groupby, nonnormal, pval=True)
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
+        categorical = ['ICU', 'death']
+        groupby = ['death']
+        nonnormal = ['Age']
+        mytable = TableOne(self.data_pn, columns=columns, categorical=categorical,
+            groupby=groupby, nonnormal=nonnormal, pval=False)
 
     @with_setup(setup, teardown)
     def test_overall_mean_and_std_as_expected_for_cont_variable(self):
@@ -216,7 +210,8 @@ class TestTableOne(object):
         assert table_no_args._categorical == table_with_args._categorical
         assert table_no_args._remarks == table_with_args._remarks
         assert (table_no_args.tableone.columns == table_with_args.tableone.columns).all()
-        assert (table_no_args.tableone['overall'].values == table_with_args.tableone['overall'].values).all()
+        assert (table_no_args.tableone['overall'].values == \
+            table_with_args.tableone['overall'].values).all()
         assert (table_no_args.tableone == table_with_args.tableone).all().all()
 
     @with_setup(setup, teardown)
@@ -225,12 +220,14 @@ class TestTableOne(object):
         Ensure that the package runs Fisher exact if cell counts are <=5 and it's a 2x2
         """
         categorical=['group1','group3']
-        table = TableOne(self.data_small, categorical=categorical, groupby='group2', pval=True)
+        table = TableOne(self.data_small, categorical=categorical, groupby='group2', 
+            pval=True)
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
         assert table._significance_table.loc['group1','ptest'] == "Fisher's exact"
-        assert table._significance_table.loc['group3','ptest'] == 'Chi-squared (warning: expected count < 5)'
+        assert table._significance_table.loc['group3','ptest'] == \
+            'Chi-squared (warning: expected count < 5)'
 
     @with_setup(setup, teardown)
     def test_sequence_of_cont_table(self):
@@ -282,28 +279,28 @@ class TestTableOne(object):
         assert t3 < 0.05
 
     @with_setup(setup, teardown)
-    def test_limit_of_categorical_data(self):
+    def test_limit_of_categorical_data_pn(self):
         """
         Tests the `limit` keyword arg, which limits the number of categories presented
         """
-        data_pbc = self.data_pbc
+        data_pn = self.data_pn.copy()
         # 6 categories of age based on decade
-        data_pbc['age_group'] = data_pbc['age'].map(lambda x: int(x/10))
+        data_pn['age_group'] = data_pn['Age'].map(lambda x: int(x/10))
 
-        # limit
-        columns = ['age_group', 'age', 'sex', 'albumin', 'ast']
-        categorical = ['age_group', 'sex']
+        # limit 
+        columns = ['age_group', 'Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
+        categorical = ['age_group','ICU', 'death']
 
         # test it limits to 3
-        table = TableOne(data_pbc, columns=columns, categorical=categorical, limit=3)
+        table = TableOne(data_pn, columns=columns, categorical=categorical, limit=3)
         assert table.tableone.loc['age_group',:].shape[0] == 3
 
         # test other categories are not affected if limit > num categories
-        assert table.tableone.loc['sex',:].shape[0] == 2
+        assert table.tableone.loc['death',:].shape[0] == 2
 
     def test_input_data_not_modified(self):
         """
-        Test to check the input dataframe is not modified by the package
+        Check the input dataframe is not modified by the package
         """
         df_orig = self.data_groups.copy()
 
@@ -375,14 +372,14 @@ class TestTableOne(object):
         # warnings.simplefilter("default")
 
     @with_setup(setup, teardown)
-    def test_groupby_with_group_named_isnull(self):
+    def test_groupby_with_group_named_isnull_pn(self):
         """
         Test case with a group having the same name as a column in TableOne
         """
-        df = self.data_pbc.copy()
+        df = self.data_pn.copy()
 
-        columns = ['age', 'albumin', 'ast']
-        groupby = 'sex'
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU']
+        groupby = 'ICU'
         group_levels = df[groupby].unique()
 
         # collect the possible column names
@@ -396,72 +393,48 @@ class TestTableOne(object):
 
         for c in tableone_columns:
             # for each output column name in tableone, try them as a group
-            df.loc[0:20,'sex'] = c
+            df.loc[0:20,'ICU'] = c
             if 'adjust' in c:
                 pval_adjust='b'
             else:
                 pval_adjust=None
 
             with assert_raises(InputError):
-                table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust=pval_adjust)
+                table = TableOne(df, columns=columns, groupby=groupby, pval=True, 
+                    pval_adjust=pval_adjust)
 
     @with_setup(setup, teardown)
-    def test_tableone_columns_in_consistent_order(self):
+    def test_label_dictionary_input_pn(self):
         """
-        Test output columns in TableOne are always in the same order
+        Test columns and rows are relabelled with the label argument
         """
-        df = self.data_pbc.copy()
-        columns = ['age', 'albumin', 'ast']
-        groupby = 'sex'
+        df = self.data_pn.copy()
+        columns = ['Age', 'ICU','death']
+        categorical = ['death','ICU']
+        groupby = 'death'
 
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
+        labels = {'death': 'mortality', 'Age': 'Age, years', 
+        'ICU': 'Intensive Care Unit'}
 
-        assert table.tableone.columns.levels[1][0] == 'isnull'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval'
-
-        df.loc[df['sex']=='f', 'sex'] = 'q'
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='bonferroni')
-
-
-        assert table.tableone.columns.levels[1][0] == 'isnull'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
-        table
-
-    @with_setup(setup, teardown)
-    def test_label_dictionary_input(self):
-        """
-        Test output columns in TableOne are always in the same order
-        """
-        df = self.data_pbc.copy()
-        columns = ['age', 'albumin', 'ast', 'trt']
-        categorical = ['trt']
-        groupby = 'sex'
-
-        labels = {'sex': 'gender', 'trt': 'treatment', 'ast': 'Aspartate Aminotransferase'}
-
-        table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, labels=labels)
+        table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, 
+            labels=labels)
 
         # check the header column is updated (groupby variable)
-        assert table.tableone.columns.levels[0][0] == 'Grouped by gender'
+        assert table.tableone.columns.levels[0][0] == 'Grouped by mortality'
 
         # check the categorical rows are updated
-        assert 'treatment' in table.tableone.index.levels[0]
+        assert 'Intensive Care Unit' in table.tableone.index.levels[0]
 
         # check the continuous rows are updated
-        assert 'Aspartate Aminotransferase' in table.tableone.index.levels[0]
-
+        assert 'Age, years' in table.tableone.index.levels[0]
 
     @with_setup(setup, teardown)
-    def test_tableone_row_sort(self):
+    def test_tableone_row_sort_pn(self):
         """
         Test sort functionality of TableOne
         """
-        df = self.data_pbc.copy()
-        columns = ['hepato', 'spiders', 'edema', 'age', 'albumin', 'ast']
-        groupby = 'sex'
-
+        df = self.data_pn.copy()
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         table = TableOne(df, columns=columns)
 
         # a call to .index.levels[0] automatically sorts the levels
@@ -488,50 +461,21 @@ class TestTableOne(object):
             # Trigger the categorical warning
             table = TableOne(self.data_mixed, categorical=[])
         except InputError as e:
-            assert e.args[0].startswith("The following continuous column(s) have non-numeric values")
+            starts_str = "The following continuous column(s) have non-numeric values"
+            assert e.args[0].startswith(starts_str)
         except:
             # unexpected error - raise it
             raise
 
     @with_setup(setup, teardown)
-    def test_groupby_with_group_named_isnull(self):
-        """
-        Test case with a group having the same name as a column in TableOne
-        """
-        df = self.data_pbc.copy()
-
-        columns = ['age', 'albumin', 'ast']
-        groupby = 'sex'
-        group_levels = df[groupby].unique()
-
-        # collect the possible column names
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
-        tableone_columns = list(table.tableone.columns.levels[1])
-
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='b')
-        tableone_columns = tableone_columns + list(table.tableone.columns.levels[1])
-        tableone_columns = np.unique(tableone_columns)
-        tableone_columns = [c for c in tableone_columns if c not in group_levels]
-
-        for c in tableone_columns:
-            # for each output column name in tableone, try them as a group
-            df.loc[0:20,'sex'] = c
-            if 'adjust' in c:
-                pval_adjust='b'
-            else:
-                pval_adjust=None
-
-            with assert_raises(InputError):
-                table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust=pval_adjust)
-
-    @with_setup(setup, teardown)
-    def test_tableone_columns_in_consistent_order(self):
+    def test_tableone_columns_in_consistent_order_pn(self):
         """
         Test output columns in TableOne are always in the same order
         """
-        df = self.data_pbc.copy()
-        columns = ['age', 'albumin', 'ast']
-        groupby = 'sex'
+        df = self.data_pn.copy()
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
+        categorical = ['ICU', 'death']
+        groupby = ['death']
 
         table = TableOne(df, columns=columns, groupby=groupby, pval=True)
 
@@ -539,9 +483,9 @@ class TestTableOne(object):
         assert table.tableone.columns.levels[1][-1] == 'ptest'
         assert table.tableone.columns.levels[1][-2] == 'pval'
 
-        df.loc[df['sex']=='f', 'sex'] = 'q'
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True, pval_adjust='bonferroni')
-
+        df.loc[df['death']==0, 'death'] = 2
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True, 
+            pval_adjust='bonferroni')
 
         assert table.tableone.columns.levels[1][0] == 'isnull'
         assert table.tableone.columns.levels[1][-1] == 'ptest'
@@ -549,68 +493,16 @@ class TestTableOne(object):
         table
 
     @with_setup(setup, teardown)
-    def test_label_dictionary_input(self):
-        """
-        Test output columns in TableOne are always in the same order
-        """
-        df = self.data_pbc.copy()
-        columns = ['age', 'albumin', 'ast', 'trt']
-        categorical = ['trt']
-        groupby = 'sex'
-
-        labels = {'sex': 'gender', 'trt': 'treatment', 'ast': 'Aspartate Aminotransferase'}
-
-        table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, labels=labels)
-
-        # check the header column is updated (groupby variable)
-        assert table.tableone.columns.levels[0][0] == 'Grouped by gender'
-
-        # check the categorical rows are updated
-        assert 'treatment' in table.tableone.index.levels[0]
-
-        # check the continuous rows are updated
-        assert 'Aspartate Aminotransferase' in table.tableone.index.levels[0]
-
-
-    @with_setup(setup, teardown)
-    def test_tableone_row_sort(self):
-        """
-        Test sort functionality of TableOne
-        """
-        df = self.data_pbc.copy()
-        columns = ['hepato', 'spiders', 'edema', 'age', 'albumin', 'ast']
-        groupby = 'sex'
-
-        table = TableOne(df, columns=columns)
-
-        # a call to .index.levels[0] automatically sorts the levels
-        # instead, call values and use pd.unique as it preserves order
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
-
-        # default should not sort
-        for i, c in enumerate(columns):
-            # i+1 because we skip the first row, 'n'
-            assert tableone_rows[i+1] == c
-
-        table = TableOne(df, columns=columns, sort=True)
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
-        for i, c in enumerate(np.sort(columns)):
-            # i+1 because we skip the first row, 'n'
-            assert tableone_rows[i+1] == c
-
-
-    @with_setup(setup, teardown)
-    def test_check_null_counts_are_correct(self):
+    def test_check_null_counts_are_correct_pn(self):
         """
         Test that the isnull column is correctly reporting number of nulls
         """
-        columns = ['age','bili','albumin','ast','platelet','protime',
-                   'ascites','hepato','spiders', 'edema','sex','trt']
-        categorical = ['ascites','hepato','edema','sex','spiders','trt']
-        groupby = 'trt'
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
+        categorical = ['ICU', 'death']
+        groupby = ['death']
 
         # test when not grouping
-        table = TableOne(self.data_pbc, columns, categorical)
+        table = TableOne(self.data_pn, columns=columns, categorical=categorical)
 
         # get isnull column only
         isnull = table.tableone.iloc[:,0]
@@ -619,10 +511,11 @@ class TestTableOne(object):
             if 'float' in str(type(v)):
                 # check each null count is correct
                 col = isnull.index[i][0]
-                assert self.data_pbc[col].isnull().sum() == v
+                assert self.data_pn[col].isnull().sum() == v
 
         # test when grouping by a variable
-        grouped_table = TableOne(self.data_pbc, columns, categorical, groupby)
+        grouped_table = TableOne(self.data_pn, columns=columns, 
+            categorical=categorical, groupby=groupby)
 
         # get isnull column only
         isnull = grouped_table.tableone.iloc[:,0]
@@ -631,4 +524,4 @@ class TestTableOne(object):
             if 'float' in str(type(v)):
                 # check each null count is correct
                 col = isnull.index[i][0]
-                assert self.data_pbc[col].isnull().sum() == v
+                assert self.data_pn[col].isnull().sum() == v
