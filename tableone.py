@@ -536,7 +536,7 @@ class TableOne(object):
             return pval,ptest
 
         # continuous
-        if is_continuous and is_normal and len(*grouped_data) :
+        if is_continuous and is_normal and len(*grouped_data)==2 :
             ptest = 'Two Sample T-test'
             test_stat, pval = stats.ttest_ind(*grouped_data,equal_var=False)
         elif is_continuous and is_normal:
