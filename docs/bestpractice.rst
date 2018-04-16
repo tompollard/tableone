@@ -18,7 +18,7 @@ For normally distributed variables, both estimation and hypothesis testing (prov
 Non-normally distributed variables
 ----------------------------------
 
-For numeric variables, including integer and floating point values in addition to some ordered discrete variables, the `nonnormal` argument of TableOne merits some discussion. The practical consequence of including a variable in the `nonnormal` argument is to rely on rank based methods for estimation of the center and variability of the distribution for the relevant variable, along with non-parametric methods to conduct hypothesis testing evaluating if the distributions of all the groups are the same [4]_ [5]_. Median and interquartile range may provide a more robust summary than mean and standard deviation for skewed distributions or in the presence of outliers, but they may be misleading in cases such as multimodality.
+For numeric variables, including integer and floating point values in addition to some ordered discrete variables, the `nonnormal` argument of TableOne merits some discussion. The practical consequence of including a variable in the `nonnormal` argument is to rely on rank based methods for estimation of the center and variability of the distribution for the relevant variable, along with non-parametric methods to conduct hypothesis testing evaluating if the distributions of all the groups are the same [4]_ [5]_. Median and interquartile range may offer a more robust summary than mean and standard deviation for skewed distributions or in the presence of outliers, but may be misleading in cases such as multimodality.
 
 Comparison of estimates
 -----------------------
@@ -48,7 +48,7 @@ The Bonferroni correction is known to over-correct, effectively reducing the sta
 Summary
 -------
 
-It should be noted that while we have tried to use best practices, automation of even basic statistical tasks can be unsound if done without supervision. We encourage users to use :py:mod:`tableone` alongside other methods of descriptive statistics and, in particular, data visualization to ensure appropriate handling of their data.
+It should be noted that while we have tried to use best practices, automation of even basic statistical tasks can be unsound if done without supervision. We encourage use of :py:mod:`tableone` alongside other methods of descriptive statistics and, in particular, visualization to ensure appropriate data handling.
 
 .. [1] Mohd Razali, Nornadiah & Yap, Bee. (2011). "Power Comparisons of Shapiro-Wilk, 
     Kolmogorov-Smirnov, Lilliefors and Anderson-Darling Tests". Journal of statistical 

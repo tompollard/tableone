@@ -24,6 +24,15 @@ Documentation
 
 For documentation, see: http://tableone.readthedocs.io/en/latest/. An executable demonstration of the package is available as a Jupyter Notebook: https://github.com/tompollard/tableone/blob/master/tableone.ipynb
 
+A note for users of `tableone`
+------------------------------
+
+While we have tried to use best practices in creating this package, automation of even basic statistical tasks can be unsound if done without supervision. We encourage use of `tableone` alongside other methods of descriptive statistics and, in particular, visualization to ensure appropriate data handling. 
+
+It is beyond the scope of our documentation to provide detailed guidance on summary statistics, but as a primer we provide some considerations for choosing parameters when creating a summary table at: http://tableone.readthedocs.io/en/latest/bestpractice.html. 
+
+*Guidance should be sought from a statistician when using `tableone` for a research study, especially prior to submitting the study for publication*.
+
 Installation
 ------------
 
@@ -114,7 +123,7 @@ Example
     m                      21 (13.29)         15 (9.74)    
 
 
-#. Compute p values by setting the ``pval`` argument to True. The name of the test that was used is also displayed::
+#. Compute p values by setting the ``pval`` argument to `True`::
 
     mytable = TableOne(data, columns, categorical, groupby, nonnormal, pval=True)
 
@@ -163,6 +172,6 @@ Example
 
 
 
-#. Tables can be exported to file in various formats, including LaTeX, Markdown, CSV, and HTML. Files are exported by calling the ``to_format`` method on the DataFrame. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
+#. Tables can be exported to file in various formats, including LaTeX, CSV, and HTML. Files are exported by calling the ``to_format`` method on the DataFrame. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
 
     mytable.to_csv('mytable.csv')
