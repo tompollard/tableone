@@ -1,7 +1,7 @@
-TableOne documentation!
+:py:mod:`tableone` documentation!
 ====================================
 
-TableOne is a library for easily producing summary measures of a dataset for use in publications.
+:py:mod:`tableone` is a package for easily producing summary measures of a dataset for use in publications.
 See :doc:`the quickstart <quickstart>` to get started.
 
 .. toctree::
@@ -9,6 +9,7 @@ See :doc:`the quickstart <quickstart>` to get started.
    :caption: Getting Started
 
    quickstart
+   bestpractice
    install
    contributing
 
