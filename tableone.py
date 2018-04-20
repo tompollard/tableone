@@ -84,8 +84,10 @@ class TableOne(object):
             nonnormal = [nonnormal]
 
         # if columns not specified, use all columns
-        if not columns:
+        if type(columns) == type(None):
             columns = data.columns.get_values()
+        elif 'pandas.core.indexes' in str(type(columns)):
+            columns = columns.get_values()
 
         # check that the columns exist in the dataframe
         if not set(columns).issubset(data.columns):
@@ -98,7 +100,11 @@ class TableOne(object):
             raise InputError('Input contains duplicate columns: {}'.format(dups))
 
         # if categorical not specified, try to identify categorical
-        if not categorical and type(categorical) != list:
+        if type(columns) == type(None):
+            categorical = self._detect_categorical_columns(data[columns])
+        elif 'pandas.core.indexes' in str(type(categorical)):
+            categorical = categorical.get_values()
+        elif type(categorical) != list:
             categorical = self._detect_categorical_columns(data[columns])
 
         if pval and not groupby:
@@ -267,7 +273,7 @@ class TableOne(object):
         Compute test for normal distribution.
 
         Null hypothesis: x comes from a normal distribution
-        p < alpha suggests the null hypothesis can be rejected.    
+        p < alpha suggests the null hypothesis can be rejected.
         """
         stat,p = stats.normaltest(x.values, nan_policy='omit')
         return p
