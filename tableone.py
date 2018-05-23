@@ -93,8 +93,8 @@ class TableOne(object):
             raise InputError('Columns not found in dataset: {}'.format(notfound))
 
         # check for duplicate columns
-        dups = data[columns].columns.get_duplicates()
-        if dups:
+        dups = data[columns].columns[data[columns].columns.duplicated()].unique()
+        if not dups.empty:
             raise InputError('Input contains duplicate columns: {}'.format(dups))
 
         # if categorical not specified, try to identify categorical
