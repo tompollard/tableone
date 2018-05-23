@@ -5,7 +5,7 @@ This class contains a number of utilities for summarizing the data using commonl
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.5.6"
+__version__ = "0.5.7"
 
 import pandas as pd
 from scipy import stats
@@ -93,8 +93,8 @@ class TableOne(object):
             raise InputError('Columns not found in dataset: {}'.format(notfound))
 
         # check for duplicate columns
-        dups = data[columns].columns.get_duplicates()
-        if dups:
+        dups = data[columns].columns[data[columns].columns.duplicated()].unique()
+        if not dups.empty:
             raise InputError('Input contains duplicate columns: {}'.format(dups))
 
         # if categorical not specified, try to identify categorical
@@ -483,7 +483,7 @@ class TableOne(object):
             # if categorical, create contingency table
             elif is_categorical:
                 catlevels = sorted(data[v].astype('category').cat.categories)
-                grouped_data = pd.crosstab(data[self._groupby],data[v])
+                grouped_data = pd.crosstab(data[self._groupby].rename('_groupby_var_'),data[v])
                 min_observed = grouped_data.sum(axis=1).min()
 
             # minimum number of observations across all levels
@@ -667,7 +667,7 @@ class TableOne(object):
         n_row = pd.DataFrame(columns = ['variable','level','isnull'])
         n_row.set_index(['variable','level'], inplace=True)
         n_row.loc['n', ''] = None
-        table = pd.concat([n_row,table])
+        table = pd.concat([n_row,table],sort=False)
 
         if self._groupbylvls == ['overall']:
             table.loc['n','overall'] = len(data.index)
