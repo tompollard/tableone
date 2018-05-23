@@ -483,7 +483,7 @@ class TableOne(object):
             # if categorical, create contingency table
             elif is_categorical:
                 catlevels = sorted(data[v].astype('category').cat.categories)
-                grouped_data = pd.crosstab(data[self._groupby],data[v])
+                grouped_data = pd.crosstab(data[self._groupby].rename('_groupby_var_'),data[v])
                 min_observed = grouped_data.sum(axis=1).min()
 
             # minimum number of observations across all levels
