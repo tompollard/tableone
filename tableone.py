@@ -667,7 +667,7 @@ class TableOne(object):
         n_row = pd.DataFrame(columns = ['variable','level','isnull'])
         n_row.set_index(['variable','level'], inplace=True)
         n_row.loc['n', ''] = None
-        table = pd.concat([n_row,table])
+        table = pd.concat([n_row,table],sort=False)
 
         if self._groupbylvls == ['overall']:
             table.loc['n','overall'] = len(data.index)
