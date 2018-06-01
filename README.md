@@ -47,7 +47,6 @@ import pandas as pd
 
 ```python
 url="https://raw.githubusercontent.com/tompollard/tableone/master/data/pn2012_demo.csv"
-
 data=pd.read_csv(url)
 ```
 
