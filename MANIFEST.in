@@ -2,4 +2,4 @@
 include LICENSE
 
 # Include readme file
-include README.md
+include README.rst
