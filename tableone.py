@@ -579,7 +579,11 @@ class TableOne(object):
 
         # add a column of null counts as 1-count() from previous function
         nulltable = data[self._continuous].isnull().sum().to_frame(name='isnull')
-        table = table.join(nulltable)
+        try:
+            table = table.join(nulltable)
+        except TypeError: # if columns form a CategoricalIndex, need to convert to string first
+            table.columns = table.columns.astype(str)
+            table = table.join(nulltable)
 
         # add an empty level column, for joining with cat table
         table['level'] = ''
@@ -606,7 +610,11 @@ class TableOne(object):
         # add the total count of null values across all levels
         isnull = data[self._categorical].isnull().sum().to_frame(name='isnull')
         isnull.index.rename('variable', inplace=True)
-        table = table.join(isnull)
+        try:
+            table = table.join(isnull)
+        except TypeError: # if columns form a CategoricalIndex, need to convert to string first
+            table.columns = table.columns.astype(str)
+            table = table.join(isnull)
 
         # add pval column
         if self._pval and self._pval_adjust:
