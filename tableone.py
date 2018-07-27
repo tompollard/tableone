@@ -40,11 +40,16 @@ class TableOne(object):
     pval : bool, optional
         Display computed p-values (default: False).
     pval_adjust : str, optional
-        Method used to adjust p-values for multiple testing.
-        Available methods are ::
+        Method used to adjust p-values for multiple testing. 
+        For a complete list, see documentation for statsmodels multipletests.
+        Available methods include ::
 
         `None` : no correction applied.
         `bonferroni` : one-step correction
+        `sidak` : one-step correction
+        `holm-sidak` : step down method using Sidak adjustments
+        `simes-hochberg` : step-up method (independent)
+        `hommel` : closed method based on Simes tests (non-negative)
 
     isnull : bool, optional
         Display a count of null values (default: True).
