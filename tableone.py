@@ -626,7 +626,7 @@ class TableOne(object):
             The complete table one.
         """
         if self._continuous and self._categorical:
-            table = pd.concat([self.cont_table,self.cat_table])
+            table = pd.concat([self.cont_table,self.cat_table],sort=False)
         elif self._continuous:
             table = self.cont_table
         elif self._categorical:
