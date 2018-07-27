@@ -928,7 +928,7 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
                     yM_lower[iMM_concave], yF[iHfin[1:]] - D/2])
     # Add points so unimodal curve goes from 0 to 1
     k_start = (yU[1]-yU[0])/(xU[1]-xU[0]+1e-5)
-    xU_start = xU[0] - yU[0]/k_start
+    xU_start = xU[0] - yU[0]/(k_start+1e-5)
     k_end = (yU[-1]-yU[-2])/(xU[-1]-xU[-2]+1e-5)
     xU_end = xU[-1] + (1-yU[-1])/(k_end+1e-5)
     xU = np.hstack([xU_start, xU, xU_end])
