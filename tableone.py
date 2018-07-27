@@ -194,16 +194,16 @@ class TableOne(object):
             if outlier_vars:
                 warnings["Warning, Tukey test indicates far outliers in"] = outlier_vars
 
-            # highlight possible multimodal distributions
-            # using hartigan's dip test
-            modal_mask = self.cont_describe.diptest < 0.05
+            # highlight possible multimodal distributions using hartigan's dip test
+            # -1 values indicate NaN
+            modal_mask = (self.cont_describe.diptest >= 0) & (self.cont_describe.diptest <= 0.05)
             modal_vars = list(self.cont_describe.diptest[modal_mask].dropna(how='all').index)
             if modal_vars:
                 warnings["Warning, Hartigan's Dip Test reports possible multimodal distributions for"] = modal_vars
 
-            # highlight possible multimodal distributions
-            # using hartigan's dip test
-            modal_mask = self.cont_describe.normaltest < 0.001
+            # highlight non normal distributions
+            # -1 values indicate NaN
+            modal_mask = (self.cont_describe.normaltest >= 0) & (self.cont_describe.normaltest <= 0.001)
             modal_vars = list(self.cont_describe.normaltest[modal_mask].dropna(how='all').index)
             if modal_vars:
                 warnings["Warning, test for normality reports non-normal distributions for"] = modal_vars
@@ -265,7 +265,12 @@ class TableOne(object):
 
         p < 0.05 suggests possible multimodality.
         """
-        return modality.hartigan_diptest(x.values)
+        p = modality.hartigan_diptest(x.values)
+        # dropna=False argument in pivot_table does not function as expected
+        # return -1 instead of None
+        if pd.isnull(p):
+            return -1
+        return p
 
     def _normaltest(self,x):
         """
@@ -274,7 +279,14 @@ class TableOne(object):
         Null hypothesis: x comes from a normal distribution
         p < alpha suggests the null hypothesis can be rejected.    
         """
-        stat,p = stats.normaltest(x.values, nan_policy='omit')
+        if len(x.values[~np.isnan(x.values)]) > 10:
+            stat,p = stats.normaltest(x.values, nan_policy='omit')
+        else:
+            p = None
+        # dropna=False argument in pivot_table does not function as expected
+        # return -1 instead of None
+        if pd.isnull(p):
+            return -1
         return p
 
     def _tukey(self,x,threshold):
