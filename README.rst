@@ -22,14 +22,26 @@ Bohn.
 Documentation
 -------------
 
-For documentation, see: http://tableone.readthedocs.io/en/latest/. An executable demonstration of the package is available as a Jupyter Notebook: https://github.com/tompollard/tableone/blob/master/tableone.ipynb
+Documentation is available on `readthedocs <http://tableone.readthedocs.io/en/latest/>`_. An executable demonstration of the package is available on `GitHub as a Jupyter Notebook <https://github.com/tompollard/tableone/blob/master/tableone.ipynb>`_.
+
+Suggested citation
+------------------
+
+If you use tableone in your study, please cite the following paper::
+
+    Tom J Pollard, Alistair E W Johnson, Jesse D Raffa, Roger G Mark; 
+    tableone: An open source Python package for producing summary statistics 
+    for research papers, JAMIA Open, Volume 1, Issue 1, 1 July 2018, Pages 26–31, 
+    https://doi.org/10.1093/jamiaopen/ooy012
+
+Download the BibTex file from: https://academic.oup.com/jamiaopen/downloadcitation/5001910?format=bibtex
 
 A note for users of `tableone`
 ------------------------------
 
 While we have tried to use best practices in creating this package, automation of even basic statistical tasks can be unsound if done without supervision. We encourage use of `tableone` alongside other methods of descriptive statistics and, in particular, visualization to ensure appropriate data handling. 
 
-It is beyond the scope of our documentation to provide detailed guidance on summary statistics, but as a primer we provide some considerations for choosing parameters when creating a summary table at: http://tableone.readthedocs.io/en/latest/bestpractice.html. 
+It is beyond the scope of our documentation to provide detailed guidance on summary statistics, but as a primer we provide some considerations for choosing parameters when creating a summary table in our `documentation <http://tableone.readthedocs.io/en/latest/>`_.
 
 *Guidance should be sought from a statistician when using `tableone` for a research study, especially prior to submitting the study for publication*.
 

@@ -26,7 +26,7 @@ Additional options include:
 
 * Select a subset of columns
 * Specify the data type (e.g. `categorical`, `numerical`, `nonnormal`)
-* Compute p-values, and adjusting for multiple testing (e.g. with the Bonferroni correction)
+* Compute p-values, and adjust for multiple testing (e.g. with the Bonferroni correction)
 * Provide a list of alternative labels for variables
 * Limit the output of categorical variables to the top N rows.
 * Display remarks relating to the appopriateness of summary measures (for example, computing tests for multimodality and normality).

@@ -12,9 +12,7 @@ Where to start?
 ===============
 
 Bug reports, bug fixes, documentation improvements, and other contributions
-are welcome.
-
-For reporting bugs or suggesting improvements, please use the `GitHub issues
+are welcome. For reporting bugs or suggesting improvements, please use the `GitHub issues
 tab <https://github.com/tompollard/tableone/issues/>`_.
 
 Bug reports
