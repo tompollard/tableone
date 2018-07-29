@@ -170,7 +170,7 @@ class TableOne(object):
         self.to_latex = self.tableone.to_latex
 
     def __str__(self):
-        return self.tableone.to_string()
+        return self.tableone.to_string() + self._generate_remark_str('\n')
 
     def __repr__(self):
         return self.tableone.to_string() + self._generate_remark_str('\n')
