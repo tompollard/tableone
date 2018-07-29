@@ -657,11 +657,13 @@ class TableOne(object):
         elif self._categorical:
             table = self.cat_table
 
-        # round pval column
+        # round pval column and convert to string
         if self._pval and self._pval_adjust:
-            table['pval (adjusted)'] = table['pval (adjusted)'].apply('{:.3f}'.format)
+            table['pval (adjusted)'] = table['pval (adjusted)'].apply('{:.3f}'.format).astype(str)
+            table.loc[table['pval (adjusted)'] == '0.000', 'pval (adjusted)'] = '<0.001'
         elif self._pval:
-            table['pval'] = table['pval'].apply('{:.3f}'.format)
+            table['pval'] = table['pval'].apply('{:.3f}'.format).astype(str)
+            table.loc[table['pval'] == '0.000', 'pval'] = '<0.001'
 
         # sort the table rows
         table.reset_index().set_index(['variable','level'], inplace=True)
