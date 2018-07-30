@@ -5,7 +5,7 @@ This class contains a number of utilities for summarizing the data using commonl
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.5.12"
+__version__ = "0.5.13"
 
 import pandas as pd
 from scipy import stats
@@ -66,6 +66,9 @@ class TableOne(object):
     remarks : bool, optional
         Add remarks on the appropriateness of the summary measures and the
         statistical tests (default: True).
+    label_suffix : bool, optional
+        Append summary type (e.g. "mean (SD); median (IQR), n (%); ") to the 
+        row label (default: False). 
 
     Attributes
     ----------
@@ -75,7 +78,8 @@ class TableOne(object):
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
         nonnormal=None, pval=False, pval_adjust=None, isnull=True,
-        ddof=1, labels=None, sort=False, limit=None, remarks=True):
+        ddof=1, labels=None, sort=False, limit=None, remarks=True,
+        label_suffix=False):
 
         # check input arguments
         if not groupby:
@@ -119,9 +123,10 @@ class TableOne(object):
         self._sort = sort
         self._groupby = groupby
         self._ddof = ddof # degrees of freedom for standard deviation
-        self._labels = labels
+        self._alt_labels = labels
         self._limit = limit
         self._remarks = remarks
+        self._label_suffix = label_suffix
 
         # output column names that cannot be contained in a groupby
         self._reserved_columns = ['isnull', 'pval', 'ptest', 'pval (adjusted)']
@@ -727,16 +732,15 @@ class TableOne(object):
         if not self._groupbylvls == ['overall']:
             # rename groupby variable if requested
             c = self._groupby
-            if self._labels:
-                if self._groupby in self._labels:
-                    c = self._labels[self._groupby]
+            if self._alt_labels:
+                if self._groupby in self._alt_labels:
+                    c = self._alt_labels[self._groupby]
 
             c = 'Grouped by {}'.format(c)
             table.columns = pd.MultiIndex.from_product([[c], table.columns])
 
         # display alternative labels if assigned
-        if self._labels:
-            table.rename(index=self._labels, inplace=True, level=0)
+        table.rename(index=self._create_row_labels(), inplace=True, level=0)
 
         # if a limit has been set on the number of categorical variables
         # limit the number of categorical variables that are displayed
@@ -766,6 +770,40 @@ class TableOne(object):
 
         return table
 
+    def _create_row_labels(self):
+        """
+        Take the original labels for rows. Rename if alternative labels are 
+        provided. Append label suffix if label_suffix is True.
+
+        Returns
+        ----------
+        labels : dictionary
+            Dictionary, keys are original column name, values are final label.
+        
+        """
+        # start with the original column names
+        labels = {}
+        for c in self._columns:
+            labels[c] = c
+            
+        # replace column names with alternative names if provided
+        if self._alt_labels:
+            for k in self._alt_labels.keys():
+                labels[k] = self._alt_labels[k]
+                
+        # append the label suffix
+        if self._label_suffix:
+            for k in labels.keys():
+                if k in self._nonnormal:
+                    labels[k] = "{}, {}".format(labels[k],"median (IQR)")
+                elif k in self._categorical:
+                    labels[k] = "{}, {}".format(labels[k],"n (%)")
+                else:
+                    labels[k] = "{}, {}".format(labels[k],"mean (SD)")
+        
+        return labels
+
     # warnings
     def _non_continuous_warning(self, c):
-        warnings.warn('"{}" has all non-numeric values. Consider including it in the list of categorical variables.'.format(c), RuntimeWarning, stacklevel=2)
+        warnings.warn('''"{}" has all non-numeric values. Consider including it in the 
+            list of categorical variables.'''.format(c), RuntimeWarning, stacklevel=2)
