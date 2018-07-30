@@ -67,7 +67,7 @@ class TableOne(object):
         Add remarks on the appropriateness of the summary measures and the
         statistical tests (default: True).
     label_suffix : bool, optional
-        Append summary type (e.g. "mean (SD); median (IQR), n (%); ") to the 
+        Append summary type (e.g. "mean (SD); median [Q1,Q3], n (%); ") to the 
         row label (default: False). 
 
     Attributes
@@ -795,7 +795,7 @@ class TableOne(object):
         if self._label_suffix:
             for k in labels.keys():
                 if k in self._nonnormal:
-                    labels[k] = "{}, {}".format(labels[k],"median (IQR)")
+                    labels[k] = "{}, {}".format(labels[k],"median [Q1,Q3]")
                 elif k in self._categorical:
                     labels[k] = "{}, {}".format(labels[k],"n (%)")
                 else:
