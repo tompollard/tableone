@@ -600,3 +600,17 @@ class TestTableOne(object):
 
         table = TableOne(self.data_pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'], limit=2)
         assert list(table.tableone.loc['ICU'].index) == ['MICU', 'SICU']
+
+    @with_setup(setup, teardown)
+    def test_groupby_categorical(self):
+        """
+        Test groupby runs without error with categorical groupby variable
+        """
+        columns = ['Age', 'Height', 'Weight', 'ICU']
+        categorical = ['ICU']
+
+        pn = self.data_pn.copy()
+        pn['death'] = pn['death'].astype('category')
+        table = TableOne(pn, columns=columns, categorical=categorical, groupby=['death'])
+        table = TableOne(pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'])
+
