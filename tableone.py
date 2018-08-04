@@ -459,7 +459,7 @@ class TableOne(object):
         df_cat = pd.concat(group_dict,axis=1)
         # ensure the groups are the final levels of the column index
         if df_cat.columns.nlevels>1:
-            df_cat = df_cat.swaplevel(0, -1, axis=1).sort_index(axis=1,level=0)
+            df_cat = df_cat.reorder_levels([df_cat.columns.nlevels-1]+[i for i in range(df_cat.columns.nlevels-1)], axis=1).sort_index(axis=1,level=0)
 
         return df_cat
 
