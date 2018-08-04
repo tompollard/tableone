@@ -538,7 +538,7 @@ class TestTableOne(object):
         assert table.tableone.columns[0][0] == 'Grouped by death, MechVent'
         table.tableone.columns = table.tableone.columns.droplevel(0)
         assert len(table.tableone.columns) == 5
-        for i, correct_col in enumerate([('isnull', ''), (0, 0), (0, 1), (1, 0), (1, 1)]):
+        for i, correct_col in enumerate([('isnull', ''), ('0', '0'), ('0', '1'), ('1', '0'), ('1', '1')]):
                 assert table.tableone.columns[i] == correct_col
         assert len(table.tableone.index) == 8
         rows = [('n', ''), ('Age', ''), ('Height', ''), ('Weight', ''), ('ICU', 'CCU'), ('ICU', 'CSRU'), ('ICU', 'MICU'), ('ICU', 'SICU')]
@@ -612,5 +612,7 @@ class TestTableOne(object):
         pn = self.data_pn.copy()
         pn['death'] = pn['death'].astype('category')
         table = TableOne(pn, columns=columns, categorical=categorical, groupby=['death'])
+        assert len(table.tableone.columns == 3)
         table = TableOne(pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'])
+        assert len(table.tableone.columns) == 5
 

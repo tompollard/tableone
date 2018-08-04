@@ -131,6 +131,8 @@ class TableOne(object):
         # output column names that cannot be contained in a groupby
         self._reserved_columns = ['isnull', 'pval', 'ptest', 'pval (adjusted)']
         if self._groupby:
+            for groupbyvar in groupby:
+                data[groupbyvar] = data[groupbyvar].astype(str) # Treat groupby variables as string to avoid problems with categorical groupby
             self._groups = data.groupby(groupby).groups
             # check that the group levels do not include reserved words
             for level in data.groupby(self._groupby[0]).groups:
@@ -603,12 +605,7 @@ class TableOne(object):
         # isnull needs to be its own column
         nulltable = data[self._continuous].isnull().sum().to_frame(name='isnull')
         if len(self._groupby) > 1: nulltable.columns = pd.MultiIndex.from_product([['isnull'] if i == 0 else [''] for i in range(len(self._groupby))])
-        try:
-            table = table.join(nulltable)
-        except TypeError: # if columns form a CategoricalIndex, need to convert to string first
-            if len(self._groupby) > 1: table.columns = pd.MultiIndex.from_tuples([tuple(str(col_value) for col_value in col) for col in table.columns])
-            else: table.columns = table.columns.astype(str)
-            table = table.join(nulltable)
+        table = table.join(nulltable)
 
         # add an empty level column, for joining with cat table
         table['level'] = ''
@@ -636,12 +633,7 @@ class TableOne(object):
         isnull = data[self._categorical].isnull().sum().to_frame(name='isnull')
         isnull.index.rename('variable', inplace=True)
         if len(self._groupby) > 1: isnull.columns = pd.MultiIndex.from_product([['isnull'] if i == 0 else [''] for i in range(len(self._groupby))])
-        try:
-            table = table.join(isnull)
-        except TypeError: # if columns form a CategoricalIndex, need to convert to string first
-            if len(self._groupby) > 1: table.columns = pd.MultiIndex.from_tuples([tuple(str(col_value) for col_value in col) for col in table.columns])
-            else: table.columns = table.columns.astype(str)
-            table = table.join(isnull)
+        table = table.join(isnull)
 
         # add pval column
         if self._pval and self._pval_adjust:
