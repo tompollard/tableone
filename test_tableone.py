@@ -525,3 +525,94 @@ class TestTableOne(object):
                 # check each null count is correct
                 col = isnull.index[i][0]
                 assert self.data_pn[col].isnull().sum() == v
+
+    @with_setup(setup, teardown)
+    def test_multilevel_groupby(self):
+        """
+        Test multilevel groupby produces expected results
+        """
+        columns = ['Age', 'Height', 'Weight', 'ICU']
+        categorical = ['ICU']
+
+        table = TableOne(self.data_pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'])
+        assert table.tableone.columns[0][0] == 'Grouped by death, MechVent'
+        table.tableone.columns = table.tableone.columns.droplevel(0)
+        assert len(table.tableone.columns) == 5
+        for i, correct_col in enumerate([('isnull', ''), ('0', '0'), ('0', '1'), ('1', '0'), ('1', '1')]):
+                assert table.tableone.columns[i] == correct_col
+        assert len(table.tableone.index) == 8
+        rows = [('n', ''), ('Age', ''), ('Height', ''), ('Weight', ''), ('ICU', 'CCU'), ('ICU', 'CSRU'), ('ICU', 'MICU'), ('ICU', 'SICU')]
+        for i, correct_row in enumerate(rows):
+                assert table.tableone.index[i] == correct_row
+        correct_value = {
+                ('n', ''): ['', 468, 396, 72, 64],
+                ('Age', ''): [0, '65.29 (17.94)', '62.47 (16.65)', '71.06 (13.90)', '72.42 (14.21)'],
+                ('Height', ''): [475, '171.55 (31.78)', '169.24 (11.06)', '167.36 (11.32)', '169.86 (11.34)'],
+                ('Weight', ''): [302, '81.03 (22.28)', '85.02 (24.67)', '83.89 (28.35)', '80.44 (21.66)'],
+                ('ICU', 'CCU'): [0, '110 (23.5)', '27 (6.82)', '11 (15.28)', '14 (21.88)'],
+                ('ICU', 'CSRU'): ['', '50 (10.68)', '144 (36.36)', '3 (4.17)', '5 (7.81)'],
+                ('ICU', 'MICU'): ['', '205 (43.8)', '113 (28.54)', '47 (65.28)', '15 (23.44)'],
+                ('ICU', 'SICU'): ['', '103 (22.01)', '112 (28.28)', '11 (15.28)', '30 (46.88)']
+        }
+        for row in rows:
+                assert list(table.tableone.loc[row]) == correct_value[row]
+
+    @with_setup(setup, teardown)
+    def test_multilevel_groupby_pval(self):
+        """
+        Test multilevel groupby works when p-values are requested
+        """
+        columns = ['Age', 'Height', 'Weight', 'ICU']
+        categorical = ['ICU']
+
+        table = TableOne(self.data_pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'], pval=True)
+        table = TableOne(self.data_pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'], pval=True, pval_adjust='bonferroni')
+        table = TableOne(self.data_pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'], pval=True, nonnormal=['Age'])
+        assert table.tableone.loc['Weight', ('Grouped by death, MechVent', 'pval', '')][0] == '0.187'
+
+    @with_setup(setup, teardown)
+    def test_multilevel_groupby_noisnull(self):
+        """
+        Test multilevel groupby runs without error when isnull option is False
+        """
+        columns = ['Age', 'Height', 'Weight', 'ICU']
+        categorical = ['ICU']
+
+        table = TableOne(self.data_pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'], isnull=False)
+
+    @with_setup(setup, teardown)
+    def test_multilevel_groupby_sort(self):
+        """
+        Test multilevel groupby runs without error when sort option is True
+        """
+        columns = ['Age', 'Height', 'Weight', 'ICU']
+        categorical = ['ICU']
+
+        table = TableOne(self.data_pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'], sort=True)
+
+    @with_setup(setup, teardown)
+    def test_multilevel_groupby_limit(self):
+        """
+        Test multilevel groupby runs correctly when limit option is set
+        """
+        columns = ['Age', 'Height', 'Weight', 'ICU']
+        categorical = ['ICU']
+
+        table = TableOne(self.data_pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'], limit=2)
+        assert list(table.tableone.loc['ICU'].index) == ['MICU', 'SICU']
+
+    @with_setup(setup, teardown)
+    def test_groupby_categorical(self):
+        """
+        Test groupby runs without error with categorical groupby variable
+        """
+        columns = ['Age', 'Height', 'Weight', 'ICU']
+        categorical = ['ICU']
+
+        pn = self.data_pn.copy()
+        pn['death'] = pn['death'].astype('category')
+        table = TableOne(pn, columns=columns, categorical=categorical, groupby=['death'])
+        assert len(table.tableone.columns == 3)
+        table = TableOne(pn, columns=columns, categorical=categorical, groupby=['death', 'MechVent'])
+        assert len(table.tableone.columns) == 5
+
