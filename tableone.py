@@ -5,7 +5,7 @@ This class contains a number of utilities for summarizing the data using commonl
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.5.14"
+__version__ = "0.5.15"
 
 import pandas as pd
 from scipy import stats
@@ -656,7 +656,12 @@ class TableOne(object):
             The complete table one.
         """
         if self._continuous and self._categorical:
-            table = pd.concat([self.cont_table,self.cat_table],sort=False)
+
+            # support pandas<=0.22
+            try: 
+                table = pd.concat([self.cont_table,self.cat_table],sort=False)
+            except: 
+                table = pd.concat([self.cont_table,self.cat_table])
         elif self._continuous:
             table = self.cont_table
         elif self._categorical:
@@ -699,7 +704,12 @@ class TableOne(object):
         n_row = pd.DataFrame(columns = ['variable','level','isnull'])
         n_row.set_index(['variable','level'], inplace=True)
         n_row.loc['n', ''] = None
-        table = pd.concat([n_row,table],sort=False)
+
+        # support pandas<=0.22
+        try:
+            table = pd.concat([n_row,table],sort=False)
+        except:
+            table = pd.concat([n_row,table])
 
         if self._groupbylvls == ['overall']:
             table.loc['n','overall'] = len(data.index)
