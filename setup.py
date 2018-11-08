@@ -49,7 +49,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'pandas>=0.21.0',
+        'pandas>=0.23.0',
         'numpy>=1.12.1',
         'scipy>=0.18.1',
         'statsmodels>=0.8.0'
