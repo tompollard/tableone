@@ -5,7 +5,7 @@ This class contains a number of utilities for summarizing the data using commonl
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.5.15"
+__version__ = "0.5.16"
 
 import pandas as pd
 from scipy import stats
@@ -69,6 +69,11 @@ class TableOne(object):
     label_suffix : bool, optional
         Append summary type (e.g. "mean (SD); median [Q1,Q3], n (%); ") to the 
         row label (default: False). 
+    decimals : int or dict, optional
+        Number of decimal places to display for continuous variables. An integer 
+        applies the rule to all continuous variables (default: 2). A dictionary 
+        (e.g. `decimals = {'age': 0)`) applies the rule per variable, defaulting 
+        to 2 places for unspecified variables.
 
     Attributes
     ----------
@@ -79,7 +84,7 @@ class TableOne(object):
     def __init__(self, data, columns=None, categorical=None, groupby=None,
         nonnormal=None, pval=False, pval_adjust=None, isnull=True,
         ddof=1, labels=None, sort=False, limit=None, remarks=True,
-        label_suffix=False):
+        label_suffix=False, decimals=2):
 
         # check input arguments
         if not groupby:
@@ -127,6 +132,7 @@ class TableOne(object):
         self._limit = limit
         self._remarks = remarks
         self._label_suffix = label_suffix
+        self._decimals = decimals
 
         # output column names that cannot be contained in a groupby
         self._reserved_columns = ['isnull', 'pval', 'ptest', 'pval (adjusted)']
@@ -340,11 +346,25 @@ class TableOne(object):
             x : pandas Series
                 Series of values to be summarised.
         """
+        # set decimal places
+        if isinstance(self._decimals,int):
+            n = self._decimals
+        elif isinstance(self._decimals,dict):
+            try:
+                n = self._decimals[x.name]
+            except:
+                n = 2
+        else:
+            n = 2
+            warnings.warn('The decimals arg must be an int or dict. Defaulting to {} d.p.'.format(n))
+
         if x.name in self._nonnormal:
-            return '{:.2f} [{:.2f},{:.2f}]'.format(np.nanmedian(x.values),
+            f = '{{:.{}f}} [{{:.{}f}},{{:.{}f}}]'.format(n,n,n)
+            return f.format(np.nanmedian(x.values),
                 np.nanpercentile(x.values,25), np.nanpercentile(x.values,75))
         else:
-            return '{:.2f} ({:.2f})'.format(np.nanmean(x.values),
+            f = '{{:.{}f}} ({{:.{}f}})'.format(n,n)
+            return f.format(np.nanmean(x.values),
                 np.nanstd(x.values,ddof=self._ddof))
 
     def _create_cont_describe(self,data):
@@ -449,8 +469,9 @@ class TableOne(object):
             df = df.join(nulls)
 
             # add summary column
+            n = 2
             df['t1_summary'] = df.freq.map(str) + ' (' + df.percent.apply(round,
-                ndigits=2).map(str) + ')'
+                ndigits=n).map(str) + ')'
 
             # add to dictionary
             group_dict[g] = df
