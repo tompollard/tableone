@@ -71,8 +71,8 @@ class TableOne(object):
         row label (default: False). 
     decimals : int or dict, optional
         Number of decimal places to display. An integer applies the rule to all
-        variables (default: 1). A dictionary (e.g. `decimals = {'age': 0)`) applies 
-        the rule per variable, defaulting to 1 place for unspecified variables.
+        variables (default: 2). A dictionary (e.g. `decimals = {'age': 0)`) applies 
+        the rule per variable, defaulting to 2 place for unspecified variables.
         For continuous variables, applies to all summary statistics (e.g. mean and
         standard deviation). For categorical variables, applies to percentage only.
 
@@ -491,7 +491,6 @@ class TableOne(object):
             df = df.join(nulls)
 
             # add summary column
-            n = 2
             df['t1_summary'] = df.freq.map(str) + ' (' + df.percent.map(str) + ')'
 
             # add to dictionary
