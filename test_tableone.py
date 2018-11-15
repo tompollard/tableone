@@ -165,12 +165,11 @@ class TestTableOne(object):
         table = TableOne(self.data_sample, columns=categorical, categorical=categorical)
 
         lm = table.cat_describe.loc['likesmarmalade']
-        # drop 2nd level for convenience
-        lm.columns = lm.columns.droplevel(level=1)
-        notlikefreq = lm.loc[0,'freq']
-        notlikepercent = lm.loc[0,'percent']
-        likefreq = lm.loc[1,'freq']
-        likepercent = lm.loc[1,'percent']
+
+        notlikefreq = float(lm.loc[0,'freq'].values[0])
+        notlikepercent = float(lm.loc[0,'percent'].values[0])
+        likefreq = float(lm.loc[1,'freq'].values[0])
+        likepercent = float(lm.loc[1,'percent'].values[0])
 
         assert notlikefreq + likefreq == 10000
         assert abs(100 - notlikepercent - likepercent) <= 0.02
@@ -186,10 +185,9 @@ class TestTableOne(object):
         table = TableOne(self.data_sample, columns=categorical, categorical=categorical)
 
         lh = table.cat_describe.loc['likeshoney']
-        # drop 2nd level for convenience
-        lh.columns = lh.columns.droplevel(level=1)
-        likefreq = lh.loc[1.0,'freq']
-        likepercent = lh.loc[1.0,'percent']
+
+        likefreq = float(lh.loc[1.0,'freq'].values[0])
+        likepercent = float(lh.loc[1.0,'percent'].values[0])
 
         assert likefreq == 5993
         assert abs(100-likepercent) <= 0.01
