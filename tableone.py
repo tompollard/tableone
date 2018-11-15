@@ -70,10 +70,11 @@ class TableOne(object):
         Append summary type (e.g. "mean (SD); median [Q1,Q3], n (%); ") to the 
         row label (default: False). 
     decimals : int or dict, optional
-        Number of decimal places to display for continuous variables. An integer 
-        applies the rule to all continuous variables (default: 2). A dictionary 
-        (e.g. `decimals = {'age': 0)`) applies the rule per variable, defaulting 
-        to 2 places for unspecified variables.
+        Number of decimal places to display. An integer applies the rule to all
+        variables (default: 1). A dictionary (e.g. `decimals = {'age': 0)`) applies 
+        the rule per variable, defaulting to 1 place for unspecified variables.
+        For continuous variables, applies to all summary statistics (e.g. mean and
+        standard deviation). For categorical variables, applies to percentage only.
 
     Attributes
     ----------
@@ -423,6 +424,15 @@ class TableOne(object):
 
         return df_cont
 
+    def _format_cat(self,row): 
+        var = row.name[0]
+        if var in self._decimals:
+            n =  self._decimals[var]
+        else: 
+            n =  2
+        f = '{{:.{}f}}'.format(n)
+        return f.format(row.percent)
+
     def _create_cat_describe(self,data):
         """
         Describe the categorical data.
@@ -449,7 +459,19 @@ class TableOne(object):
             df = d_slice.copy()
             df = df.melt().groupby(['variable','value']).size().to_frame(name='freq')
             df.index.set_names('level', level=1, inplace=True)
-            df['percent'] = df['freq'].div(df.freq.sum(level=0),level=0)* 100
+            df['percent'] = df['freq'].div(df.freq.sum(level=0),level=0).astype(float)* 100
+
+            # set number of decimal places for percent
+            if isinstance(self._decimals,int):
+                n = self._decimals
+                f = '{{:.{}f}}'.format(n)
+                df['percent'] = df['percent'].astype(float).map(f.format)
+            elif isinstance(self._decimals,dict):
+                df.loc[:,'percent'] = df.apply(self._format_cat, axis=1)
+            else:
+                n = 2
+                f = '{{:.{}f}}'.format(n)
+                df['percent'] = df['percent'].astype(float).map(f.format)
 
             # add n column, listing total non-null values for each variable
             ct = d_slice.count().to_frame(name='n')
@@ -470,8 +492,7 @@ class TableOne(object):
 
             # add summary column
             n = 2
-            df['t1_summary'] = df.freq.map(str) + ' (' + df.percent.apply(round,
-                ndigits=n).map(str) + ')'
+            df['t1_summary'] = df.freq.map(str) + ' (' + df.percent.map(str) + ')'
 
             # add to dictionary
             group_dict[g] = df
