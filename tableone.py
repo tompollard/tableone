@@ -71,8 +71,8 @@ class TableOne(object):
         row label (default: False). 
     decimals : int or dict, optional
         Number of decimal places to display. An integer applies the rule to all
-        variables (default: 2). A dictionary (e.g. `decimals = {'age': 0)`) applies 
-        the rule per variable, defaulting to 2 place for unspecified variables.
+        variables (default: 1). A dictionary (e.g. `decimals = {'age': 0)`) applies 
+        the rule per variable, defaulting to 1 place for unspecified variables.
         For continuous variables, applies to all summary statistics (e.g. mean and
         standard deviation). For categorical variables, applies to percentage only.
 
@@ -85,7 +85,7 @@ class TableOne(object):
     def __init__(self, data, columns=None, categorical=None, groupby=None,
         nonnormal=None, pval=False, pval_adjust=None, isnull=True,
         ddof=1, labels=None, sort=False, limit=None, remarks=True,
-        label_suffix=False, decimals=2):
+        label_suffix=False, decimals=1):
 
         # check input arguments
         if not groupby:
@@ -354,9 +354,9 @@ class TableOne(object):
             try:
                 n = self._decimals[x.name]
             except:
-                n = 2
+                n = 1
         else:
-            n = 2
+            n = 1
             warnings.warn('The decimals arg must be an int or dict. Defaulting to {} d.p.'.format(n))
 
         if x.name in self._nonnormal:
@@ -429,7 +429,7 @@ class TableOne(object):
         if var in self._decimals:
             n =  self._decimals[var]
         else: 
-            n =  2
+            n = 1
         f = '{{:.{}f}}'.format(n)
         return f.format(row.percent)
 
@@ -469,7 +469,7 @@ class TableOne(object):
             elif isinstance(self._decimals,dict):
                 df.loc[:,'percent'] = df.apply(self._format_cat, axis=1)
             else:
-                n = 2
+                n = 1
                 f = '{{:.{}f}}'.format(n)
                 df['percent'] = df['percent'].astype(float).map(f.format)
 

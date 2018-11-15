@@ -236,7 +236,8 @@ class TestTableOne(object):
         categorical = []
         groupby = 'group'
         t = TableOne(self.data_groups, columns = columns,
-            categorical = categorical, groupby = groupby, isnull = False)
+            categorical = categorical, groupby = groupby, isnull = False,
+            decimals=2)
 
         # n and weight rows are already ordered, so sorting should not alter the order
         assert (t.tableone.loc['n'].values[0].astype(float) == \
@@ -488,7 +489,6 @@ class TestTableOne(object):
         assert table.tableone.columns.levels[1][0] == 'isnull'
         assert table.tableone.columns.levels[1][-1] == 'ptest'
         assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
-        table
 
     @with_setup(setup, teardown)
     def test_check_null_counts_are_correct_pn(self):
@@ -523,3 +523,137 @@ class TestTableOne(object):
                 # check each null count is correct
                 col = isnull.index[i][0]
                 assert self.data_pn[col].isnull().sum() == v
+
+    @with_setup(setup, teardown)
+    def test_the_decimals_argument_for_continuous_variables(self):
+
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
+        categorical = ['ICU', 'death']
+        groupby = ['death']
+        nonnormal = ['Age']
+
+        # no decimals argument
+        # expected result is to default to 1
+        table_no_arg = TableOne(self.data_pn, columns=columns, categorical=categorical,
+            groupby=groupby, nonnormal=nonnormal, pval=False)
+
+        t_no_arg_group0 = table_no_arg.tableone['Grouped by death'].loc["Weight",0].values
+        t_no_arg_group0_expected = np.array(['83.0 (23.6)'])
+
+        t_no_arg_group1 = table_no_arg.tableone['Grouped by death'].loc["Weight",1].values
+        t_no_arg_group1_expected = np.array(['82.3 (25.4)'])
+
+        assert all(t_no_arg_group0 == t_no_arg_group0_expected)
+        assert all(t_no_arg_group1 == t_no_arg_group1_expected)
+
+        # decimals = 1
+        table_1_decimal = TableOne(self.data_pn, columns=columns, categorical=categorical,
+            groupby=groupby, nonnormal=nonnormal, pval=False, decimals=1)
+
+        t1_group0 = table_1_decimal.tableone['Grouped by death'].loc["Weight",0].values
+        t1_group0_expected = np.array(['83.0 (23.6)'])
+
+        t1_group1 = table_1_decimal.tableone['Grouped by death'].loc["Weight",1].values
+        t1_group1_expected = np.array(['82.3 (25.4)'])
+
+        assert all(t1_group0 == t1_group0_expected)
+        assert all(t1_group1 == t1_group1_expected)
+
+        # decimals = 2
+        table_2_decimal = TableOne(self.data_pn, columns=columns, categorical=categorical,
+            groupby=groupby, nonnormal=nonnormal, pval=False, decimals=2)
+
+        t2_group0 = table_2_decimal.tableone['Grouped by death'].loc["Weight",0].values
+        t2_group0_expected = np.array(['83.04 (23.58)'])
+
+        t2_group1 = table_2_decimal.tableone['Grouped by death'].loc["Weight",1].values
+        t2_group1_expected = np.array(['82.29 (25.40)'])
+
+        assert all(t2_group0 == t2_group0_expected)
+        assert all(t2_group1 == t2_group1_expected)
+
+        # decimals = {"Age": 0, "Weight":3}
+        table_3_decimal = TableOne(self.data_pn, columns=columns, categorical=categorical,
+            groupby=groupby, nonnormal=nonnormal, pval=False, decimals={"Age": 0, "Weight":3})
+
+        t3_group0 = table_3_decimal.tableone['Grouped by death'].loc["Weight",0].values
+        t3_group0_expected = np.array(['83.041 (23.581)'])
+
+        t3_group1 = table_3_decimal.tableone['Grouped by death'].loc["Weight",1].values
+        t3_group1_expected = np.array(['82.286 (25.396)'])
+
+        assert all(t3_group0 == t3_group0_expected)
+        assert all(t3_group1 == t3_group1_expected)
+
+    @with_setup(setup, teardown)
+    def test_the_decimals_argument_for_categorical_variables(self):
+
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
+        categorical = ['ICU', 'death']
+        groupby = ['death']
+        nonnormal = ['Age']
+
+        # decimals = 1
+        table_1_decimal = TableOne(self.data_pn, columns=columns, categorical=categorical,
+            groupby=groupby, nonnormal=nonnormal, pval=False, decimals=1)
+
+        t1_group0 = table_1_decimal.tableone['Grouped by death'].loc["ICU",0].values
+        t1_group0_expected = np.array(['137 (15.9)', '194 (22.5)', 
+            '318 (36.8)', '215 (24.9)'])
+
+        t1_group1 = table_1_decimal.tableone['Grouped by death'].loc["ICU",1].values
+        t1_group1_expected = np.array(['25 (18.4)', '8 (5.9)', 
+            '62 (45.6)', '41 (30.1)'])
+
+        assert all(t1_group0 == t1_group0_expected)
+        assert all(t1_group1 == t1_group1_expected)  
+
+        # decimals = 2
+        table_2_decimal = TableOne(self.data_pn, columns=columns, categorical=categorical,
+            groupby=groupby, nonnormal=nonnormal, pval=False, decimals=2)
+
+        t2_group0 = table_2_decimal.tableone['Grouped by death'].loc["ICU",0].values
+        t2_group0_expected = np.array(['137 (15.86)', '194 (22.45)', 
+            '318 (36.81)', '215 (24.88)'])
+
+        t2_group1 = table_2_decimal.tableone['Grouped by death'].loc["ICU",1].values
+        t2_group1_expected = np.array(['25 (18.38)', '8 (5.88)', 
+            '62 (45.59)', '41 (30.15)'])
+
+        assert all(t2_group0 == t2_group0_expected)
+        assert all(t2_group1 == t2_group1_expected)  
+
+        # decimals = {"ICU":3}
+        table_3_decimal = TableOne(self.data_pn, columns=columns, categorical=categorical,
+            groupby=groupby, nonnormal=nonnormal, pval=False, decimals={"ICU":3})
+
+        t3_group0 = table_3_decimal.tableone['Grouped by death'].loc["ICU",0].values
+        t3_group0_expected = np.array(['137 (15.856)', '194 (22.454)',
+            '318 (36.806)', '215 (24.884)'])
+
+        t3_group1 = table_3_decimal.tableone['Grouped by death'].loc["ICU",1].values
+        t3_group1_expected = np.array(['25 (18.382)', '8 (5.882)', 
+            '62 (45.588)', '41 (30.147)'])
+
+        assert all(t3_group0 == t3_group0_expected)
+        assert all(t3_group1 == t3_group1_expected) 
+
+        # decimals = {"Age":3}
+        # expected result is to default to 1 decimal place
+        table_4_decimal = TableOne(self.data_pn, columns=columns, categorical=categorical,
+            groupby=groupby, nonnormal=nonnormal, pval=False, decimals={"Age":3})
+
+        t4_group0 = table_4_decimal.tableone['Grouped by death'].loc["ICU",0].values
+        t4_group0_expected = np.array(['137 (15.9)', '194 (22.5)', 
+            '318 (36.8)', '215 (24.9)'])
+
+        t4_group1 = table_4_decimal.tableone['Grouped by death'].loc["ICU",1].values
+        t4_group1_expected = np.array(['25 (18.4)', '8 (5.9)', 
+            '62 (45.6)', '41 (30.1)'])
+
+        assert all(t4_group0 == t4_group0_expected)
+        assert all(t4_group1 == t4_group1_expected)    
+
+
+
+
