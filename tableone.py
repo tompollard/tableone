@@ -4,8 +4,8 @@ It provides the TableOne class, which can be called on a pandas dataframe.
 This class contains a number of utilities for summarizing the data using commonly applied statistical measures.
 """
 
-__author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson"
-__version__ = "0.5.17"
+__author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
+__version__ = "0.5.18"
 
 import pandas as pd
 from scipy import stats
