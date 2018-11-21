@@ -166,10 +166,10 @@ class TestTableOne(object):
 
         lm = table.cat_describe.loc['likesmarmalade']
 
-        notlikefreq = float(lm.loc[0,'freq'].values[0])
-        notlikepercent = float(lm.loc[0,'percent'].values[0])
-        likefreq = float(lm.loc[1,'freq'].values[0])
-        likepercent = float(lm.loc[1,'percent'].values[0])
+        notlikefreq = float(lm.loc['0','freq'].values[0])
+        notlikepercent = float(lm.loc['0','percent'].values[0])
+        likefreq = float(lm.loc['1','freq'].values[0])
+        likepercent = float(lm.loc['1','percent'].values[0])
 
         assert notlikefreq + likefreq == 10000
         assert abs(100 - notlikepercent - likepercent) <= 0.02
@@ -186,8 +186,8 @@ class TestTableOne(object):
 
         lh = table.cat_describe.loc['likeshoney']
 
-        likefreq = float(lh.loc[1.0,'freq'].values[0])
-        likepercent = float(lh.loc[1.0,'percent'].values[0])
+        likefreq = float(lh.loc['1.0','freq'].values[0])
+        likepercent = float(lh.loc['1.0','percent'].values[0])
 
         assert likefreq == 5993
         assert abs(100-likepercent) <= 0.01
@@ -524,9 +524,33 @@ class TestTableOne(object):
                 col = isnull.index[i][0]
                 assert self.data_pn[col].isnull().sum() == v
 
+    # @with_setup(setup, teardown)
+    # def test_binary_columns_are_not_converted_to_true_false(self):
+    #     """
+    #     Fix issue where 0 and 1 were being converted to False and True when set as 
+    #     categorical variables.
+    #     """
+    #     df = pd.DataFrame({'Feature': [True,True,False,True,False,False,True,False,False,True], 
+    #         'ID': [1,1,0,0,1,1,0,0,1,0],
+    #         'Stuff1': [23,54,45,38,32,59,37,76,32,23],
+    #         'Stuff2': [12,12,67,29,24,39,32,65,12,15]})
+
+    #     t = TableOne(df, columns=['Feature','ID'], categorical=['Feature','ID'])
+
+    #     # not boolean
+    #     assert type(t.tableone.loc['ID'].index[0]) != bool
+    #     assert type(t.tableone.loc['ID'].index[1]) != bool
+
+    #     # integer
+    #     assert type(t.tableone.loc['ID'].index[0]) == int
+    #     assert type(t.tableone.loc['ID'].index[1]) == int
+
     @with_setup(setup, teardown)
     def test_the_decimals_argument_for_continuous_variables(self):
-
+        """
+        For continuous variables, the decimals argument should set the number of 
+        decimal places for all summary statistics (e.g. mean and standard deviation).
+        """
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         categorical = ['ICU', 'death']
         groupby = ['death']
@@ -587,7 +611,10 @@ class TestTableOne(object):
 
     @with_setup(setup, teardown)
     def test_the_decimals_argument_for_categorical_variables(self):
-
+        """
+        For categorical variables, the decimals argument should set the number of 
+        decimal places for the percent only.
+        """
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         categorical = ['ICU', 'death']
         groupby = ['death']
