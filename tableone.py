@@ -23,7 +23,14 @@ class InputError(Exception):
 
 class TableOne(object):
     """
-    Create a tableone instance.
+
+    If you use the tableone package, please cite:
+
+    Pollard TJ, Johnson AEW, Raffa JD, Mark RG (2018). tableone: An open source Python
+    package for producing summary statistics for research papers. JAMIA Open, Volume 1,
+    Issue 1, 1 July 2018, Pages 26-31. https://doi.org/10.1093/jamiaopen/ooy012
+
+    Create an instance of the tableone summary table.
 
     Parameters
     ----------
