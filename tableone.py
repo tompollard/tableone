@@ -458,7 +458,8 @@ class TableOne(object):
             # create a dataframe with freq, proportion
             df = d_slice.copy()
             # convert type to string to avoid int converted to boolean, avoiding nans
-            df[df.columns] = df[df.columns].dropna().astype(str)
+            for column in df.columns:
+                df[column] = [str(row) if not np.isnan(row) else None for row in df[column].values]
             df = df.melt().groupby(['variable','value']).size().to_frame(name='freq')
             df.index.set_names('level', level=1, inplace=True)
             df['percent'] = df['freq'].div(df.freq.sum(level=0),level=0).astype(float)* 100
