@@ -13,14 +13,6 @@ python:
     - "2.7"
     - "3.5"
 
-addons:
-  apt:
-    packages:
-      - libopenblas-base
-      - libopenblas-dev
-      - liblapack-dev
-      - gfortran
-
 before_install:
   - pip install --upgrade pip
 
