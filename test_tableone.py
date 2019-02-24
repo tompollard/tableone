@@ -691,16 +691,14 @@ class TestTableOne(object):
         values (issue #79).
         """
         # create the dataset
-        random.seed(1)
-        fruit = ['apple','banana','orange','pineapple','lemon','durian','peach']
-        n = 4
-        fruit = [random.sample(fruit, n),
-                random.sample(fruit, n),
-                random.sample(fruit, n),
-                random.sample(fruit, n),
-                random.sample(fruit, n),
-                random.sample(fruit, n),
-                random.sample(fruit, n)]
+        fruit = [['apple', 'durian', 'pineapple', 'banana'],
+                 ['pineapple', 'orange', 'peach', 'lemon'],
+                 ['lemon', 'peach', 'lemon', 'banana'],
+                 ['durian', 'apple', 'orange', 'lemon'],
+                 ['banana', 'durian', 'lemon', 'apple'],
+                 ['orange', 'pineapple', 'lemon', 'banana'],
+                 ['banana', 'orange', 'apple', 'lemon']]
+
         df = pd.DataFrame(fruit)
         df.columns = ['basket1','basket2','basket3','basket4']
 
@@ -714,8 +712,10 @@ class TestTableOne(object):
         assert all(t1.tableone.loc['basket1'].index == ['apple', 'banana', 'durian', 
             'lemon', 'orange', 'pineapple'])
 
-        assert all(t1.tableone.loc['basket2'].index == ['apple', 'banana', 'lemon'])
+        assert all(t1.tableone.loc['basket2'].index == ['durian', 'orange', 
+            'pineapple'])
         
-        assert all(t1.tableone.loc['basket3'].index == ['apple', 'durian', 'lemon'])
+        assert all(t1.tableone.loc['basket3'].index == ['apple', 'lemon', 'peach', 
+            'pineapple'])
         
-        assert all(t1.tableone.loc['basket4'].index == ['apple', 'lemon', 'orange'])
+        assert all(t1.tableone.loc['basket4'].index == ['apple', 'banana', 'lemon'])
