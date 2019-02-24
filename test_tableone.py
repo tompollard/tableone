@@ -1,11 +1,14 @@
-import pandas as pd
-import tableone
-from tableone import TableOne
-from tableone import InputError
+import random
+import warnings
+
 from nose.tools import with_setup, assert_raises, assert_equal
 import numpy as np
 import modality
-import warnings
+import pandas as pd
+
+import tableone
+from tableone import TableOne
+from tableone import InputError
 
 class TestTableOne(object):
     """
@@ -681,6 +684,38 @@ class TestTableOne(object):
         assert all(t4_group0 == t4_group0_expected)
         assert all(t4_group1 == t4_group1_expected)    
 
+    @with_setup(setup, teardown)
+    def test_nan_rows_not_deleted_in_categorical_columns(self):
+        """
+        Test that rows in categorical columns are not deleted if there are null
+        values (issue #79).
+        """
+        # create the dataset
+        random.seed(1)
+        fruit = ['apple','banana','orange','pineapple','lemon','durian','peach']
+        n = 4
+        fruit = [random.sample(fruit, n),
+                random.sample(fruit, n),
+                random.sample(fruit, n),
+                random.sample(fruit, n),
+                random.sample(fruit, n),
+                random.sample(fruit, n),
+                random.sample(fruit, n)]
+        df = pd.DataFrame(fruit)
+        df.columns = ['basket1','basket2','basket3','basket4']
 
+        # set two of the columns to none
+        df.loc[1:3,'basket2'] = None
+        df.loc[2:4,'basket3'] = None
 
+        # create tableone
+        t1 = TableOne(df, categorical = ['basket1','basket2','basket3','basket4'])
 
+        assert all(t1.tableone.loc['basket1'].index == ['apple', 'banana', 'durian', 
+            'lemon', 'orange', 'pineapple'])
+
+        assert all(t1.tableone.loc['basket2'].index == ['apple', 'banana', 'lemon'])
+        
+        assert all(t1.tableone.loc['basket3'].index == ['apple', 'durian', 'lemon'])
+        
+        assert all(t1.tableone.loc['basket4'].index == ['apple', 'lemon', 'orange'])
