@@ -111,8 +111,12 @@ class TableOne(object):
             nonnormal = [nonnormal]
 
         # if columns not specified, use all columns
-        if not columns:
+        if type(columns) == type(None):
             columns = data.columns.get_values()
+        elif 'pandas.core.indexes' in str(type(columns)):
+            columns = columns.get_values()
+        else:
+            columns = list(columns)
 
         # check that the columns exist in the dataframe
         if not set(columns).issubset(data.columns):
@@ -125,13 +129,17 @@ class TableOne(object):
             raise InputError('Input contains duplicate columns: {}'.format(dups))
 
         # if categorical not specified, try to identify categorical
-        if not categorical and type(categorical) != list:
+        if type(columns) == type(None):
             categorical = self._detect_categorical_columns(data[columns])
+        elif 'pandas.core.indexes' in str(type(categorical)):
+            categorical = categorical.get_values()
+        else:
+            categorical = list(columns)
 
         if pval and not groupby:
             raise InputError("If pval=True then the groupby must be specified.")
 
-        self._columns = list(columns)
+        self._columns = columns
         self._isnull = isnull
         self._continuous = [c for c in columns if c not in categorical + [groupby]]
         self._categorical = categorical
