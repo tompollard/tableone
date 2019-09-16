@@ -184,6 +184,7 @@ Example
 
 
 
-#. Tables can be exported to file in various formats, including LaTeX, CSV, and HTML. Files are exported by calling the ``to_format`` method on the DataFrame. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command::
+#. Tables can be exported to file in various formats, including LaTeX, CSV, and HTML. Files are exported by calling the ``to_format`` method on the DataFrame. For example, mytable can be exported to an Excel spreadsheet named 'mytable.xlsx' with the following command::
 
-    mytable.to_csv('mytable.csv')
+    with pd.ExcelWriter('mytable.xlsx', engine='openpyxl') as writer:
+        mytable.to_excel(writer)
