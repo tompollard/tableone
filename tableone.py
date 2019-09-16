@@ -5,7 +5,7 @@ This class contains a number of utilities for summarizing the data using commonl
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 import pandas as pd
 from scipy import stats
@@ -13,6 +13,7 @@ import warnings
 import numpy as np
 from statsmodels.stats import multitest
 import modality
+import openpyxl
 
 
 class InputError(Exception):
@@ -105,7 +106,7 @@ class TableOne(object):
             groupby = groupby[0]
 
         if not nonnormal:
-            nonnormal=[]
+            nonnormal = []
         elif nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
 

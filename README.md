@@ -100,10 +100,11 @@ Grouped by mortality:
 | mortality |  0     | 0      | 864 (100.0)    |                | 
 |           |  1     |        |                | 136 (100.0)    | 
 
-9. Tables can be exported to file in various formats, including LaTeX, CSV, and HTML. Files are exported by calling the ``to_format`` method on the tableone object. For example, mytable can be exported to a CSV named 'mytable.csv' with the following command:
+9. Tables can be exported to file in various formats, including LaTeX, CSV, and HTML. Files are exported by calling the ``to_format`` method on the tableone object. For example, mytable can be exported to an Excel spreadsheet named 'mytable.xlsx' with the following command:
 
 ```python
-mytable.to_csv('mytable.csv')
+with pd.ExcelWriter('tableone.xlsx', engine='openpyxl') as writer:
+    grouped_table.to_excel(writer)
 ```
 
 
