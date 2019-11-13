@@ -5,7 +5,7 @@ This class contains a number of utilities for summarizing the data using commonl
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 import modality
 import openpyxl

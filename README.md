@@ -73,7 +73,7 @@ labels={'death': 'mortality'}
 6. Create an instance of TableOne with the input arguments:
 
 ```python
-mytable = TableOne(data, columns, categorical, groupby, nonnormal, labels=labels, pval=False)
+mytable = TableOne(data, columns, categorical, groupby, nonnormal, rename=labels, pval=False)
 ```
 
 7. Type the name of the instance in an interpreter:
