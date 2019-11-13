@@ -5,16 +5,16 @@ This class contains a number of utilities for summarizing the data using commonl
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
-import modality
-import openpyxl
 import warnings
 
 import numpy as np
 import pandas as pd
 from scipy import stats
 from statsmodels.stats import multitest
+
+import modality
 
 # display deprecation warnings
 warnings.simplefilter('always', DeprecationWarning)
