@@ -830,7 +830,7 @@ class TableOne(object):
         if self._limit:
             table = table.groupby('variable').head(self._limit)
 
-        # re-order the columns in a consistent fashion
+        # re-order the columns for consistency
         if self._groupby:
             cols = table.columns.levels[1].values
         else:
@@ -839,9 +839,8 @@ class TableOne(object):
         if 'isnull' in cols:
             cols = ['isnull'] + [x for x in cols if x != 'isnull']
 
-        # iterate through each optional column
-        # if they exist, put them at the end of the dataframe ensures
-        # the last 3 columns will be in the same order as optional_columns
+        # put optional_columns at the end of the dataframe to
+        # ensure consistent ordering
         for col in optional_columns:
             if col in cols:
                 cols = [x for x in cols if x != col] + [col]
@@ -850,6 +849,12 @@ class TableOne(object):
             table = table.reindex(cols, axis=1, level=1)
         else:
             table = table.reindex(cols, axis=1)
+
+        try:
+            if 'isnull' in self._alt_labels or 'overall' in self._alt_labels:
+                table = table.rename(columns=self._alt_labels)
+        except TypeError:
+            pass
 
         return table
 
