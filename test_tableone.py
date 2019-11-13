@@ -350,7 +350,7 @@ class TestTableOne(object):
         # labels
         df_labels = self.data_groups.copy()
         table_labels = TableOne(df_labels, columns = ['group','age','weight'],
-            categorical = ['group'], groupby=['group'], labels={'age':'age, years'})
+            categorical = ['group'], groupby=['group'], rename={'age':'age, years'})
         assert (df_labels['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
         assert (df_groupby['weight'] == df_orig['weight']).all()
@@ -419,7 +419,7 @@ class TestTableOne(object):
         'ICU': 'Intensive Care Unit'}
 
         table = TableOne(df, columns=columns, categorical=categorical, groupby=groupby, 
-            labels=labels)
+            rename=labels)
 
         # check the header column is updated (groupby variable)
         assert table.tableone.columns.levels[0][0] == 'Grouped by mortality'
