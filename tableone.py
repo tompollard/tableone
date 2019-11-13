@@ -112,7 +112,7 @@ class TableOne(object):
 
         # if columns not specified, use all columns
         if not columns:
-            columns = data.columns.get_values()
+            columns = data.columns.values
 
         # check that the columns exist in the dataframe
         if not set(columns).issubset(data.columns):
