@@ -7,13 +7,17 @@ This class contains a number of utilities for summarizing the data using commonl
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
 __version__ = "0.6.1"
 
-import pandas as pd
-from scipy import stats
-import warnings
-import numpy as np
-from statsmodels.stats import multitest
 import modality
 import openpyxl
+import warnings
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+from statsmodels.stats import multitest
+
+# display deprecation warnings
+warnings.simplefilter('always', DeprecationWarning)
 
 
 class InputError(Exception):
@@ -66,9 +70,9 @@ class TableOne(object):
         Display a count of null values (default: True).
     ddof : int, optional
         Degrees of freedom for standard deviation calculations (default: 1).
-    labels : dict, optional
-        Dictionary of alternative labels for variables.
-        e.g. `labels = {'sex':'gender', 'trt':'treatment'}`
+    rename : dict, optional
+        Dictionary of alternative names for variables.
+        e.g. `rename = {'sex':'gender', 'trt':'treatment'}`
     sort : bool, optional
         Sort the rows alphabetically. Default (False) retains the input order
         of columns.
@@ -96,8 +100,17 @@ class TableOne(object):
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
         nonnormal=None, pval=False, pval_adjust=None, isnull=True,
-        ddof=1, labels=None, sort=False, limit=None, remarks=True,
+        ddof=1, labels=None, rename=None, sort=False, limit=None, remarks=True,
         label_suffix=False, decimals=1):
+
+        # labels is now rename
+        if labels is not None and rename is not None:
+            raise TypeError("TableOne received both labels and rename")
+        elif labels is not None:
+            warnings.warn("The labels argument is deprecated; use rename instead", DeprecationWarning)
+            self._alt_labels = labels
+        else:
+            self._alt_labels = rename
 
         # check input arguments
         if not groupby:
@@ -142,7 +155,6 @@ class TableOne(object):
         self._groupby = groupby
         # degrees of freedom for standard deviation
         self._ddof = ddof
-        self._alt_labels = labels
         self._limit = limit
         self._remarks = remarks
         self._label_suffix = label_suffix
