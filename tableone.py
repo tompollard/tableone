@@ -99,9 +99,9 @@ class TableOne(object):
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
-        nonnormal=None, pval=False, pval_adjust=None, isnull=True,
-        ddof=1, labels=None, rename=None, sort=False, limit=None, remarks=True,
-        label_suffix=False, decimals=1):
+                 nonnormal=None, pval=False, pval_adjust=None, isnull=True,
+                 ddof=1, labels=None, rename=None, sort=False, limit=None,
+                 remarks=True, label_suffix=False, decimals=1):
 
         # labels is now rename
         if labels is not None and rename is not None:
