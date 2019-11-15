@@ -112,18 +112,23 @@ class TableOne(object):
         else:
             self._alt_labels = rename
 
-        # check input arguments
+        # groupby should be a string
         if not groupby:
             groupby = ''
         elif groupby and type(groupby) == list:
             groupby = groupby[0]
 
+        # nonnormal should be a string
         if not nonnormal:
             nonnormal = []
         elif nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
 
-        # if columns not specified, use all columns
+        # if the input dataframe is empty, raise error
+        if data.empty:
+            raise InputError('The input dataframe is empty')
+
+        # if columns are not specified, use all columns
         if not columns:
             columns = data.columns.values
 
