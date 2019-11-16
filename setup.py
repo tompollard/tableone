@@ -49,7 +49,6 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'openpyxl>=2.6.3',
         'pandas>=0.22.0',
         'numpy>=1.12.1',
         'scipy>=0.18.1',
