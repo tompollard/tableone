@@ -450,12 +450,12 @@ class TableOne(object):
             df_cont.columns = pd.MultiIndex.from_product([df_cont.columns,
                                                          ['overall']])
 
-        df_cont.index.rename('variable', inplace=True)
+        df_cont.index = df_cont.index.rename('variable')
 
         # remove prefix underscore from column names (e.g. _std -> std)
         agg_rename = df_cont.columns.levels[0]
         agg_rename = [x[1:] if x[0] == '_' else x for x in agg_rename]
-        df_cont.columns.set_levels(agg_rename, level=0, inplace=True)
+        df_cont.columns = df_cont.columns.set_levels(agg_rename, level=0)
 
         return df_cont
 
@@ -500,7 +500,7 @@ class TableOne(object):
             df = df.melt().groupby(['variable',
                                     'value']).size().to_frame(name='freq')
 
-            df.index.set_names('level', level=1, inplace=True)
+            df.index = df.index.set_names('level', level=1)
             df['percent'] = df['freq'].div(df.freq.sum(level=0),
                                                        level=0).astype(float) * 100
 
@@ -530,7 +530,7 @@ class TableOne(object):
                                        'level']].groupby('variable').first()
             # add this category to the nulls table
             nulls = nulls.join(levels)
-            nulls.set_index('level', append=True, inplace=True)
+            nulls = nulls.set_index('level', append=True)
             # join nulls to categorical
             df = df.join(nulls)
 
@@ -567,7 +567,7 @@ class TableOne(object):
                           columns=['continuous', 'nonnormal',
                                    'min_observed', 'pval', 'ptest'])
 
-        df.index.rename('variable', inplace=True)
+        df.index = df.index.rename('variable')
         df['continuous'] = np.where(df.index.isin(self._continuous),
                                     True, False)
 
@@ -705,7 +705,7 @@ class TableOne(object):
 
         # add an empty level column, for joining with cat table
         table['level'] = ''
-        table.set_index([table.index, 'level'], inplace=True)
+        table = table.set_index([table.index, 'level'])
 
         # add pval column
         if self._pval and self._pval_adjust:
@@ -728,7 +728,7 @@ class TableOne(object):
         table = self.cat_describe['t1_summary'].copy()
         # add the total count of null values across all levels
         isnull = data[self._categorical].isnull().sum().to_frame(name='isnull')
-        isnull.index.rename('variable', inplace=True)
+        isnull.index = isnull.index.rename('variable')
         try:
             table = table.join(isnull)
         # if columns form a CategoricalIndex, need to convert to string first
@@ -775,7 +775,7 @@ class TableOne(object):
             table.loc[table['pval'] == '0.000', 'pval'] = '<0.001'
 
         # sort the table rows
-        table.reset_index().set_index(['variable', 'level'], inplace=True)
+        table = table.reset_index().set_index(['variable', 'level'])
         if self._sort:
             # alphabetical
             new_index = sorted(table.index.values)
@@ -802,7 +802,7 @@ class TableOne(object):
 
         # inserts n row
         n_row = pd.DataFrame(columns=['variable', 'level', 'isnull'])
-        n_row.set_index(['variable', 'level'], inplace=True)
+        n_row = n_row.set_index(['variable', 'level'])
         n_row.loc['n', ''] = None
 
         # support pandas<=0.22
@@ -829,14 +829,14 @@ class TableOne(object):
         table[dupe_columns] = table[dupe_columns].mask(dupe_mask).fillna('')
 
         # remove empty column added above
-        table.drop([''], axis=1, inplace=True)
+        table = table.drop([''], axis=1)
 
         # remove isnull column if not needed
         if not self._isnull:
-            table.drop('isnull', axis=1, inplace=True)
+            table = table.drop('isnull', axis=1)
 
         # replace nans with empty strings
-        table.fillna('', inplace=True)
+        table = table.fillna('')
 
         # add column index
         if not self._groupbylvls == ['overall']:
@@ -850,7 +850,7 @@ class TableOne(object):
             table.columns = pd.MultiIndex.from_product([[c], table.columns])
 
         # display alternative labels if assigned
-        table.rename(index=self._create_row_labels(), inplace=True, level=0)
+        table = table.rename(index=self._create_row_labels(), level=0)
 
         # if a limit has been set on the number of categorical variables
         # limit the number of categorical variables that are displayed
