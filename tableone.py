@@ -759,7 +759,7 @@ class TableOne(object):
             # support pandas<=0.22
             try:
                 table = pd.concat([self.cont_table, self.cat_table], sort=False)
-            except:
+            except TypeError:
                 table = pd.concat([self.cont_table, self.cat_table])
         elif self._continuous:
             table = self.cont_table
