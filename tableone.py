@@ -384,7 +384,7 @@ class TableOne(object):
         elif isinstance(self._decimals, dict):
             try:
                 n = self._decimals[x.name]
-            except:
+            except KeyError:
                 n = 1
         else:
             n = 1
@@ -788,7 +788,7 @@ class TableOne(object):
         # support pandas<=0.22
         try:
             table = pd.concat([n_row, table], sort=False)
-        except:
+        except TypeError:
             table = pd.concat([n_row, table])
 
         if self._groupbylvls == ['overall']:
