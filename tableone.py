@@ -497,7 +497,8 @@ class TableOne(object):
             for column in df.columns:
                 df[column] = [str(row) if not pd.isnull(row) else None for row in df[column].values]
 
-            df = df.melt().groupby(['variable','value']).size().to_frame(name='freq')
+            df = df.melt().groupby(['variable',
+                                    'value']).size().to_frame(name='freq')
 
             df['percent'] = df['freq'].div(df.freq.sum(level=0),
                                                        level=0).astype(float) * 100
@@ -701,9 +702,9 @@ class TableOne(object):
             table.columns = table.columns.astype(str)
             table = table.join(nulltable)
 
-        # add an empty level column, for joining with cat table
-        table['level'] = ''
-        table = table.set_index([table.index, 'level'])
+        # add an empty value column, for joining with cat table
+        table['value'] = ''
+        table = table.set_index([table.index, 'value'])
 
         # add pval column
         if self._pval and self._pval_adjust:
@@ -773,7 +774,7 @@ class TableOne(object):
             table.loc[table['pval'] == '0.000', 'pval'] = '<0.001'
 
         # sort the table rows
-        table = table.reset_index().set_index(['variable', 'level'])
+        table = table.reset_index().set_index(['variable', 'value'])
         if self._sort:
             # alphabetical
             new_index = sorted(table.index.values)
@@ -799,8 +800,8 @@ class TableOne(object):
                 table = table.reindex(orig_index)
 
         # inserts n row
-        n_row = pd.DataFrame(columns=['variable', 'level', 'isnull'])
-        n_row = n_row.set_index(['variable', 'level'])
+        n_row = pd.DataFrame(columns=['variable', 'value', 'isnull'])
+        n_row = n_row.set_index(['variable', 'value'])
         n_row.loc['n', ''] = None
 
         # support pandas<=0.22
