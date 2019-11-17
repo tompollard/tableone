@@ -802,7 +802,7 @@ class TableOne(object):
         # inserts n row
         n_row = pd.DataFrame(columns=['variable', 'value', 'isnull'])
         n_row = n_row.set_index(['variable', 'value'])
-        n_row.loc['n', ''] = None
+        n_row.loc['n', 'isnull'] = None
 
         # support pandas<=0.22
         try:
@@ -826,9 +826,6 @@ class TableOne(object):
                 dupe_columns.append(col)
 
         table[dupe_columns] = table[dupe_columns].mask(dupe_mask).fillna('')
-
-        # remove empty column added above
-        table = table.drop([''], axis=1)
 
         # remove isnull column if not needed
         if not self._isnull:
