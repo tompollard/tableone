@@ -885,6 +885,9 @@ class TableOne(object):
         except TypeError:
             pass
 
+        # remove the 'variable, value' column names in the index
+        table = table.rename_axis([None,None])
+
         return table
 
     def _create_row_labels(self):
