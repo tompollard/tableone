@@ -193,7 +193,7 @@ class TableOne(object):
             self.cat_describe = self._create_cat_describe(data)
             self.cat_table = self._create_cat_table(data)
 
-        # create tables of continuous and categorical variables
+        # create continuous tables
         if self._continuous:
             self.cont_describe = self._create_cont_describe(data)
             self.cont_table = self._create_cont_table(data)
@@ -677,7 +677,7 @@ class TableOne(object):
                     oddsratio, pval = stats.fisher_exact(grouped_data)
                 else:
                     ptest = 'Chi-squared (warning: expected count < 5)'
-                    warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
+                    warnings.warn('Chi-squared test for {} may be invalid (expected cell counts are < 5).'.format(v))
 
         return pval, ptest
 
