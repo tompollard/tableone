@@ -65,7 +65,7 @@ class TableOne(object):
         `simes-hochberg` : step-up method (independent)
         `hommel` : closed method based on Simes tests (non-negative)
 
-    isnull : bool, optional
+    missing : bool, optional
         Display a count of null values (default: True).
     ddof : int, optional
         Degrees of freedom for standard deviation calculations (default: 1).
@@ -98,9 +98,9 @@ class TableOne(object):
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
-                 nonnormal=None, pval=False, pval_adjust=None, isnull=True,
-                 ddof=1, labels=None, rename=None, sort=False, limit=None,
-                 remarks=True, label_suffix=False, decimals=1):
+                 nonnormal=None, pval=False, pval_adjust=None, isnull=None,
+                 missing=True, ddof=1, labels=None, rename=None, sort=False,
+                 limit=None, remarks=True, label_suffix=False, decimals=1):
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -110,6 +110,13 @@ class TableOne(object):
             self._alt_labels = labels
         else:
             self._alt_labels = rename
+
+        # isnull is now missing
+        if isnull is not None:
+            warnings.warn("The isnull argument is deprecated; use missing instead", DeprecationWarning)
+            self._isnull = isnull
+        else:
+            self._isnull = missing
 
         # groupby should be a string
         if not groupby:
@@ -149,7 +156,6 @@ class TableOne(object):
             raise InputError("If pval=True then the groupby must be specified.")
 
         self._columns = list(columns)
-        self._isnull = isnull
         self._continuous = [c for c in columns if c not in categorical + [groupby]]
         self._categorical = categorical
         self._nonnormal = nonnormal
@@ -165,7 +171,7 @@ class TableOne(object):
         self._decimals = decimals
 
         # output column names that cannot be contained in a groupby
-        self._reserved_columns = ['isnull', 'pval', 'ptest', 'pval (adjusted)']
+        self._reserved_columns = ['Missing', 'pval', 'ptest', 'pval (adjusted)']
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
             # check that the group levels do not include reserved words
@@ -173,7 +179,7 @@ class TableOne(object):
                 if level in self._reserved_columns:
                     raise InputError('Group level contained "{}", a reserved keyword for tableone.'.format(level))
         else:
-            self._groupbylvls = ['overall']
+            self._groupbylvls = ['Overall']
 
         # forgive me jraffa
         if self._pval:
@@ -446,9 +452,9 @@ class TableOne(object):
         else:
             # if no groupby, just add single group column
             df_cont = cont_data.apply(aggfuncs).T
-            df_cont.columns.name = 'overall'
+            df_cont.columns.name = 'Overall'
             df_cont.columns = pd.MultiIndex.from_product([df_cont.columns,
-                                                         ['overall']])
+                                                         ['Overall']])
 
         df_cont.index = df_cont.index.rename('variable')
 
@@ -521,7 +527,7 @@ class TableOne(object):
             df = df.join(ct)
 
             # add null count
-            nulls = d_slice.isnull().sum().to_frame(name='isnull')
+            nulls = d_slice.isnull().sum().to_frame(name='Missing')
             nulls.index.name = 'variable'
             # only save null count to the first category for each variable
             # do this by extracting the first category from the df row index
@@ -694,7 +700,7 @@ class TableOne(object):
         table.columns = table.columns.droplevel(level=0)
 
         # add a column of null counts as 1-count() from previous function
-        nulltable = data[self._continuous].isnull().sum().to_frame(name='isnull')
+        nulltable = data[self._continuous].isnull().sum().to_frame(name='Missing')
         try:
             table = table.join(nulltable)
         # if columns form a CategoricalIndex, need to convert to string first
@@ -726,7 +732,7 @@ class TableOne(object):
         """
         table = self.cat_describe['t1_summary'].copy()
         # add the total count of null values across all levels
-        isnull = data[self._categorical].isnull().sum().to_frame(name='isnull')
+        isnull = data[self._categorical].isnull().sum().to_frame(name='Missing')
         isnull.index = isnull.index.rename('variable')
         try:
             table = table.join(isnull)
@@ -800,9 +806,9 @@ class TableOne(object):
                 table = table.reindex(orig_index)
 
         # inserts n row
-        n_row = pd.DataFrame(columns=['variable', 'value', 'isnull'])
+        n_row = pd.DataFrame(columns=['variable', 'value', 'Missing'])
         n_row = n_row.set_index(['variable', 'value'])
-        n_row.loc['n', 'isnull'] = None
+        n_row.loc['n', 'Missing'] = None
 
         # support pandas<=0.22
         try:
@@ -810,8 +816,8 @@ class TableOne(object):
         except TypeError:
             table = pd.concat([n_row, table])
 
-        if self._groupbylvls == ['overall']:
-            table.loc['n', 'overall'] = len(data.index)
+        if self._groupbylvls == ['Overall']:
+            table.loc['n', 'Overall'] = len(data.index)
         else:
             for g in self._groupbylvls:
                 ct = data[self._groupby][data[self._groupby] == g].count()
@@ -819,7 +825,7 @@ class TableOne(object):
 
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
-        dupe_columns = ['isnull']
+        dupe_columns = ['Missing']
         optional_columns = ['pval', 'pval (adjusted)', 'ptest']
         for col in optional_columns:
             if col in table.columns.values:
@@ -827,15 +833,15 @@ class TableOne(object):
 
         table[dupe_columns] = table[dupe_columns].mask(dupe_mask).fillna('')
 
-        # remove isnull column if not needed
+        # remove Missing column if not needed
         if not self._isnull:
-            table = table.drop('isnull', axis=1)
+            table = table.drop('Missing', axis=1)
 
         # replace nans with empty strings
         table = table.fillna('')
 
         # add column index
-        if not self._groupbylvls == ['overall']:
+        if not self._groupbylvls == ['Overall']:
             # rename groupby variable if requested
             c = self._groupby
             if self._alt_labels:
@@ -859,8 +865,8 @@ class TableOne(object):
         else:
             cols = table.columns.values
 
-        if 'isnull' in cols:
-            cols = ['isnull'] + [x for x in cols if x != 'isnull']
+        if 'Missing' in cols:
+            cols = ['Missing'] + [x for x in cols if x != 'Missing']
 
         # put optional_columns at the end of the dataframe to
         # ensure consistent ordering
@@ -874,7 +880,7 @@ class TableOne(object):
             table = table.reindex(cols, axis=1)
 
         try:
-            if 'isnull' in self._alt_labels or 'overall' in self._alt_labels:
+            if 'Missing' in self._alt_labels or 'Overall' in self._alt_labels:
                 table = table.rename(columns=self._alt_labels)
         except TypeError:
             pass
