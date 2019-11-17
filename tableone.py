@@ -497,10 +497,8 @@ class TableOne(object):
             for column in df.columns:
                 df[column] = [str(row) if not pd.isnull(row) else None for row in df[column].values]
 
-            df = df.melt().groupby(['variable',
-                                    'value']).size().to_frame(name='freq')
+            df = df.melt().groupby(['variable','value']).size().to_frame(name='freq')
 
-            df.index = df.index.set_names('level', level=1)
             df['percent'] = df['freq'].div(df.freq.sum(level=0),
                                                        level=0).astype(float) * 100
 
@@ -527,10 +525,10 @@ class TableOne(object):
             # only save null count to the first category for each variable
             # do this by extracting the first category from the df row index
             levels = df.reset_index()[['variable',
-                                       'level']].groupby('variable').first()
+                                       'value']].groupby('variable').first()
             # add this category to the nulls table
             nulls = nulls.join(levels)
-            nulls = nulls.set_index('level', append=True)
+            nulls = nulls.set_index('value', append=True)
             # join nulls to categorical
             df = df.join(nulls)
 
