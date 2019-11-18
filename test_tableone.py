@@ -238,8 +238,8 @@ class TestTableOne(object):
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
-        assert table._significance_table.loc['group1', 'ptest'] == "Fisher's exact"
-        assert table._significance_table.loc['group3', 'ptest'] == \
+        assert table._significance_table.loc['group1', 'Test'] == "Fisher's exact"
+        assert table._significance_table.loc['group3', 'Test'] == \
             'Chi-squared (warning: expected count < 5)'
 
     @with_setup(setup, teardown)
@@ -512,8 +512,8 @@ class TestTableOne(object):
         table = TableOne(df, columns=columns, groupby=groupby, pval=True)
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval'
+        assert table.tableone.columns.levels[1][-1] == 'Test'
+        assert table.tableone.columns.levels[1][-2] == 'p-value'
 
         df.loc[df['death'] == 0, 'death'] = 2
 
@@ -521,8 +521,8 @@ class TestTableOne(object):
                          pval_adjust='bonferroni')
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
-        assert table.tableone.columns.levels[1][-1] == 'ptest'
-        assert table.tableone.columns.levels[1][-2] == 'pval (adjusted)'
+        assert table.tableone.columns.levels[1][-1] == 'Test'
+        assert table.tableone.columns.levels[1][-2] == 'p-value (adjusted)'
 
     @with_setup(setup, teardown)
     def test_check_null_counts_are_correct_pn(self):
@@ -702,7 +702,7 @@ class TestTableOne(object):
         # decimals = {"ICU":3}
         table_3_decimal = TableOne(self.data_pn, columns=columns,
                                    categorical=categorical, groupby=groupby,
-                                   nonnormal=nonnormal, pval=False, 
+                                   nonnormal=nonnormal, pval=False,
                                    decimals={"ICU": 3})
 
         t3_group0 = table_3_decimal.tableone['Grouped by death'].loc["ICU",0].values

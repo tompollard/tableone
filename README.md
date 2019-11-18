@@ -86,19 +86,19 @@ mytable
 
 Grouped by mortality:
 
-| variable  | level  | isnull |        0       |        1       | 
-| --------- | ------ | ------ | -------------- | -------------- | 
-| n         |        |        | 864            | 136            |
-| Age       |        |  0     | 66 [52,78]     | 75 [62,83]     |
-| SysABP    |        | 291    | 115.36 (38.34) | 107.57 (49.43) |
-| Height    |        | 475    | 170.33 (23.22) | 168.51 (11.31) |
-| Weight    |        | 302    | 83.04 (23.58)  | 82.29 (25.40)  | 
-| ICU       |  CCU   | 0      | 137 (15.86)    | 25 (18.38)     |
-|           |  CSRU  |        | 194 (22.45)    | 8 (5.88)       |  
-|           |  MICU  |        | 318 (36.81)    | 62 (45.59)     | 
-|           |  SICU  |        | 215 (24.88)    | 41 (30.15)     | 
-| mortality |  0     | 0      | 864 (100.0)    |                | 
-|           |  1     |        |                | 136 (100.0)    | 
+| variable  | level  | missing  |        0       |        1       | 
+| --------- | ------ | -------- | -------------- | -------------- | 
+| n         |        |          | 864            | 136            |
+| Age       |        |  0       | 66 [52,78]     | 75 [62,83]     |
+| SysABP    |        | 291      | 115.36 (38.34) | 107.57 (49.43) |
+| Height    |        | 475      | 170.33 (23.22) | 168.51 (11.31) |
+| Weight    |        | 302      | 83.04 (23.58)  | 82.29 (25.40)  | 
+| ICU       |  CCU   | 0        | 137 (15.86)    | 25 (18.38)     |
+|           |  CSRU  |          | 194 (22.45)    | 8 (5.88)       |  
+|           |  MICU  |          | 318 (36.81)    | 62 (45.59)     | 
+|           |  SICU  |          | 215 (24.88)    | 41 (30.15)     | 
+| mortality |  0     | 0        | 864 (100.0)    |                | 
+|           |  1     |          |                | 136 (100.0)    | 
 
 9. Tables can be exported to file in various formats, including LaTeX, CSV, and HTML. Files are exported by calling the ``to_format`` method on the tableone object. For example, mytable can be exported to an Excel spreadsheet named 'mytable.xlsx' with the following command:
 

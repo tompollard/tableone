@@ -94,7 +94,7 @@ Example
 #. ...which prints the following table to screen::
 
     Stratified by trt
-                           1.0                2.0                  isnull
+                           1.0                2.0                 missing
     ---------------------  -----------------  -----------------  --------
     n                      158                154                     106
     time (mean (std))      2015.62 (1094.12)  1996.86 (1155.93)         0
@@ -142,7 +142,7 @@ Example
 #. ...which prints::
 
     Stratified by trt
-                           1.0                2.0                  isnull  pval    testname
+                           1.0                2.0                 missing  pval    test
     ---------------------  -----------------  -----------------  --------  ------  --------------
     n                      158                154                     106
     time (mean (std))      2015.62 (1094.12)  1996.86 (1155.93)         0  0.883   One_way_ANOVA

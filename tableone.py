@@ -171,7 +171,7 @@ class TableOne(object):
         self._decimals = decimals
 
         # output column names that cannot be contained in a groupby
-        self._reserved_columns = ['Missing', 'p-value', 'ptest', 'p-value (adjusted)']
+        self._reserved_columns = ['Missing', 'p-value', 'Test', 'p-value (adjusted)']
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
             # check that the group levels do not include reserved words
@@ -570,7 +570,7 @@ class TableOne(object):
         # list features of the variable e.g. matched, paired, n_expected
         df = pd.DataFrame(index=self._continuous+self._categorical,
                           columns=['continuous', 'nonnormal',
-                                   'min_observed', 'p-value', 'ptest'])
+                                   'min_observed', 'p-value', 'Test'])
 
         df.index = df.index.rename('variable')
         df['continuous'] = np.where(df.index.isin(self._continuous),
@@ -608,7 +608,7 @@ class TableOne(object):
             df.loc[v, 'min_observed'] = min_observed
 
             # compute pvalues
-            df.loc[v, 'p-value'], df.loc[v, 'ptest'] = self._p_test(v,
+            df.loc[v, 'p-value'], df.loc[v, 'Test'] = self._p_test(v,
                                                                  grouped_data,
                                                                  is_continuous,
                                                                  is_categorical,
@@ -715,9 +715,9 @@ class TableOne(object):
         # add pval column
         if self._pval and self._pval_adjust:
             table = table.join(self._significance_table[['p-value (adjusted)',
-                                                        'ptest']])
+                                                        'Test']])
         elif self._pval:
-            table = table.join(self._significance_table[['p-value', 'ptest']])
+            table = table.join(self._significance_table[['p-value', 'Test']])
 
         return table
 
@@ -744,9 +744,9 @@ class TableOne(object):
         # add pval column
         if self._pval and self._pval_adjust:
             table = table.join(self._significance_table[['p-value (adjusted)',
-                                                         'ptest']])
+                                                         'Test']])
         elif self._pval:
-            table = table.join(self._significance_table[['p-value', 'ptest']])
+            table = table.join(self._significance_table[['p-value', 'Test']])
 
         return table
 
@@ -826,7 +826,7 @@ class TableOne(object):
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
         dupe_columns = ['Missing']
-        optional_columns = ['p-value', 'p-value (adjusted)', 'ptest']
+        optional_columns = ['p-value', 'p-value (adjusted)', 'Test']
         for col in optional_columns:
             if col in table.columns.values:
                 dupe_columns.append(col)
