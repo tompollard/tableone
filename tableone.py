@@ -171,7 +171,7 @@ class TableOne(object):
         self._decimals = decimals
 
         # output column names that cannot be contained in a groupby
-        self._reserved_columns = ['Missing', 'pval', 'ptest', 'pval (adjusted)']
+        self._reserved_columns = ['Missing', 'p-value', 'ptest', 'p-value (adjusted)']
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
             # check that the group levels do not include reserved words
@@ -188,10 +188,10 @@ class TableOne(object):
         # correct for multiple testing
         if self._pval and self._pval_adjust:
             alpha = 0.05
-            adjusted = multitest.multipletests(self._significance_table['pval'],
+            adjusted = multitest.multipletests(self._significance_table['p-value'],
                                                alpha=alpha,
                                                method=self._pval_adjust)
-            self._significance_table['pval (adjusted)'] = adjusted[1]
+            self._significance_table['p-value (adjusted)'] = adjusted[1]
             self._significance_table['adjust method'] = self._pval_adjust
 
         # create descriptive tables
@@ -570,7 +570,7 @@ class TableOne(object):
         # list features of the variable e.g. matched, paired, n_expected
         df = pd.DataFrame(index=self._continuous+self._categorical,
                           columns=['continuous', 'nonnormal',
-                                   'min_observed', 'pval', 'ptest'])
+                                   'min_observed', 'p-value', 'ptest'])
 
         df.index = df.index.rename('variable')
         df['continuous'] = np.where(df.index.isin(self._continuous),
@@ -608,7 +608,7 @@ class TableOne(object):
             df.loc[v, 'min_observed'] = min_observed
 
             # compute pvalues
-            df.loc[v, 'pval'], df.loc[v, 'ptest'] = self._p_test(v,
+            df.loc[v, 'p-value'], df.loc[v, 'ptest'] = self._p_test(v,
                                                                  grouped_data,
                                                                  is_continuous,
                                                                  is_categorical,
@@ -714,10 +714,10 @@ class TableOne(object):
 
         # add pval column
         if self._pval and self._pval_adjust:
-            table = table.join(self._significance_table[['pval (adjusted)',
+            table = table.join(self._significance_table[['p-value (adjusted)',
                                                         'ptest']])
         elif self._pval:
-            table = table.join(self._significance_table[['pval', 'ptest']])
+            table = table.join(self._significance_table[['p-value', 'ptest']])
 
         return table
 
@@ -743,10 +743,10 @@ class TableOne(object):
 
         # add pval column
         if self._pval and self._pval_adjust:
-            table = table.join(self._significance_table[['pval (adjusted)',
+            table = table.join(self._significance_table[['p-value (adjusted)',
                                                          'ptest']])
         elif self._pval:
-            table = table.join(self._significance_table[['pval', 'ptest']])
+            table = table.join(self._significance_table[['p-value', 'ptest']])
 
         return table
 
@@ -773,11 +773,11 @@ class TableOne(object):
 
         # round pval column and convert to string
         if self._pval and self._pval_adjust:
-            table['pval (adjusted)'] = table['pval (adjusted)'].apply('{:.3f}'.format).astype(str)
-            table.loc[table['pval (adjusted)'] == '0.000', 'pval (adjusted)'] = '<0.001'
+            table['p-value (adjusted)'] = table['p-value (adjusted)'].apply('{:.3f}'.format).astype(str)
+            table.loc[table['p-value (adjusted)'] == '0.000', 'p-value (adjusted)'] = '<0.001'
         elif self._pval:
-            table['pval'] = table['pval'].apply('{:.3f}'.format).astype(str)
-            table.loc[table['pval'] == '0.000', 'pval'] = '<0.001'
+            table['p-value'] = table['p-value'].apply('{:.3f}'.format).astype(str)
+            table.loc[table['p-value'] == '0.000', 'p-value'] = '<0.001'
 
         # sort the table rows
         table = table.reset_index().set_index(['variable', 'value'])
@@ -826,7 +826,7 @@ class TableOne(object):
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
         dupe_columns = ['Missing']
-        optional_columns = ['pval', 'pval (adjusted)', 'ptest']
+        optional_columns = ['p-value', 'p-value (adjusted)', 'ptest']
         for col in optional_columns:
             if col in table.columns.values:
                 dupe_columns.append(col)
