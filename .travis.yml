@@ -18,7 +18,7 @@ before_install:
 
 # command to install dependencies
 install:
-  - pip install numpy scipy matplotlib pandas sympy nose statsmodels
+  - pip install numpy scipy matplotlib pandas sympy nose statsmodels tabulate
   - pip install .
 
 # command to run tests
