@@ -76,17 +76,17 @@ labels={'death': 'mortality'}
 mytable = TableOne(data, columns, categorical, groupby, nonnormal, rename=labels, pval=False)
 ```
 
-7. Type the name of the instance in an interpreter:
+7. Display the table using the `tabulate` method. The `tablefmt` argument allows the table to be displayed in multiple formats, including "github", "grid", "fancy_grid", "rst", "html", and "latex".
 
 ```python
-mytable
+print(overall_table.tabulate(tablefmt = "fancy_grid"))
 ```
 
 8. ...which prints the following table to screen:
 
 Grouped by mortality:
 
-| variable  | level  | missing  |        0       |        1       | 
+|           |        | Missing  |        0       |        1       | 
 | --------- | ------ | -------- | -------------- | -------------- | 
 | n         |        |          | 864            | 136            |
 | Age       |        |  0       | 66 [52,78]     | 75 [62,83]     |
@@ -105,5 +105,3 @@ Grouped by mortality:
 ```python
 mytable.to_excel('mytable.xlsx')
 ```
-
-

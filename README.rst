@@ -87,9 +87,9 @@ Example
 
     mytable = TableOne(data, columns, categorical, groupby, nonnormal)
 
-#. Type the name of the instance in an interpreter::
+#. Display the table using the ``tabulate`` method. The ``tablefmt`` argument allows the table to be displayed in multiple formats, including "github", "grid", "fancy_grid", "rst", "html", and "latex".::
 
-    mytable
+    print(mytable.tabulate(tablefmt="github"))
 
 #. ...which prints the following table to screen::
 

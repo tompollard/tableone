@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from statsmodels.stats import multitest
+from tabulate import tabulate
 
 import modality
 
@@ -225,6 +226,41 @@ class TableOne(object):
 
     def _repr_html_(self):
         return self.tableone._repr_html_() + self._generate_remark_str('<br />')
+
+    def tabulate(self, headers=None, tablefmt='grid', **kwargs):
+        """
+        Pretty-print tableone data. Wrapper for the Python 'tabulate' library.
+
+        Args:
+            headers (list): Defines a list of column headers to be used.
+            tablefmt (str): Defines how the table is formatted. Table formats
+                include: 'plain','simple','github','grid','fancy_grid','pipe',
+                'orgtbl','jira','presto','psql','rst','mediawiki','moinmoin',
+                'youtrack','html','latex','latex_raw','latex_booktabs',
+                and 'textile'.
+
+        Examples:
+            To output tableone in github syntax, call tabulate with the
+                'tablefmt=github' argument.
+
+            >>> print(tableone.tabulate(tablefmt='fancy_grid'))
+        """
+        # reformat table for tabulate
+        df = self.tableone
+
+        if not headers:
+            try:
+                headers = df.columns.levels[1]
+            except AttributeError:
+                headers = df.columns
+
+        df = df.reset_index()
+        df = df.set_index('level_0')
+        isdupe = df.index.duplicated()
+        df.index = df.index.where(~isdupe, '')
+        df = df.rename_axis(None).rename(columns={'level_1': ''})
+
+        return tabulate(df, headers=headers, tablefmt=tablefmt, **kwargs)
 
     def _generate_remark_str(self, end_of_line='\n'):
         """
@@ -886,7 +922,7 @@ class TableOne(object):
             pass
 
         # remove the 'variable, value' column names in the index
-        table = table.rename_axis([None,None])
+        table = table.rename_axis([None, None])
 
         return table
 
