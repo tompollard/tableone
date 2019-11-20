@@ -79,7 +79,7 @@ mytable = TableOne(data, columns, categorical, groupby, nonnormal, rename=labels
 7. Display the table using the `tabulate` method. The `tablefmt` argument allows the table to be displayed in multiple formats, including "github", "grid", "fancy_grid", "rst", "html", and "latex".
 
 ```python
-print(overall_table.tabulate(tablefmt = "fancy_grid"))
+print(mytable.tabulate(tablefmt = "fancy_grid"))
 ```
 
 8. ...which prints the following table to screen:
