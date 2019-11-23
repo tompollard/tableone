@@ -833,13 +833,16 @@ class TableOne(object):
             levelcounts = levelcounts[levelcounts >= self._limit]
             for v, _ in levelcounts.iteritems():
                 count = data[v].value_counts().sort_values(ascending=False)
-                new_index = [(v, i) for i in count.index]
+                new_index = [(v, '{}'.format(i)) for i in count.index]
                 # restructure to match orig_index
                 new_index_array = np.empty((len(new_index),), dtype=object)
                 new_index_array[:] = [tuple(i) for i in new_index]
                 orig_index = table.index.values.copy()
                 orig_index[table.index.get_loc(v)] = new_index_array
                 table = table.reindex(orig_index)
+
+                # now drop the rows > the limit
+                table = table.drop(new_index_array[self._limit:])
 
         # inserts n row
         n_row = pd.DataFrame(columns=['variable', 'value', 'Missing'])
@@ -889,11 +892,6 @@ class TableOne(object):
 
         # display alternative labels if assigned
         table = table.rename(index=self._create_row_labels(), level=0)
-
-        # if a limit has been set on the number of categorical variables
-        # limit the number of categorical variables that are displayed
-        if self._limit:
-            table = table.groupby('variable').head(self._limit)
 
         # re-order the columns for consistency
         if self._groupby:
