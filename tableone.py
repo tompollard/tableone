@@ -76,8 +76,9 @@ class TableOne(object):
     sort : bool, optional
         Sort the rows alphabetically. Default (False) retains the input order
         of columns.
-    limit : int, optional
-        Limit to the top N most frequent categories.
+    limit : int or dict, optional
+        Limit to the top N most frequent categories. If int, apply to all
+        categorical variables. If dict, apply to the key (e.g. {'gender': 1}).
     remarks : bool, optional
         Add remarks on the appropriateness of the summary measures and the
         statistical tests (default: True).
@@ -826,14 +827,24 @@ class TableOne(object):
                                key=lambda x: self._columns.index(x[0]))
         table = table.reindex(new_index)
 
-        # if a limit has been set on the number of categorical variables
-        # then re-order the variables by frequency
+        # set the limit on the number of categorical variables
         if self._limit:
             levelcounts = data[self._categorical].nunique()
-            levelcounts = levelcounts[levelcounts >= self._limit]
             for v, _ in levelcounts.iteritems():
+
+                # set the limit for the variable
+                if (isinstance(self._limit, int)
+                    and levelcounts[v] >= self._limit):
+                    limit = self._limit
+                elif isinstance(self._limit, dict) and v in self._limit:
+                    limit = self._limit[v]
+                else:
+                    continue
+
+                # re-order the variables by frequency
                 count = data[v].value_counts().sort_values(ascending=False)
                 new_index = [(v, '{}'.format(i)) for i in count.index]
+
                 # restructure to match orig_index
                 new_index_array = np.empty((len(new_index),), dtype=object)
                 new_index_array[:] = [tuple(i) for i in new_index]
@@ -841,8 +852,8 @@ class TableOne(object):
                 orig_index[table.index.get_loc(v)] = new_index_array
                 table = table.reindex(orig_index)
 
-                # now drop the rows > the limit
-                table = table.drop(new_index_array[self._limit:])
+                # drop the rows > the limit
+                table = table.drop(new_index_array[limit:])
 
         # inserts n row
         n_row = pd.DataFrame(columns=['variable', 'value', 'Missing'])
