@@ -78,7 +78,10 @@ class TableOne(object):
         of columns.
     limit : int or dict, optional
         Limit to the top N most frequent categories. If int, apply to all
-        categorical variables. If dict, apply to the key (e.g. {'gender': 1}).
+        categorical variables. If dict, apply to the key (e.g. {'sex': 1}).
+    order : dict, optional
+        Specify an order for categorical variables. Key is the variable, value
+        is a list of values in order.  {e.g. 'sex': ['f', 'm', 'other']}
     remarks : bool, optional
         Add remarks on the appropriateness of the summary measures and the
         statistical tests (default: True).
@@ -102,7 +105,8 @@ class TableOne(object):
     def __init__(self, data, columns=None, categorical=None, groupby=None,
                  nonnormal=None, pval=False, pval_adjust=None, isnull=None,
                  missing=True, ddof=1, labels=None, rename=None, sort=False,
-                 limit=None, remarks=True, label_suffix=False, decimals=1):
+                 limit=None, order=None, remarks=True, label_suffix=False,
+                 decimals=1):
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -168,6 +172,7 @@ class TableOne(object):
         # degrees of freedom for standard deviation
         self._ddof = ddof
         self._limit = limit
+        self._order = order
         self._remarks = remarks
         self._label_suffix = label_suffix
         self._decimals = decimals
@@ -827,35 +832,69 @@ class TableOne(object):
                                key=lambda x: self._columns.index(x[0]))
         table = table.reindex(new_index)
 
+        # if an order is specified, apply it
+        if self._order:
+            for k in self._order:
+
+                # Skip if the variable isn't present
+                try:
+                    all_var = table.loc[k].index.unique(level='value')
+                except KeyError:
+                    warnings.warn('Order variable not found: {}'.format(k))
+                    continue
+
+                # Remove value from the order list of it is not present
+                if [i for i in self._order[k] if i not in all_var]:
+                    rm_var = [i for i in self._order[k] if i not in all_var]
+                    self._order[k] = [i for i in self._order[k] if i in all_var]
+                    warnings.warn('Order value not found: {}: {}'.format(k,
+                                                                         rm_var))
+
+                new_seq = [(k, '{}'.format(v)) for v in self._order[k]]
+                new_seq += [(k, '{}'.format(v)) for v in all_var if v not in self._order[k]]
+
+                # restructure to match the original idx
+                new_idx_array = np.empty((len(new_seq),), dtype=object)
+                new_idx_array[:] = [tuple(i) for i in new_seq]
+                orig_idx = table.index.values.copy()
+                orig_idx[table.index.get_loc(k)] = new_idx_array
+                table = table.reindex(orig_idx)
+
         # set the limit on the number of categorical variables
         if self._limit:
             levelcounts = data[self._categorical].nunique()
-            for v, _ in levelcounts.iteritems():
+            for k, _ in levelcounts.iteritems():
 
                 # set the limit for the variable
                 if (isinstance(self._limit, int)
-                    and levelcounts[v] >= self._limit):
+                        and levelcounts[k] >= self._limit):
                     limit = self._limit
-                elif isinstance(self._limit, dict) and v in self._limit:
-                    limit = self._limit[v]
+                elif isinstance(self._limit, dict) and k in self._limit:
+                    limit = self._limit[k]
                 else:
                     continue
 
-                # re-order the variables by frequency
-                count = data[v].value_counts().sort_values(ascending=False)
-                new_index = [(v, '{}'.format(i)) for i in count.index]
+                if not self._order or (self._order and k not in self._order):
+                    # re-order the variables by frequency
+                    count = data[k].value_counts().sort_values(ascending=False)
+                    new_idx = [(k, '{}'.format(i)) for i in count.index]
+                else:
+                    # apply order
+                    all_var = table.loc[k].index.unique(level='value')
+                    new_idx = [(k, '{}'.format(v)) for v in self._order[k]]
+                    new_idx += [(k, '{}'.format(v)) for v in all_var if v not in self._order[k]]
 
-                # restructure to match orig_index
-                new_index_array = np.empty((len(new_index),), dtype=object)
-                new_index_array[:] = [tuple(i) for i in new_index]
-                orig_index = table.index.values.copy()
-                orig_index[table.index.get_loc(v)] = new_index_array
-                table = table.reindex(orig_index)
+                # restructure to match the original idx
+                new_idx_array = np.empty((len(new_idx),), dtype=object)
+                new_idx_array[:] = [tuple(i) for i in new_idx]
+                orig_idx = table.index.values.copy()
+                orig_idx[table.index.get_loc(k)] = new_idx_array
+                table = table.reindex(orig_idx)
 
                 # drop the rows > the limit
-                table = table.drop(new_index_array[limit:])
+                table = table.drop(new_idx_array[limit:])
 
-        # inserts n row
+        # insert n row
         n_row = pd.DataFrame(columns=['variable', 'value', 'Missing'])
         n_row = n_row.set_index(['variable', 'value'])
         n_row.loc['n', 'Missing'] = None
