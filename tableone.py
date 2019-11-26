@@ -162,6 +162,11 @@ class TableOne(object):
         if not categorical and type(categorical) != list:
             categorical = self._detect_categorical_columns(data[columns])
 
+        # ensure that values to order are strings
+        if order:
+            for k in order:
+                order[k] = ["{}".format(v) for v in order[k]]
+
         if pval and not groupby:
             raise InputError("If pval=True then groupby must be specified.")
 
