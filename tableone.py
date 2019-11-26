@@ -112,14 +112,16 @@ class TableOne(object):
         if labels is not None and rename is not None:
             raise TypeError("TableOne received both labels and rename")
         elif labels is not None:
-            warnings.warn("The labels argument is deprecated; use rename instead", DeprecationWarning)
+            warnings.warn("The labels argument is deprecated; use " +
+                          "rename instead.", DeprecationWarning)
             self._alt_labels = labels
         else:
             self._alt_labels = rename
 
         # isnull is now missing
         if isnull is not None:
-            warnings.warn("The isnull argument is deprecated; use missing instead", DeprecationWarning)
+            warnings.warn("The isnull argument is deprecated; use " +
+                          "missing instead", DeprecationWarning)
             self._isnull = isnull
         else:
             self._isnull = missing
@@ -147,19 +149,21 @@ class TableOne(object):
         # check that the columns exist in the dataframe
         if not set(columns).issubset(data.columns):
             notfound = list(set(columns) - set(data.columns))
-            raise InputError('Columns not found in dataset: {}'.format(notfound))
+            raise InputError("Columns not found in " +
+                             "dataset: {}".format(notfound))
 
         # check for duplicate columns
         dups = data[columns].columns[data[columns].columns.duplicated()].unique()
         if not dups.empty:
-            raise InputError('Input contains duplicate columns: {}'.format(dups))
+            raise InputError("Input contains duplicate " +
+                             "columns: {}".format(dups))
 
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
             categorical = self._detect_categorical_columns(data[columns])
 
         if pval and not groupby:
-            raise InputError("If pval=True then the groupby must be specified.")
+            raise InputError("If pval=True then groupby must be specified.")
 
         self._columns = list(columns)
         self._continuous = [c for c in columns if c not in categorical + [groupby]]
@@ -185,7 +189,8 @@ class TableOne(object):
             # check that the group levels do not include reserved words
             for level in self._groupbylvls:
                 if level in self._reserved_columns:
-                    raise InputError('Group level contained "{}", a reserved keyword for tableone.'.format(level))
+                    raise InputError('Group level contains "{}", a reserved' +
+                                     ' keyword.'.format(level))
         else:
             self._groupbylvls = ['Overall']
 
@@ -283,21 +288,24 @@ class TableOne(object):
             outlier_mask = self.cont_describe.far_outliers > 1
             outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].dropna(how='all').index)
             if outlier_vars:
-                warnings["Warning, Tukey test indicates far outliers in"] = outlier_vars
+                warnings["Warning, Tukey test indicates far " +
+                         "outliers in"] = outlier_vars
 
             # highlight possible multimodal distributions using hartigan's dip
             # test -1 values indicate NaN
             modal_mask = (self.cont_describe.diptest >= 0) & (self.cont_describe.diptest <= 0.05)
             modal_vars = list(self.cont_describe.diptest[modal_mask].dropna(how='all').index)
             if modal_vars:
-                warnings["Warning, Hartigan's Dip Test reports possible multimodal distributions for"] = modal_vars
+                warnings["Warning, Hartigan's Dip Test reports possible " +
+                         "multimodal distributions for"] = modal_vars
 
             # highlight non normal distributions
             # -1 values indicate NaN
             modal_mask = (self.cont_describe.normaltest >= 0) & (self.cont_describe.normaltest <= 0.001)
             modal_vars = list(self.cont_describe.normaltest[modal_mask].dropna(how='all').index)
             if modal_vars:
-                warnings["Warning, test for normality reports non-normal distributions for"] = modal_vars
+                warnings["Warning, test for normality reports " +
+                         "non-normal distributions for"] = modal_vars
 
         # create the warning string
         for n, k in enumerate(sorted(warnings)):
@@ -439,7 +447,8 @@ class TableOne(object):
                 n = 1
         else:
             n = 1
-            warnings.warn('The decimals arg must be an int or dict. Defaulting to {} d.p.'.format(n))
+            warnings.warn("The decimals arg must be an int or dict. " +
+                          "Defaulting to {} d.p.".format(n))
 
         if x.name in self._nonnormal:
             f = '{{:.{}f}} [{{:.{}f}},{{:.{}f}}]'.format(n, n, n)
@@ -471,13 +480,16 @@ class TableOne(object):
                     self._normaltest]
 
         # coerce continuous data to numeric
-        cont_data = data[self._continuous].apply(pd.to_numeric, errors='coerce')
+        cont_data = data[self._continuous].apply(pd.to_numeric,
+                                                 errors='coerce')
         # check all data in each continuous column is numeric
         bad_cols = cont_data.count() != data[self._continuous].count()
         bad_cols = cont_data.columns[bad_cols]
         if len(bad_cols) > 0:
-            raise InputError("""The following continuous column(s) have non-numeric values: {}.
-            Either specify the column(s) as categorical or remove the non-numeric values.""".format(bad_cols.values))
+            raise InputError("The following continuous column(s) have " +
+                             "non-numeric values: {}. Either specify the " +
+                             "column(s) as categorical or remove the " +
+                             "non-numeric values.""".format(bad_cols.values))
 
         # check for coerced column containing all NaN to warn user
         for column in cont_data.columns[cont_data.count() == 0]:
@@ -552,7 +564,7 @@ class TableOne(object):
                                     'value']).size().to_frame(name='freq')
 
             df['percent'] = df['freq'].div(df.freq.sum(level=0),
-                                                       level=0).astype(float) * 100
+                                           level=0).astype(float) * 100
 
             # set number of decimal places for percent
             if isinstance(self._decimals, int):
@@ -699,7 +711,8 @@ class TableOne(object):
 
         # do not test if the variable has no observations in a level
         if min_observed == 0:
-            warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
+            warnings.warn("No p-value was computed for {} due to the low " +
+                          "number of observations.".format(v))
             return pval, ptest
 
         # continuous
@@ -727,7 +740,8 @@ class TableOne(object):
                     oddsratio, pval = stats.fisher_exact(grouped_data)
                 else:
                     ptest = 'Chi-squared (warning: expected count < 5)'
-                    warnings.warn('Chi-squared test for {} may be invalid (expected cell counts are < 5).'.format(v))
+                    warnings.warn("Chi-squared test for {} may be invalid " +
+                                  "(expected cell counts are < 5).".format(v))
 
         return pval, ptest
 
@@ -820,7 +834,8 @@ class TableOne(object):
         # round pval column and convert to string
         if self._pval and self._pval_adjust:
             table['p-value (adjusted)'] = table['p-value (adjusted)'].apply('{:.3f}'.format).astype(str)
-            table.loc[table['p-value (adjusted)'] == '0.000', 'p-value (adjusted)'] = '<0.001'
+            table.loc[table['p-value (adjusted)'] == '0.000',
+                      'p-value (adjusted)'] = '<0.001'
         elif self._pval:
             table['p-value'] = table['p-value'].apply('{:.3f}'.format).astype(str)
             table.loc[table['p-value'] == '0.000', 'p-value'] = '<0.001'
@@ -1025,6 +1040,6 @@ class TableOne(object):
 
     # warnings
     def _non_continuous_warning(self, c):
-        warnings.warn('''"{}" has all non-numeric values. Consider including it
-            in the list of categorical variables.'''.format(c), RuntimeWarning,
-            stacklevel=2)
+        warnings.warn('"{}" has all non-numeric values. Consider including ' +
+                      'it in the list of categorical ' +
+                      'variables.'.format(c), RuntimeWarning, stacklevel=2)
