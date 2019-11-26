@@ -598,10 +598,12 @@ class TestTableOne(object):
                                 categorical=categorical, groupby=groupby,
                                 nonnormal=nonnormal, pval=False)
 
-        t_no_arg_group0 = table_no_arg.tableone['Grouped by death'].loc["Weight", 0].values
+        t_no_arg_group0 = table_no_arg.tableone['Grouped by death'].loc["Weight",
+                                                                        "0"].values
         t_no_arg_group0_expected = np.array(['83.0 (23.6)'])
 
-        t_no_arg_group1 = table_no_arg.tableone['Grouped by death'].loc["Weight", 1].values
+        t_no_arg_group1 = table_no_arg.tableone['Grouped by death'].loc["Weight",
+                                                                        "1"].values
         t_no_arg_group1_expected = np.array(['82.3 (25.4)'])
 
         assert all(t_no_arg_group0 == t_no_arg_group0_expected)
@@ -613,11 +615,11 @@ class TestTableOne(object):
                                    nonnormal=nonnormal, pval=False, decimals=1)
 
         t1_group0 = table_1_decimal.tableone['Grouped by death'].loc["Weight",
-                                                                     0].values
+                                                                     "0"].values
         t1_group0_expected = np.array(['83.0 (23.6)'])
 
         t1_group1 = table_1_decimal.tableone['Grouped by death'].loc["Weight",
-                                                                     1].values
+                                                                     "1"].values
         t1_group1_expected = np.array(['82.3 (25.4)'])
 
         assert all(t1_group0 == t1_group0_expected)
@@ -629,11 +631,11 @@ class TestTableOne(object):
                                    nonnormal=nonnormal, pval=False, decimals=2)
 
         t2_group0 = table_2_decimal.tableone['Grouped by death'].loc["Weight",
-                                                                     0].values
+                                                                     "0"].values
         t2_group0_expected = np.array(['83.04 (23.58)'])
 
         t2_group1 = table_2_decimal.tableone['Grouped by death'].loc["Weight",
-                                                                     1].values
+                                                                     "1"].values
         t2_group1_expected = np.array(['82.29 (25.40)'])
 
         assert all(t2_group0 == t2_group0_expected)
@@ -646,11 +648,11 @@ class TestTableOne(object):
                                    decimals={"Age": 0, "Weight": 3})
 
         t3_group0 = table_3_decimal.tableone['Grouped by death'].loc["Weight",
-                                                                     0].values
+                                                                     "0"].values
         t3_group0_expected = np.array(['83.041 (23.581)'])
 
         t3_group1 = table_3_decimal.tableone['Grouped by death'].loc["Weight",
-                                                                     1].values
+                                                                     "1"].values
         t3_group1_expected = np.array(['82.286 (25.396)'])
 
         assert all(t3_group0 == t3_group0_expected)
@@ -672,11 +674,13 @@ class TestTableOne(object):
                                    categorical=categorical, groupby=groupby,
                                    nonnormal=nonnormal, pval=False, decimals=1)
 
-        t1_group0 = table_1_decimal.tableone['Grouped by death'].loc["ICU", 0].values
-        t1_group0_expected = np.array(['137 (15.9)', '194 (22.5)', 
+        t1_group0 = table_1_decimal.tableone['Grouped by death'].loc["ICU",
+                                                                     "0"].values
+        t1_group0_expected = np.array(['137 (15.9)', '194 (22.5)',
                                       '318 (36.8)', '215 (24.9)'])
 
-        t1_group1 = table_1_decimal.tableone['Grouped by death'].loc["ICU", 1].values
+        t1_group1 = table_1_decimal.tableone['Grouped by death'].loc["ICU",
+                                                                     "1"].values
         t1_group1_expected = np.array(['25 (18.4)', '8 (5.9)',
                                       '62 (45.6)', '41 (30.1)'])
 
@@ -688,11 +692,13 @@ class TestTableOne(object):
                                    categorical=categorical, groupby=groupby,
                                    nonnormal=nonnormal, pval=False, decimals=2)
 
-        t2_group0 = table_2_decimal.tableone['Grouped by death'].loc["ICU", 0].values
+        t2_group0 = table_2_decimal.tableone['Grouped by death'].loc["ICU",
+                                                                     "0"].values
         t2_group0_expected = np.array(['137 (15.86)', '194 (22.45)',
                                       '318 (36.81)', '215 (24.88)'])
 
-        t2_group1 = table_2_decimal.tableone['Grouped by death'].loc["ICU", 1].values
+        t2_group1 = table_2_decimal.tableone['Grouped by death'].loc["ICU",
+                                                                     "1"].values
         t2_group1_expected = np.array(['25 (18.38)', '8 (5.88)',
                                       '62 (45.59)', '41 (30.15)'])
 
@@ -705,11 +711,13 @@ class TestTableOne(object):
                                    nonnormal=nonnormal, pval=False,
                                    decimals={"ICU": 3})
 
-        t3_group0 = table_3_decimal.tableone['Grouped by death'].loc["ICU",0].values
+        t3_group0 = table_3_decimal.tableone['Grouped by death'].loc["ICU",
+                                                                     "0"].values
         t3_group0_expected = np.array(['137 (15.856)', '194 (22.454)',
                                       '318 (36.806)', '215 (24.884)'])
 
-        t3_group1 = table_3_decimal.tableone['Grouped by death'].loc["ICU",1].values
+        t3_group1 = table_3_decimal.tableone['Grouped by death'].loc["ICU",
+                                                                     "1"].values
         t3_group1_expected = np.array(['25 (18.382)', '8 (5.882)',
                                       '62 (45.588)', '41 (30.147)'])
 
@@ -723,11 +731,13 @@ class TestTableOne(object):
                                    nonnormal=nonnormal, pval=False,
                                    decimals={"Age": 3})
 
-        t4_group0 = table_4_decimal.tableone['Grouped by death'].loc["ICU", 0].values
+        t4_group0 = table_4_decimal.tableone['Grouped by death'].loc["ICU",
+                                                                     "0"].values
         t4_group0_expected = np.array(['137 (15.9)', '194 (22.5)',
                                        '318 (36.8)', '215 (24.9)'])
 
-        t4_group1 = table_4_decimal.tableone['Grouped by death'].loc["ICU", 1].values
+        t4_group1 = table_4_decimal.tableone['Grouped by death'].loc["ICU",
+                                                                     "1"].values
         t4_group1_expected = np.array(['25 (18.4)', '8 (5.9)',
                                        '62 (45.6)', '41 (30.1)'])
 
@@ -772,4 +782,3 @@ class TestTableOne(object):
 
         assert all(t1.tableone.loc['basket4'].index == ['apple', 'banana',
                                                         'lemon'])
-
