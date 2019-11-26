@@ -4,7 +4,7 @@ research papers.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 import warnings
 
