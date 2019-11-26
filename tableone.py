@@ -247,7 +247,7 @@ class TableOne(object):
 
         Examples:
             To output tableone in github syntax, call tabulate with the
-                'tablefmt=github' argument.
+                'tablefmt="github"' argument.
 
             >>> print(tableone.tabulate(tablefmt='fancy_grid'))
         """
@@ -357,6 +357,7 @@ class TableOne(object):
         """
         p = modality.hartigan_diptest(x.values)
         # dropna=False argument in pivot_table does not function as expected
+        # https://github.com/pandas-dev/pandas/issues/22159
         # return -1 instead of None
         if pd.isnull(p):
             return -1
@@ -843,7 +844,7 @@ class TableOne(object):
                     warnings.warn('Order variable not found: {}'.format(k))
                     continue
 
-                # Remove value from the order list of it is not present
+                # Remove value from order if it is not present
                 if [i for i in self._order[k] if i not in all_var]:
                     rm_var = [i for i in self._order[k] if i not in all_var]
                     self._order[k] = [i for i in self._order[k] if i in all_var]
@@ -943,24 +944,33 @@ class TableOne(object):
         # display alternative labels if assigned
         table = table.rename(index=self._create_row_labels(), level=0)
 
-        # re-order the columns for consistency
-        if self._groupby:
-            cols = table.columns.levels[1].values
+        # ensure the order of columns is consistent
+        if self._groupby and self._order and (self._groupby in self._order):
+            header = ['{}'.format(v) for v in table.columns.levels[1].values]
+            cols = self._order[self._groupby] + ['{}'.format(v)
+                                                 for v in header
+                                                 if v not in
+                                                 self._order[self._groupby]]
+        elif self._groupby:
+            cols = ['{}'.format(v) for v in table.columns.levels[1].values]
         else:
-            cols = table.columns.values
+            cols = ['{}'.format(v) for v in table.columns.values]
 
         if 'Missing' in cols:
             cols = ['Missing'] + [x for x in cols if x != 'Missing']
 
-        # put optional_columns at the end of the dataframe to
-        # ensure consistent ordering
+        # move optional_columns to the end of the dataframe
         for col in optional_columns:
             if col in cols:
                 cols = [x for x in cols if x != col] + [col]
 
+        # ensure column headers are strings before reindexing
         if self._groupby:
+            header = ['{}'.format(v) for v in table.columns.levels[1].values]
+            table.columns = table.columns.set_levels(header, level=1)
             table = table.reindex(cols, axis=1, level=1)
         else:
+            table.columns = table.columns.values.astype(str)
             table = table.reindex(cols, axis=1)
 
         try:
