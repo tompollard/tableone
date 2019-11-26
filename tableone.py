@@ -178,7 +178,8 @@ class TableOne(object):
         self._decimals = decimals
 
         # output column names that cannot be contained in a groupby
-        self._reserved_columns = ['Missing', 'p-value', 'Test', 'p-value (adjusted)']
+        self._reserved_columns = ['Missing', 'p-value', 'Test',
+                                  'p-value (adjusted)']
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
             # check that the group levels do not include reserved words
@@ -542,9 +543,10 @@ class TableOne(object):
             # create a dataframe with freq, proportion
             df = d_slice.copy()
 
-            # convert type to str to avoid int converted to boolean, avoiding nans
+            # convert to str to handle int converted to boolean. Avoid nans.
             for column in df.columns:
-                df[column] = [str(row) if not pd.isnull(row) else None for row in df[column].values]
+                df[column] = [str(row) if not pd.isnull(row)
+                              else None for row in df[column].values]
 
             df = df.melt().groupby(['variable',
                                     'value']).size().to_frame(name='freq')
@@ -652,12 +654,12 @@ class TableOne(object):
 
             # compute pvalues
             df.loc[v, 'p-value'], df.loc[v, 'Test'] = self._p_test(v,
-                                                                 grouped_data,
-                                                                 is_continuous,
-                                                                 is_categorical,
-                                                                 is_normal,
-                                                                 min_observed,
-                                                                 catlevels)
+                                                                   grouped_data,
+                                                                   is_continuous,
+                                                                   is_categorical,
+                                                                   is_normal,
+                                                                   min_observed,
+                                                                   catlevels)
 
         return df
 
@@ -806,7 +808,8 @@ class TableOne(object):
 
             # support pandas<=0.22
             try:
-                table = pd.concat([self.cont_table, self.cat_table], sort=False)
+                table = pd.concat([self.cont_table, self.cat_table],
+                                  sort=False)
             except TypeError:
                 table = pd.concat([self.cont_table, self.cat_table])
         elif self._continuous:
@@ -847,12 +850,14 @@ class TableOne(object):
                 # Remove value from order if it is not present
                 if [i for i in self._order[k] if i not in all_var]:
                     rm_var = [i for i in self._order[k] if i not in all_var]
-                    self._order[k] = [i for i in self._order[k] if i in all_var]
+                    self._order[k] = [i for i in self._order[k]
+                                      if i in all_var]
                     warnings.warn('Order value not found: {}: {}'.format(k,
                                                                          rm_var))
 
                 new_seq = [(k, '{}'.format(v)) for v in self._order[k]]
-                new_seq += [(k, '{}'.format(v)) for v in all_var if v not in self._order[k]]
+                new_seq += [(k, '{}'.format(v)) for v in all_var
+                            if v not in self._order[k]]
 
                 # restructure to match the original idx
                 new_idx_array = np.empty((len(new_seq),), dtype=object)
@@ -883,7 +888,8 @@ class TableOne(object):
                     # apply order
                     all_var = table.loc[k].index.unique(level='value')
                     new_idx = [(k, '{}'.format(v)) for v in self._order[k]]
-                    new_idx += [(k, '{}'.format(v)) for v in all_var if v not in self._order[k]]
+                    new_idx += [(k, '{}'.format(v)) for v in all_var
+                                if v not in self._order[k]]
 
                 # restructure to match the original idx
                 new_idx_array = np.empty((len(new_idx),), dtype=object)
