@@ -110,7 +110,7 @@ class TableOne(object):
 
         # labels is now rename
         if labels is not None and rename is not None:
-            raise TypeError("TableOne received both labels and rename")
+            raise TypeError("TableOne received both labels and rename.")
         elif labels is not None:
             warnings.warn("The labels argument is deprecated; use " +
                           "rename instead.", DeprecationWarning)
@@ -121,7 +121,7 @@ class TableOne(object):
         # isnull is now missing
         if isnull is not None:
             warnings.warn("The isnull argument is deprecated; use " +
-                          "missing instead", DeprecationWarning)
+                          "missing instead.", DeprecationWarning)
             self._isnull = isnull
         else:
             self._isnull = missing
@@ -140,7 +140,7 @@ class TableOne(object):
 
         # if the input dataframe is empty, raise error
         if data.empty:
-            raise InputError('The input dataframe is empty')
+            raise InputError('The input dataframe is empty.')
 
         # if columns are not specified, use all columns
         if not columns:
