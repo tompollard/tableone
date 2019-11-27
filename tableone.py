@@ -4,7 +4,7 @@ research papers.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 import warnings
 
@@ -53,9 +53,9 @@ class TableOne(object):
     nonnormal : list, optional
         List of columns that contain non-normal variables (default: None).
     pval : bool, optional
-        Display computed p-values (default: False).
+        Display computed P-Values (default: False).
     pval_adjust : str, optional
-        Method used to adjust p-values for multiple testing.
+        Method used to adjust P-Values for multiple testing.
         For a complete list, see documentation for statsmodels multipletests.
         Available methods include ::
 
@@ -73,11 +73,18 @@ class TableOne(object):
     rename : dict, optional
         Dictionary of alternative names for variables.
         e.g. `rename = {'sex':'gender', 'trt':'treatment'}`
-    sort : bool, optional
-        Sort the rows alphabetically. Default (False) retains the input order
-        of columns.
-    limit : int, optional
-        Limit to the top N most frequent categories.
+    sort : bool or str, optional
+        If `True`, sort the variables alphabetically. If a string
+        (e.g. `'P-Value'`), sort by the specified column in ascending order.
+        Default (`False`) retains the sequence specified in the `columns`
+        argument. Currently the only columns supported are: `'Missing'`,
+        `'P-Value'`, `'P-Value (adjusted)'`, and `'Test'`.
+    limit : int or dict, optional
+        Limit to the top N most frequent categories. If int, apply to all
+        categorical variables. If dict, apply to the key (e.g. {'sex': 1}).
+    order : dict, optional
+        Specify an order for categorical variables. Key is the variable, value
+        is a list of values in order.  {e.g. 'sex': ['f', 'm', 'other']}
     remarks : bool, optional
         Add remarks on the appropriateness of the summary measures and the
         statistical tests (default: True).
@@ -101,20 +108,23 @@ class TableOne(object):
     def __init__(self, data, columns=None, categorical=None, groupby=None,
                  nonnormal=None, pval=False, pval_adjust=None, isnull=None,
                  missing=True, ddof=1, labels=None, rename=None, sort=False,
-                 limit=None, remarks=True, label_suffix=False, decimals=1):
+                 limit=None, order=None, remarks=True, label_suffix=False,
+                 decimals=1):
 
         # labels is now rename
         if labels is not None and rename is not None:
-            raise TypeError("TableOne received both labels and rename")
+            raise TypeError("TableOne received both labels and rename.")
         elif labels is not None:
-            warnings.warn("The labels argument is deprecated; use rename instead", DeprecationWarning)
+            warnings.warn("The labels argument is deprecated; use " +
+                          "rename instead.", DeprecationWarning)
             self._alt_labels = labels
         else:
             self._alt_labels = rename
 
         # isnull is now missing
         if isnull is not None:
-            warnings.warn("The isnull argument is deprecated; use missing instead", DeprecationWarning)
+            warnings.warn("The isnull argument is deprecated; use " +
+                          "missing instead.", DeprecationWarning)
             self._isnull = isnull
         else:
             self._isnull = missing
@@ -133,7 +143,7 @@ class TableOne(object):
 
         # if the input dataframe is empty, raise error
         if data.empty:
-            raise InputError('The input dataframe is empty')
+            raise InputError('The input dataframe is empty.')
 
         # if columns are not specified, use all columns
         if not columns:
@@ -142,19 +152,26 @@ class TableOne(object):
         # check that the columns exist in the dataframe
         if not set(columns).issubset(data.columns):
             notfound = list(set(columns) - set(data.columns))
-            raise InputError('Columns not found in dataset: {}'.format(notfound))
+            raise InputError("Columns not found in " +
+                             "dataset: {}".format(notfound))
 
         # check for duplicate columns
         dups = data[columns].columns[data[columns].columns.duplicated()].unique()
         if not dups.empty:
-            raise InputError('Input contains duplicate columns: {}'.format(dups))
+            raise InputError("Input contains duplicate " +
+                             "columns: {}".format(dups))
 
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
             categorical = self._detect_categorical_columns(data[columns])
 
+        # ensure that values to order are strings
+        if order:
+            for k in order:
+                order[k] = ["{}".format(v) for v in order[k]]
+
         if pval and not groupby:
-            raise InputError("If pval=True then the groupby must be specified.")
+            raise InputError("If pval=True then groupby must be specified.")
 
         self._columns = list(columns)
         self._continuous = [c for c in columns if c not in categorical + [groupby]]
@@ -167,18 +184,21 @@ class TableOne(object):
         # degrees of freedom for standard deviation
         self._ddof = ddof
         self._limit = limit
+        self._order = order
         self._remarks = remarks
         self._label_suffix = label_suffix
         self._decimals = decimals
 
         # output column names that cannot be contained in a groupby
-        self._reserved_columns = ['Missing', 'p-value', 'Test', 'p-value (adjusted)']
+        self._reserved_columns = ['Missing', 'P-Value', 'Test',
+                                  'P-Value (adjusted)']
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
             # check that the group levels do not include reserved words
             for level in self._groupbylvls:
                 if level in self._reserved_columns:
-                    raise InputError('Group level contained "{}", a reserved keyword for tableone.'.format(level))
+                    raise InputError('Group level contains "{}", a reserved' +
+                                     ' keyword.'.format(level))
         else:
             self._groupbylvls = ['Overall']
 
@@ -189,10 +209,10 @@ class TableOne(object):
         # correct for multiple testing
         if self._pval and self._pval_adjust:
             alpha = 0.05
-            adjusted = multitest.multipletests(self._significance_table['p-value'],
+            adjusted = multitest.multipletests(self._significance_table['P-Value'],
                                                alpha=alpha,
                                                method=self._pval_adjust)
-            self._significance_table['p-value (adjusted)'] = adjusted[1]
+            self._significance_table['P-Value (adjusted)'] = adjusted[1]
             self._significance_table['adjust method'] = self._pval_adjust
 
         # create descriptive tables
@@ -241,7 +261,7 @@ class TableOne(object):
 
         Examples:
             To output tableone in github syntax, call tabulate with the
-                'tablefmt=github' argument.
+                'tablefmt="github"' argument.
 
             >>> print(tableone.tabulate(tablefmt='fancy_grid'))
         """
@@ -276,21 +296,24 @@ class TableOne(object):
             outlier_mask = self.cont_describe.far_outliers > 1
             outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].dropna(how='all').index)
             if outlier_vars:
-                warnings["Warning, Tukey test indicates far outliers in"] = outlier_vars
+                warnings["Warning, Tukey test indicates far " +
+                         "outliers in"] = outlier_vars
 
             # highlight possible multimodal distributions using hartigan's dip
             # test -1 values indicate NaN
             modal_mask = (self.cont_describe.diptest >= 0) & (self.cont_describe.diptest <= 0.05)
             modal_vars = list(self.cont_describe.diptest[modal_mask].dropna(how='all').index)
             if modal_vars:
-                warnings["Warning, Hartigan's Dip Test reports possible multimodal distributions for"] = modal_vars
+                warnings["Warning, Hartigan's Dip Test reports possible " +
+                         "multimodal distributions for"] = modal_vars
 
             # highlight non normal distributions
             # -1 values indicate NaN
             modal_mask = (self.cont_describe.normaltest >= 0) & (self.cont_describe.normaltest <= 0.001)
             modal_vars = list(self.cont_describe.normaltest[modal_mask].dropna(how='all').index)
             if modal_vars:
-                warnings["Warning, test for normality reports non-normal distributions for"] = modal_vars
+                warnings["Warning, test for normality reports " +
+                         "non-normal distributions for"] = modal_vars
 
         # create the warning string
         for n, k in enumerate(sorted(warnings)):
@@ -351,6 +374,7 @@ class TableOne(object):
         """
         p = modality.hartigan_diptest(x.values)
         # dropna=False argument in pivot_table does not function as expected
+        # https://github.com/pandas-dev/pandas/issues/22159
         # return -1 instead of None
         if pd.isnull(p):
             return -1
@@ -431,7 +455,8 @@ class TableOne(object):
                 n = 1
         else:
             n = 1
-            warnings.warn('The decimals arg must be an int or dict. Defaulting to {} d.p.'.format(n))
+            warnings.warn("The decimals arg must be an int or dict. " +
+                          "Defaulting to {} d.p.".format(n))
 
         if x.name in self._nonnormal:
             f = '{{:.{}f}} [{{:.{}f}},{{:.{}f}}]'.format(n, n, n)
@@ -463,13 +488,16 @@ class TableOne(object):
                     self._normaltest]
 
         # coerce continuous data to numeric
-        cont_data = data[self._continuous].apply(pd.to_numeric, errors='coerce')
+        cont_data = data[self._continuous].apply(pd.to_numeric,
+                                                 errors='coerce')
         # check all data in each continuous column is numeric
         bad_cols = cont_data.count() != data[self._continuous].count()
         bad_cols = cont_data.columns[bad_cols]
         if len(bad_cols) > 0:
-            raise InputError("""The following continuous column(s) have non-numeric values: {}.
-            Either specify the column(s) as categorical or remove the non-numeric values.""".format(bad_cols.values))
+            raise InputError("The following continuous column(s) have " +
+                             "non-numeric values: {}. Either specify the " +
+                             "column(s) as categorical or remove the " +
+                             "non-numeric values.""".format(bad_cols.values))
 
         # check for coerced column containing all NaN to warn user
         for column in cont_data.columns[cont_data.count() == 0]:
@@ -535,15 +563,16 @@ class TableOne(object):
             # create a dataframe with freq, proportion
             df = d_slice.copy()
 
-            # convert type to str to avoid int converted to boolean, avoiding nans
+            # convert to str to handle int converted to boolean. Avoid nans.
             for column in df.columns:
-                df[column] = [str(row) if not pd.isnull(row) else None for row in df[column].values]
+                df[column] = [str(row) if not pd.isnull(row)
+                              else None for row in df[column].values]
 
             df = df.melt().groupby(['variable',
                                     'value']).size().to_frame(name='freq')
 
             df['percent'] = df['freq'].div(df.freq.sum(level=0),
-                                                       level=0).astype(float) * 100
+                                           level=0).astype(float) * 100
 
             # set number of decimal places for percent
             if isinstance(self._decimals, int):
@@ -590,8 +619,8 @@ class TableOne(object):
 
     def _create_significance_table(self, data):
         """
-        Create a table containing p-values for significance tests. Add features
-        of the distributions and the p-values to the dataframe.
+        Create a table containing P-Values for significance tests. Add features
+        of the distributions and the P-Values to the dataframe.
 
         Parameters
         ----------
@@ -601,12 +630,12 @@ class TableOne(object):
         Returns
         ----------
             df : pandas DataFrame
-                A table containing the p-values, test name, etc.
+                A table containing the P-Values, test name, etc.
         """
         # list features of the variable e.g. matched, paired, n_expected
         df = pd.DataFrame(index=self._continuous+self._categorical,
                           columns=['continuous', 'nonnormal',
-                                   'min_observed', 'p-value', 'Test'])
+                                   'min_observed', 'P-Value', 'Test'])
 
         df.index = df.index.rename('variable')
         df['continuous'] = np.where(df.index.isin(self._continuous),
@@ -644,20 +673,20 @@ class TableOne(object):
             df.loc[v, 'min_observed'] = min_observed
 
             # compute pvalues
-            df.loc[v, 'p-value'], df.loc[v, 'Test'] = self._p_test(v,
-                                                                 grouped_data,
-                                                                 is_continuous,
-                                                                 is_categorical,
-                                                                 is_normal,
-                                                                 min_observed,
-                                                                 catlevels)
+            df.loc[v, 'P-Value'], df.loc[v, 'Test'] = self._p_test(v,
+                                                                   grouped_data,
+                                                                   is_continuous,
+                                                                   is_categorical,
+                                                                   is_normal,
+                                                                   min_observed,
+                                                                   catlevels)
 
         return df
 
     def _p_test(self, v, grouped_data, is_continuous, is_categorical,
                 is_normal, min_observed, catlevels):
         """
-        Compute p-values.
+        Compute P-Values.
 
         Parameters
         ----------
@@ -679,9 +708,9 @@ class TableOne(object):
         Returns
         ----------
             pval : float
-                The computed p-value.
+                The computed P-Value.
             ptest : str
-                The name of the test used to compute the p-value.
+                The name of the test used to compute the P-Value.
         """
 
         # no test by default
@@ -690,7 +719,8 @@ class TableOne(object):
 
         # do not test if the variable has no observations in a level
         if min_observed == 0:
-            warnings.warn('No p-value was computed for {} due to the low number of observations.'.format(v))
+            warnings.warn("No P-Value was computed for {} due to the low " +
+                          "number of observations.".format(v))
             return pval, ptest
 
         # continuous
@@ -718,7 +748,8 @@ class TableOne(object):
                     oddsratio, pval = stats.fisher_exact(grouped_data)
                 else:
                     ptest = 'Chi-squared (warning: expected count < 5)'
-                    warnings.warn('Chi-squared test for {} may be invalid (expected cell counts are < 5).'.format(v))
+                    warnings.warn("Chi-squared test for {} may be invalid " +
+                                  "(expected cell counts are < 5).".format(v))
 
         return pval, ptest
 
@@ -750,10 +781,10 @@ class TableOne(object):
 
         # add pval column
         if self._pval and self._pval_adjust:
-            table = table.join(self._significance_table[['p-value (adjusted)',
+            table = table.join(self._significance_table[['P-Value (adjusted)',
                                                         'Test']])
         elif self._pval:
-            table = table.join(self._significance_table[['p-value', 'Test']])
+            table = table.join(self._significance_table[['P-Value', 'Test']])
 
         return table
 
@@ -779,10 +810,10 @@ class TableOne(object):
 
         # add pval column
         if self._pval and self._pval_adjust:
-            table = table.join(self._significance_table[['p-value (adjusted)',
+            table = table.join(self._significance_table[['P-Value (adjusted)',
                                                          'Test']])
         elif self._pval:
-            table = table.join(self._significance_table[['p-value', 'Test']])
+            table = table.join(self._significance_table[['P-Value', 'Test']])
 
         return table
 
@@ -799,7 +830,8 @@ class TableOne(object):
 
             # support pandas<=0.22
             try:
-                table = pd.concat([self.cont_table, self.cat_table], sort=False)
+                table = pd.concat([self.cont_table, self.cat_table],
+                                  sort=False)
             except TypeError:
                 table = pd.concat([self.cont_table, self.cat_table])
         elif self._continuous:
@@ -807,41 +839,109 @@ class TableOne(object):
         elif self._categorical:
             table = self.cat_table
 
-        # round pval column and convert to string
-        if self._pval and self._pval_adjust:
-            table['p-value (adjusted)'] = table['p-value (adjusted)'].apply('{:.3f}'.format).astype(str)
-            table.loc[table['p-value (adjusted)'] == '0.000', 'p-value (adjusted)'] = '<0.001'
-        elif self._pval:
-            table['p-value'] = table['p-value'].apply('{:.3f}'.format).astype(str)
-            table.loc[table['p-value'] == '0.000', 'p-value'] = '<0.001'
+        # ensure column headers are strings before reindexing
+        table = table.reset_index().set_index(['variable', 'value'])
+        table.columns = table.columns.values.astype(str)
 
         # sort the table rows
-        table = table.reset_index().set_index(['variable', 'value'])
-        if self._sort:
-            # alphabetical
-            new_index = sorted(table.index.values)
+        sort_columns = ['Missing', 'P-Value', 'P-Value (adjusted)', 'Test']
+        if self._sort and isinstance(self._sort, bool):
+            new_index = sorted(table.index.values, key=lambda x: x[0].lower())
+        elif self._sort and isinstance(self._sort, str) and (self._sort in
+                                                             sort_columns):
+            try:
+                new_index = table.sort_values(self._sort).index
+            except KeyError:
+                new_index = sorted(table.index.values,
+                                   key=lambda x: self._columns.index(x[0]))
+                warnings.warn('Sort variable not found: {}'.format(self._sort))
+        elif self._sort and isinstance(self._sort, str) and (self._sort not in
+                                                             sort_columns):
+            new_index = sorted(table.index.values,
+                               key=lambda x: self._columns.index(x[0]))
+            warnings.warn('Sort must be in the following ' +
+                          'list: {}.'.format(self._sort))
         else:
             # sort by the columns argument
             new_index = sorted(table.index.values,
                                key=lambda x: self._columns.index(x[0]))
         table = table.reindex(new_index)
 
-        # if a limit has been set on the number of categorical variables
-        # then re-order the variables by frequency
+        # round pval column and convert to string
+        if self._pval and self._pval_adjust:
+            table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply('{:.3f}'.format).astype(str)
+            table.loc[table['P-Value (adjusted)'] == '0.000',
+                      'P-Value (adjusted)'] = '<0.001'
+        elif self._pval:
+            table['P-Value'] = table['P-Value'].apply('{:.3f}'.format).astype(str)
+            table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
+
+        # if an order is specified, apply it
+        if self._order:
+            for k in self._order:
+
+                # Skip if the variable isn't present
+                try:
+                    all_var = table.loc[k].index.unique(level='value')
+                except KeyError:
+                    warnings.warn('Order variable not found: {}'.format(k))
+                    continue
+
+                # Remove value from order if it is not present
+                if [i for i in self._order[k] if i not in all_var]:
+                    rm_var = [i for i in self._order[k] if i not in all_var]
+                    self._order[k] = [i for i in self._order[k]
+                                      if i in all_var]
+                    warnings.warn('Order value not found: {}: {}'.format(k,
+                                                                         rm_var))
+
+                new_seq = [(k, '{}'.format(v)) for v in self._order[k]]
+                new_seq += [(k, '{}'.format(v)) for v in all_var
+                            if v not in self._order[k]]
+
+                # restructure to match the original idx
+                new_idx_array = np.empty((len(new_seq),), dtype=object)
+                new_idx_array[:] = [tuple(i) for i in new_seq]
+                orig_idx = table.index.values.copy()
+                orig_idx[table.index.get_loc(k)] = new_idx_array
+                table = table.reindex(orig_idx)
+
+        # set the limit on the number of categorical variables
         if self._limit:
             levelcounts = data[self._categorical].nunique()
-            levelcounts = levelcounts[levelcounts >= self._limit]
-            for v, _ in levelcounts.iteritems():
-                count = data[v].value_counts().sort_values(ascending=False)
-                new_index = [(v, i) for i in count.index]
-                # restructure to match orig_index
-                new_index_array = np.empty((len(new_index),), dtype=object)
-                new_index_array[:] = [tuple(i) for i in new_index]
-                orig_index = table.index.values.copy()
-                orig_index[table.index.get_loc(v)] = new_index_array
-                table = table.reindex(orig_index)
+            for k, _ in levelcounts.iteritems():
 
-        # inserts n row
+                # set the limit for the variable
+                if (isinstance(self._limit, int)
+                        and levelcounts[k] >= self._limit):
+                    limit = self._limit
+                elif isinstance(self._limit, dict) and k in self._limit:
+                    limit = self._limit[k]
+                else:
+                    continue
+
+                if not self._order or (self._order and k not in self._order):
+                    # re-order the variables by frequency
+                    count = data[k].value_counts().sort_values(ascending=False)
+                    new_idx = [(k, '{}'.format(i)) for i in count.index]
+                else:
+                    # apply order
+                    all_var = table.loc[k].index.unique(level='value')
+                    new_idx = [(k, '{}'.format(v)) for v in self._order[k]]
+                    new_idx += [(k, '{}'.format(v)) for v in all_var
+                                if v not in self._order[k]]
+
+                # restructure to match the original idx
+                new_idx_array = np.empty((len(new_idx),), dtype=object)
+                new_idx_array[:] = [tuple(i) for i in new_idx]
+                orig_idx = table.index.values.copy()
+                orig_idx[table.index.get_loc(k)] = new_idx_array
+                table = table.reindex(orig_idx)
+
+                # drop the rows > the limit
+                table = table.drop(new_idx_array[limit:])
+
+        # insert n row
         n_row = pd.DataFrame(columns=['variable', 'value', 'Missing'])
         n_row = n_row.set_index(['variable', 'value'])
         n_row.loc['n', 'Missing'] = None
@@ -857,12 +957,12 @@ class TableOne(object):
         else:
             for g in self._groupbylvls:
                 ct = data[self._groupby][data[self._groupby] == g].count()
-                table.loc['n', g] = ct
+                table.loc['n', '{}'.format(g)] = ct
 
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
         dupe_columns = ['Missing']
-        optional_columns = ['p-value', 'p-value (adjusted)', 'Test']
+        optional_columns = ['P-Value', 'P-Value (adjusted)', 'Test']
         for col in optional_columns:
             if col in table.columns.values:
                 dupe_columns.append(col)
@@ -890,22 +990,22 @@ class TableOne(object):
         # display alternative labels if assigned
         table = table.rename(index=self._create_row_labels(), level=0)
 
-        # if a limit has been set on the number of categorical variables
-        # limit the number of categorical variables that are displayed
-        if self._limit:
-            table = table.groupby('variable').head(self._limit)
-
-        # re-order the columns for consistency
-        if self._groupby:
-            cols = table.columns.levels[1].values
+        # ensure the order of columns is consistent
+        if self._groupby and self._order and (self._groupby in self._order):
+            header = ['{}'.format(v) for v in table.columns.levels[1].values]
+            cols = self._order[self._groupby] + ['{}'.format(v)
+                                                 for v in header
+                                                 if v not in
+                                                 self._order[self._groupby]]
+        elif self._groupby:
+            cols = ['{}'.format(v) for v in table.columns.levels[1].values]
         else:
-            cols = table.columns.values
+            cols = ['{}'.format(v) for v in table.columns.values]
 
         if 'Missing' in cols:
             cols = ['Missing'] + [x for x in cols if x != 'Missing']
 
-        # put optional_columns at the end of the dataframe to
-        # ensure consistent ordering
+        # move optional_columns to the end of the dataframe
         for col in optional_columns:
             if col in cols:
                 cols = [x for x in cols if x != col] + [col]
@@ -961,6 +1061,6 @@ class TableOne(object):
 
     # warnings
     def _non_continuous_warning(self, c):
-        warnings.warn('''"{}" has all non-numeric values. Consider including it
-            in the list of categorical variables.'''.format(c), RuntimeWarning,
-            stacklevel=2)
+        warnings.warn('"{}" has all non-numeric values. Consider including ' +
+                      'it in the list of categorical ' +
+                      'variables.'.format(c), RuntimeWarning, stacklevel=2)
