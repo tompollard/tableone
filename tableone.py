@@ -74,8 +74,8 @@ class TableOne(object):
         Dictionary of alternative names for variables.
         e.g. `rename = {'sex':'gender', 'trt':'treatment'}`
     sort : bool, optional
-        Sort the rows alphabetically. Default (False) retains the input order
-        of columns.
+        If `True`, sort the variables alphabetically. Default (`False`)
+        retains the sequence specified in the `columns` argument.
     limit : int or dict, optional
         Limit to the top N most frequent categories. If int, apply to all
         categorical variables. If dict, apply to the key (e.g. {'sex': 1}).
@@ -836,6 +836,20 @@ class TableOne(object):
         elif self._categorical:
             table = self.cat_table
 
+        # ensure column headers are strings before reindexing
+        table = table.reset_index().set_index(['variable', 'value'])
+        table.columns = table.columns.values.astype(str)
+
+        # sort the table rows
+        if self._sort and isinstance(self._sort, bool):
+            # alphabetical
+            new_index = sorted(table.index.values)
+        else:
+            # sort by the columns argument
+            new_index = sorted(table.index.values,
+                               key=lambda x: self._columns.index(x[0]))
+        table = table.reindex(new_index)
+
         # round pval column and convert to string
         if self._pval and self._pval_adjust:
             table['p-value (adjusted)'] = table['p-value (adjusted)'].apply('{:.3f}'.format).astype(str)
@@ -844,17 +858,6 @@ class TableOne(object):
         elif self._pval:
             table['p-value'] = table['p-value'].apply('{:.3f}'.format).astype(str)
             table.loc[table['p-value'] == '0.000', 'p-value'] = '<0.001'
-
-        # sort the table rows
-        table = table.reset_index().set_index(['variable', 'value'])
-        if self._sort:
-            # alphabetical
-            new_index = sorted(table.index.values)
-        else:
-            # sort by the columns argument
-            new_index = sorted(table.index.values,
-                               key=lambda x: self._columns.index(x[0]))
-        table = table.reindex(new_index)
 
         # if an order is specified, apply it
         if self._order:
@@ -937,7 +940,7 @@ class TableOne(object):
         else:
             for g in self._groupbylvls:
                 ct = data[self._groupby][data[self._groupby] == g].count()
-                table.loc['n', g] = ct
+                table.loc['n', '{}'.format(g)] = ct
 
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
@@ -990,13 +993,9 @@ class TableOne(object):
             if col in cols:
                 cols = [x for x in cols if x != col] + [col]
 
-        # ensure column headers are strings before reindexing
         if self._groupby:
-            header = ['{}'.format(v) for v in table.columns.levels[1].values]
-            table.columns = table.columns.set_levels(header, level=1)
             table = table.reindex(cols, axis=1, level=1)
         else:
-            table.columns = table.columns.values.astype(str)
             table = table.reindex(cols, axis=1)
 
         try:
