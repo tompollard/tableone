@@ -480,7 +480,7 @@ class TestTableOne(object):
 
         table = TableOne(df, columns=columns, sort=True)
         tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
-        for i, c in enumerate(np.sort(columns)):
+        for i, c in enumerate(sorted(columns, key=lambda s: s.lower())):
             # i+1 because we skip the first row, 'n'
             assert tableone_rows[i+1] == c
 

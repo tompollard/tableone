@@ -73,9 +73,12 @@ class TableOne(object):
     rename : dict, optional
         Dictionary of alternative names for variables.
         e.g. `rename = {'sex':'gender', 'trt':'treatment'}`
-    sort : bool, optional
-        If `True`, sort the variables alphabetically. Default (`False`)
-        retains the sequence specified in the `columns` argument.
+    sort : bool or str, optional
+        If `True`, sort the variables alphabetically. If a string
+        (e.g. `'p-value'`), sort by the specified column in ascending order.
+        Default (`False`) retains the sequence specified in the `columns`
+        argument. Currently the only columns supported are: `'Missing'`,
+        `'p-value'`, `'p-value (adjusted)'`, and `'Test'`.
     limit : int or dict, optional
         Limit to the top N most frequent categories. If int, apply to all
         categorical variables. If dict, apply to the key (e.g. {'sex': 1}).
@@ -841,9 +844,23 @@ class TableOne(object):
         table.columns = table.columns.values.astype(str)
 
         # sort the table rows
+        sort_columns = ['Missing', 'p-value', 'p-value (adjusted)', 'Test']
         if self._sort and isinstance(self._sort, bool):
-            # alphabetical
-            new_index = sorted(table.index.values)
+            new_index = sorted(table.index.values, key=lambda x: x[0].lower())
+        elif self._sort and isinstance(self._sort, str) and (self._sort in
+                                                             sort_columns):
+            try:
+                new_index = table.sort_values(self._sort).index
+            except KeyError:
+                new_index = sorted(table.index.values,
+                                   key=lambda x: self._columns.index(x[0]))
+                warnings.warn('Sort variable not found: {}'.format(self._sort))
+        elif self._sort and isinstance(self._sort, str) and (self._sort not in
+                                                             sort_columns):
+            new_index = sorted(table.index.values,
+                               key=lambda x: self._columns.index(x[0]))
+            warnings.warn('Sort must be in the following ' +
+                          'list: {}.'.format(self._sort))
         else:
             # sort by the columns argument
             new_index = sorted(table.index.values,
