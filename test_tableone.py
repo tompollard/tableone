@@ -513,7 +513,7 @@ class TestTableOne(object):
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
         assert table.tableone.columns.levels[1][-1] == 'Test'
-        assert table.tableone.columns.levels[1][-2] == 'p-value'
+        assert table.tableone.columns.levels[1][-2] == 'P-Value'
 
         df.loc[df['death'] == 0, 'death'] = 2
 
@@ -522,7 +522,7 @@ class TestTableOne(object):
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
         assert table.tableone.columns.levels[1][-1] == 'Test'
-        assert table.tableone.columns.levels[1][-2] == 'p-value (adjusted)'
+        assert table.tableone.columns.levels[1][-2] == 'P-Value (adjusted)'
 
     @with_setup(setup, teardown)
     def test_check_null_counts_are_correct_pn(self):

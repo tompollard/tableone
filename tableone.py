@@ -53,9 +53,9 @@ class TableOne(object):
     nonnormal : list, optional
         List of columns that contain non-normal variables (default: None).
     pval : bool, optional
-        Display computed p-values (default: False).
+        Display computed P-Values (default: False).
     pval_adjust : str, optional
-        Method used to adjust p-values for multiple testing.
+        Method used to adjust P-Values for multiple testing.
         For a complete list, see documentation for statsmodels multipletests.
         Available methods include ::
 
@@ -75,10 +75,10 @@ class TableOne(object):
         e.g. `rename = {'sex':'gender', 'trt':'treatment'}`
     sort : bool or str, optional
         If `True`, sort the variables alphabetically. If a string
-        (e.g. `'p-value'`), sort by the specified column in ascending order.
+        (e.g. `'P-Value'`), sort by the specified column in ascending order.
         Default (`False`) retains the sequence specified in the `columns`
         argument. Currently the only columns supported are: `'Missing'`,
-        `'p-value'`, `'p-value (adjusted)'`, and `'Test'`.
+        `'P-Value'`, `'P-Value (adjusted)'`, and `'Test'`.
     limit : int or dict, optional
         Limit to the top N most frequent categories. If int, apply to all
         categorical variables. If dict, apply to the key (e.g. {'sex': 1}).
@@ -190,8 +190,8 @@ class TableOne(object):
         self._decimals = decimals
 
         # output column names that cannot be contained in a groupby
-        self._reserved_columns = ['Missing', 'p-value', 'Test',
-                                  'p-value (adjusted)']
+        self._reserved_columns = ['Missing', 'P-Value', 'Test',
+                                  'P-Value (adjusted)']
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
             # check that the group levels do not include reserved words
@@ -209,10 +209,10 @@ class TableOne(object):
         # correct for multiple testing
         if self._pval and self._pval_adjust:
             alpha = 0.05
-            adjusted = multitest.multipletests(self._significance_table['p-value'],
+            adjusted = multitest.multipletests(self._significance_table['P-Value'],
                                                alpha=alpha,
                                                method=self._pval_adjust)
-            self._significance_table['p-value (adjusted)'] = adjusted[1]
+            self._significance_table['P-Value (adjusted)'] = adjusted[1]
             self._significance_table['adjust method'] = self._pval_adjust
 
         # create descriptive tables
@@ -619,8 +619,8 @@ class TableOne(object):
 
     def _create_significance_table(self, data):
         """
-        Create a table containing p-values for significance tests. Add features
-        of the distributions and the p-values to the dataframe.
+        Create a table containing P-Values for significance tests. Add features
+        of the distributions and the P-Values to the dataframe.
 
         Parameters
         ----------
@@ -630,12 +630,12 @@ class TableOne(object):
         Returns
         ----------
             df : pandas DataFrame
-                A table containing the p-values, test name, etc.
+                A table containing the P-Values, test name, etc.
         """
         # list features of the variable e.g. matched, paired, n_expected
         df = pd.DataFrame(index=self._continuous+self._categorical,
                           columns=['continuous', 'nonnormal',
-                                   'min_observed', 'p-value', 'Test'])
+                                   'min_observed', 'P-Value', 'Test'])
 
         df.index = df.index.rename('variable')
         df['continuous'] = np.where(df.index.isin(self._continuous),
@@ -673,7 +673,7 @@ class TableOne(object):
             df.loc[v, 'min_observed'] = min_observed
 
             # compute pvalues
-            df.loc[v, 'p-value'], df.loc[v, 'Test'] = self._p_test(v,
+            df.loc[v, 'P-Value'], df.loc[v, 'Test'] = self._p_test(v,
                                                                    grouped_data,
                                                                    is_continuous,
                                                                    is_categorical,
@@ -686,7 +686,7 @@ class TableOne(object):
     def _p_test(self, v, grouped_data, is_continuous, is_categorical,
                 is_normal, min_observed, catlevels):
         """
-        Compute p-values.
+        Compute P-Values.
 
         Parameters
         ----------
@@ -708,9 +708,9 @@ class TableOne(object):
         Returns
         ----------
             pval : float
-                The computed p-value.
+                The computed P-Value.
             ptest : str
-                The name of the test used to compute the p-value.
+                The name of the test used to compute the P-Value.
         """
 
         # no test by default
@@ -719,7 +719,7 @@ class TableOne(object):
 
         # do not test if the variable has no observations in a level
         if min_observed == 0:
-            warnings.warn("No p-value was computed for {} due to the low " +
+            warnings.warn("No P-Value was computed for {} due to the low " +
                           "number of observations.".format(v))
             return pval, ptest
 
@@ -781,10 +781,10 @@ class TableOne(object):
 
         # add pval column
         if self._pval and self._pval_adjust:
-            table = table.join(self._significance_table[['p-value (adjusted)',
+            table = table.join(self._significance_table[['P-Value (adjusted)',
                                                         'Test']])
         elif self._pval:
-            table = table.join(self._significance_table[['p-value', 'Test']])
+            table = table.join(self._significance_table[['P-Value', 'Test']])
 
         return table
 
@@ -810,10 +810,10 @@ class TableOne(object):
 
         # add pval column
         if self._pval and self._pval_adjust:
-            table = table.join(self._significance_table[['p-value (adjusted)',
+            table = table.join(self._significance_table[['P-Value (adjusted)',
                                                          'Test']])
         elif self._pval:
-            table = table.join(self._significance_table[['p-value', 'Test']])
+            table = table.join(self._significance_table[['P-Value', 'Test']])
 
         return table
 
@@ -844,7 +844,7 @@ class TableOne(object):
         table.columns = table.columns.values.astype(str)
 
         # sort the table rows
-        sort_columns = ['Missing', 'p-value', 'p-value (adjusted)', 'Test']
+        sort_columns = ['Missing', 'P-Value', 'P-Value (adjusted)', 'Test']
         if self._sort and isinstance(self._sort, bool):
             new_index = sorted(table.index.values, key=lambda x: x[0].lower())
         elif self._sort and isinstance(self._sort, str) and (self._sort in
@@ -869,12 +869,12 @@ class TableOne(object):
 
         # round pval column and convert to string
         if self._pval and self._pval_adjust:
-            table['p-value (adjusted)'] = table['p-value (adjusted)'].apply('{:.3f}'.format).astype(str)
-            table.loc[table['p-value (adjusted)'] == '0.000',
-                      'p-value (adjusted)'] = '<0.001'
+            table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply('{:.3f}'.format).astype(str)
+            table.loc[table['P-Value (adjusted)'] == '0.000',
+                      'P-Value (adjusted)'] = '<0.001'
         elif self._pval:
-            table['p-value'] = table['p-value'].apply('{:.3f}'.format).astype(str)
-            table.loc[table['p-value'] == '0.000', 'p-value'] = '<0.001'
+            table['P-Value'] = table['P-Value'].apply('{:.3f}'.format).astype(str)
+            table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
 
         # if an order is specified, apply it
         if self._order:
@@ -962,7 +962,7 @@ class TableOne(object):
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
         dupe_columns = ['Missing']
-        optional_columns = ['p-value', 'p-value (adjusted)', 'Test']
+        optional_columns = ['P-Value', 'P-Value (adjusted)', 'Test']
         for col in optional_columns:
             if col in table.columns.values:
                 dupe_columns.append(col)
