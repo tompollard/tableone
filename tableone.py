@@ -4,7 +4,7 @@ research papers.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
-__version__ = "0.6.6"
+__version__ = "0.6.7"
 
 import warnings
 
@@ -66,6 +66,11 @@ class TableOne(object):
         `simes-hochberg` : step-up method (independent)
         `hommel` : closed method based on Simes tests (non-negative)
 
+    pval_test : dict, optional
+        Dictionary of custom hypothesis test functions. Keys are variable names 
+        and values are functions. Functions must take a list of Numpy Arrays as
+        the input argument and must return a test result.
+        e.g. pval_test = {'age': myfunc}
     missing : bool, optional
         Display a count of null values (default: True).
     ddof : int, optional
@@ -106,10 +111,10 @@ class TableOne(object):
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
-                 nonnormal=None, pval=False, pval_adjust=None, isnull=None,
-                 missing=True, ddof=1, labels=None, rename=None, sort=False,
-                 limit=None, order=None, remarks=True, label_suffix=False,
-                 decimals=1):
+                 nonnormal=None, pval=False, pval_adjust=None, pval_test=None,
+                 isnull=None, missing=True, ddof=1, labels=None, rename=None, 
+                 sort=False, limit=None, order=None, remarks=True, 
+                 label_suffix=False, decimals=1):
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -179,6 +184,7 @@ class TableOne(object):
         self._nonnormal = nonnormal
         self._pval = pval
         self._pval_adjust = pval_adjust
+        self._pval_test = pval_test
         self._sort = sort
         self._groupby = groupby
         # degrees of freedom for standard deviation
@@ -693,7 +699,7 @@ class TableOne(object):
             v : str
                 Name of the variable to be tested.
             grouped_data : list
-                List of lists of values to be tested.
+                List of Numpy Arrays to be tested.
             is_continuous : bool
                 True if the variable is continuous.
             is_categorical : bool
@@ -716,6 +722,12 @@ class TableOne(object):
         # no test by default
         pval = np.nan
         ptest = 'Not tested'
+
+        # apply user defined test
+        if self._pval_test and v in self._pval_test:
+            pval = self._pval_test[v](*grouped_data)
+            ptest = self._pval_test[v].__name__
+            return pval, ptest
 
         # do not test if the variable has no observations in a level
         if min_observed == 0:

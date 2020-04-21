@@ -1,14 +1,24 @@
 import random
 import warnings
 
-from nose.tools import with_setup, assert_raises, assert_equal
+from nose.tools import with_setup, assert_raises, assert_equal, assert_almost_equal
 import numpy as np
 import modality
 import pandas as pd
+from scipy import stats
 
 import tableone
 from tableone import TableOne
 from tableone import InputError
+
+
+def mytest(*args):
+    """
+    Hypothesis test for test_self_defined_statistical_tests
+    """
+    mytest.__name__ = "Test name"
+    _, pval= stats.ks_2samp(*args)
+    return pval
 
 
 class TestTableOne(object):
@@ -782,3 +792,64 @@ class TestTableOne(object):
 
         assert all(t1.tableone.loc['basket4'].index == ['apple', 'banana',
                                                         'lemon'])
+
+    @with_setup(setup, teardown)
+    def test_self_defined_statistical_tests(self):
+        """
+        Test that the user can specify custom statistical functions.
+        """
+        # from the example provided at:
+        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_2samp.html
+
+        # define custom test
+        func = mytest
+
+        np.random.seed(12345678)
+        n1 = 200
+        n2 = 300
+
+        # Baseline distribution
+        rvs1 = stats.norm.rvs(size=n1, loc=0., scale=1)
+        df1 = pd.DataFrame({'rvs': 'rvs1', 'val': rvs1})
+
+        # Different to rvs1
+        # stats.ks_2samp(rvs1, rvs2)
+        # (0.20833333333333334, 5.129279597781977e-05)
+        rvs2 = stats.norm.rvs(size=n2, loc=0.5, scale=1.5)
+        df2 = pd.DataFrame({'rvs': 'rvs2', 'val': rvs2})
+
+        # Similar to rvs1
+        # stats.ks_2samp(rvs1, rvs3)
+        # (0.10333333333333333, 0.14691437867433876)
+        rvs3 = stats.norm.rvs(size=n2, loc=0.01, scale=1.0)
+        df3 = pd.DataFrame({'rvs': 'rvs3', 'val': rvs3})
+
+        # Identical to rvs1
+        # stats.ks_2samp(rvs1, rvs4)
+        # (0.07999999999999996, 0.41126949729859719)
+        rvs4 = stats.norm.rvs(size=n2, loc=0.0, scale=1.0)
+        df4 = pd.DataFrame({'rvs': 'rvs4', 'val': rvs4})
+
+        # Table 1 for different distributions
+        different = df1.append(df2)
+        t1_diff = TableOne(data=different, columns = ["val"], pval=True,
+                           groupby="rvs", pval_test={"val": func})
+
+        assert_almost_equal(t1_diff._significance_table['P-Value'].val,
+                            stats.ks_2samp(rvs1, rvs2)[1])
+
+        # Table 1 for similar distributions
+        similar = df1.append(df3)
+        t1_similar = TableOne(data=similar, columns = ["val"], pval=True,
+                              groupby="rvs", pval_test={"val": func})
+
+        assert_almost_equal(t1_similar._significance_table['P-Value'].val,
+                            stats.ks_2samp(rvs1, rvs3)[1])
+
+        # Table 1 for identical distributions
+        identical = df1.append(df4)
+        t1_identical = TableOne(data=identical, columns = ["val"], pval=True,
+                                groupby="rvs", pval_test={"val": func})
+
+        assert_almost_equal(t1_identical._significance_table['P-Value'].val,
+                            stats.ks_2samp(rvs1, rvs4)[1])
