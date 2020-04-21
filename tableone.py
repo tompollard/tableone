@@ -500,10 +500,11 @@ class TableOne(object):
         bad_cols = cont_data.count() != data[self._continuous].count()
         bad_cols = cont_data.columns[bad_cols]
         if len(bad_cols) > 0:
-            raise InputError("The following continuous column(s) have " +
-                             "non-numeric values: {}. Either specify the " +
-                             "column(s) as categorical or remove the " +
-                             "non-numeric values.""".format(bad_cols.values))
+            msg = """The following continuous column(s) have
+                     non-numeric values: {variables}. Either specify the
+                     column(s) as categorical or remove the
+                     non-numeric values.""".format(variables=bad_cols.values)
+            raise InputError(msg)
 
         # check for coerced column containing all NaN to warn user
         for column in cont_data.columns[cont_data.count() == 0]:
