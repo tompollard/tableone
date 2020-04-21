@@ -760,9 +760,10 @@ class TableOne(object):
                     ptest = "Fisher's exact"
                     oddsratio, pval = stats.fisher_exact(grouped_data)
                 else:
-                    ptest = 'Chi-squared (warning: expected count < 5)'
-                    warnings.warn("Chi-squared test for {} may be invalid " +
-                                  "(expected cell counts are < 5).".format(v))
+                    ptest = "Chi-squared (warning: expected count < 5)"
+                    msg = """Chi-squared test for {variable} may be invalid
+                             (expected cell counts are < 5).""".format(variable=v)
+                    warnings.warn(msg)
 
         return pval, ptest
 
