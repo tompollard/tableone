@@ -302,7 +302,7 @@ class TableOne(object):
             outlier_mask = self.cont_describe.far_outliers > 1
             outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].dropna(how='all').index)
             if outlier_vars:
-                warnings["Warning, Tukey test indicates far " +
+                warnings["Tukey test indicates far " +
                          "outliers in"] = outlier_vars
 
             # highlight possible multimodal distributions using hartigan's dip
@@ -310,7 +310,7 @@ class TableOne(object):
             modal_mask = (self.cont_describe.diptest >= 0) & (self.cont_describe.diptest <= 0.05)
             modal_vars = list(self.cont_describe.diptest[modal_mask].dropna(how='all').index)
             if modal_vars:
-                warnings["Warning, Hartigan's Dip Test reports possible " +
+                warnings["Hartigan's Dip Test reports possible " +
                          "multimodal distributions for"] = modal_vars
 
             # highlight non normal distributions
@@ -318,7 +318,7 @@ class TableOne(object):
             modal_mask = (self.cont_describe.normaltest >= 0) & (self.cont_describe.normaltest <= 0.001)
             modal_vars = list(self.cont_describe.normaltest[modal_mask].dropna(how='all').index)
             if modal_vars:
-                warnings["Warning, test for normality reports " +
+                warnings["Normality test reports " +
                          "non-normal distributions for"] = modal_vars
 
         # create the warning string
