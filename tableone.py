@@ -95,7 +95,7 @@ class TableOne(object):
         statistical tests (default: True).
     label_suffix : bool, optional
         Append summary type (e.g. "mean (SD); median [Q1,Q3], n (%); ") to the
-        row label (default: False).
+        row label (default: True).
     decimals : int or dict, optional
         Number of decimal places to display. An integer applies the rule to all
         variables (default: 1). A dictionary (e.g. `decimals = {'age': 0)`)
@@ -114,7 +114,7 @@ class TableOne(object):
                  nonnormal=None, pval=False, pval_adjust=None, pval_test=None,
                  isnull=None, missing=True, ddof=1, labels=None, rename=None, 
                  sort=False, limit=None, order=None, remarks=True, 
-                 label_suffix=False, decimals=1):
+                 label_suffix=True, decimals=1):
 
         # labels is now rename
         if labels is not None and rename is not None:

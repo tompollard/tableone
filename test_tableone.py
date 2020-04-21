@@ -262,7 +262,7 @@ class TestTableOne(object):
         groupby = 'group'
         t = TableOne(self.data_groups, columns=columns,
                      categorical=categorical, groupby=groupby,
-                     missing=False, decimals=2)
+                     missing=False, decimals=2, label_suffix=False)
 
         # n and weight rows are already ordered, so sorting should
         # not change the order
@@ -322,7 +322,7 @@ class TestTableOne(object):
 
         # test it limits to 3
         table = TableOne(data_pn, columns=columns, categorical=categorical,
-                         limit=3)
+                         limit=3, label_suffix=False)
         assert table.tableone.loc['age_group', :].shape[0] == 3
 
         # test other categories are not affected if limit > num categories
@@ -459,7 +459,7 @@ class TestTableOne(object):
                   'ICU': 'Intensive Care Unit'}
 
         table = TableOne(df, columns=columns, categorical=categorical,
-                         groupby=groupby, rename=labels)
+                         groupby=groupby, rename=labels, label_suffix=False)
 
         # check the header column is updated (groupby variable)
         assert table.tableone.columns.levels[0][0] == 'Grouped by mortality'
@@ -477,7 +477,7 @@ class TestTableOne(object):
         """
         df = self.data_pn.copy()
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
-        table = TableOne(df, columns=columns)
+        table = TableOne(df, columns=columns, label_suffix=False)
 
         # a call to .index.levels[0] automatically sorts the levels
         # instead, call values and use pd.unique as it preserves order
@@ -488,7 +488,7 @@ class TestTableOne(object):
             # i+1 because we skip the first row, 'n'
             assert tableone_rows[i+1] == c
 
-        table = TableOne(df, columns=columns, sort=True)
+        table = TableOne(df, columns=columns, sort=True , label_suffix=False)
         tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
         for i, c in enumerate(sorted(columns, key=lambda s: s.lower())):
             # i+1 because we skip the first row, 'n'
@@ -606,7 +606,8 @@ class TestTableOne(object):
         # expected result is to default to 1
         table_no_arg = TableOne(self.data_pn, columns=columns,
                                 categorical=categorical, groupby=groupby,
-                                nonnormal=nonnormal, pval=False)
+                                nonnormal=nonnormal, pval=False,
+                                label_suffix=False)
 
         t_no_arg_group0 = table_no_arg.tableone['Grouped by death'].loc["Weight",
                                                                         "0"].values
@@ -622,7 +623,8 @@ class TestTableOne(object):
         # decimals = 1
         table_1_decimal = TableOne(self.data_pn, columns=columns,
                                    categorical=categorical, groupby=groupby,
-                                   nonnormal=nonnormal, pval=False, decimals=1)
+                                   nonnormal=nonnormal, pval=False, decimals=1,
+                                   label_suffix=False)
 
         t1_group0 = table_1_decimal.tableone['Grouped by death'].loc["Weight",
                                                                      "0"].values
@@ -638,7 +640,8 @@ class TestTableOne(object):
         # decimals = 2
         table_2_decimal = TableOne(self.data_pn, columns=columns,
                                    categorical=categorical, groupby=groupby,
-                                   nonnormal=nonnormal, pval=False, decimals=2)
+                                   nonnormal=nonnormal, pval=False, decimals=2,
+                                   label_suffix=False)
 
         t2_group0 = table_2_decimal.tableone['Grouped by death'].loc["Weight",
                                                                      "0"].values
@@ -655,7 +658,8 @@ class TestTableOne(object):
         table_3_decimal = TableOne(self.data_pn, columns=columns,
                                    categorical=categorical, groupby=groupby,
                                    nonnormal=nonnormal, pval=False,
-                                   decimals={"Age": 0, "Weight": 3})
+                                   decimals={"Age": 0, "Weight": 3},
+                                   label_suffix=False)
 
         t3_group0 = table_3_decimal.tableone['Grouped by death'].loc["Weight",
                                                                      "0"].values
@@ -682,7 +686,8 @@ class TestTableOne(object):
         # decimals = 1
         table_1_decimal = TableOne(self.data_pn, columns=columns,
                                    categorical=categorical, groupby=groupby,
-                                   nonnormal=nonnormal, pval=False, decimals=1)
+                                   nonnormal=nonnormal, pval=False, decimals=1,
+                                   label_suffix=False)
 
         t1_group0 = table_1_decimal.tableone['Grouped by death'].loc["ICU",
                                                                      "0"].values
@@ -700,7 +705,8 @@ class TestTableOne(object):
         # decimals = 2
         table_2_decimal = TableOne(self.data_pn, columns=columns,
                                    categorical=categorical, groupby=groupby,
-                                   nonnormal=nonnormal, pval=False, decimals=2)
+                                   nonnormal=nonnormal, pval=False, decimals=2,
+                                   label_suffix=False)
 
         t2_group0 = table_2_decimal.tableone['Grouped by death'].loc["ICU",
                                                                      "0"].values
@@ -719,7 +725,7 @@ class TestTableOne(object):
         table_3_decimal = TableOne(self.data_pn, columns=columns,
                                    categorical=categorical, groupby=groupby,
                                    nonnormal=nonnormal, pval=False,
-                                   decimals={"ICU": 3})
+                                   decimals={"ICU": 3}, label_suffix=False)
 
         t3_group0 = table_3_decimal.tableone['Grouped by death'].loc["ICU",
                                                                      "0"].values
@@ -739,7 +745,7 @@ class TestTableOne(object):
         table_4_decimal = TableOne(self.data_pn, columns=columns,
                                    categorical=categorical, groupby=groupby,
                                    nonnormal=nonnormal, pval=False,
-                                   decimals={"Age": 3})
+                                   decimals={"Age": 3}, label_suffix=False)
 
         t4_group0 = table_4_decimal.tableone['Grouped by death'].loc["ICU",
                                                                      "0"].values
@@ -777,8 +783,8 @@ class TestTableOne(object):
         df.loc[2:4, 'basket3'] = None
 
         # create tableone
-        t1 = TableOne(df, categorical=['basket1', 'basket2',
-                                       'basket3', 'basket4'])
+        t1 = TableOne(df, label_suffix=False, categorical=['basket1', 'basket2',
+                                                           'basket3', 'basket4'])
 
         assert all(t1.tableone.loc['basket1'].index == ['apple', 'banana',
                                                         'durian', 'lemon',
