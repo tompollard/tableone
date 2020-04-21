@@ -71,6 +71,8 @@ class TableOne(object):
         and values are functions. Functions must take a list of Numpy Arrays as
         the input argument and must return a test result.
         e.g. pval_test = {'age': myfunc}
+    pval_test_name : bool, optional
+        Display a column with the names of statistical tests (default: False).
     missing : bool, optional
         Display a count of null values (default: True).
     ddof : int, optional
@@ -112,9 +114,9 @@ class TableOne(object):
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
                  nonnormal=None, pval=False, pval_adjust=None, pval_test=None,
-                 isnull=None, missing=True, ddof=1, labels=None, rename=None, 
-                 sort=False, limit=None, order=None, remarks=True, 
-                 label_suffix=True, decimals=1):
+                 pval_test_name=False, isnull=None, missing=True, ddof=1, 
+                 labels=None, rename=None, sort=False, limit=None, order=None, 
+                 remarks=True, label_suffix=True, decimals=1):
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -185,6 +187,7 @@ class TableOne(object):
         self._pval = pval
         self._pval_adjust = pval_adjust
         self._pval_test = pval_test
+        self._pval_test_name = pval_test_name
         self._sort = sort
         self._groupby = groupby
         # degrees of freedom for standard deviation
@@ -986,6 +989,9 @@ class TableOne(object):
         # remove Missing column if not needed
         if not self._isnull:
             table = table.drop('Missing', axis=1)
+
+        if self._pval and not self._pval_test_name:
+            table = table.drop('Test', axis=1)
 
         # replace nans with empty strings
         table = table.fillna('')

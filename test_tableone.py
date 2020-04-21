@@ -519,7 +519,8 @@ class TestTableOne(object):
         categorical = ['ICU', 'death']
         groupby = ['death']
 
-        table = TableOne(df, columns=columns, groupby=groupby, pval=True)
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True,
+                         pval_test_name=True)
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
         assert table.tableone.columns.levels[1][-1] == 'Test'
@@ -528,7 +529,7 @@ class TestTableOne(object):
         df.loc[df['death'] == 0, 'death'] = 2
 
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
-                         pval_adjust='bonferroni')
+                         pval_adjust='bonferroni', pval_test_name=True)
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
         assert table.tableone.columns.levels[1][-1] == 'Test'
