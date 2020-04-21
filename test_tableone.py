@@ -503,7 +503,7 @@ class TestTableOne(object):
             # Trigger the categorical warning
             table = TableOne(self.data_mixed, categorical=[])
         except InputError as e:
-            starts_str = "The following continuous column(s) have non-numeric values"
+            starts_str = "The following continuous column(s) have"
             assert e.args[0].startswith(starts_str)
         except:
             # unexpected error - raise it
