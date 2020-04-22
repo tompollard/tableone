@@ -116,7 +116,7 @@ class TableOne(object):
                  nonnormal=None, pval=False, pval_adjust=None, pval_test=None,
                  pval_test_name=False, isnull=None, missing=True, ddof=1, 
                  labels=None, rename=None, sort=False, limit=None, order=None, 
-                 remarks=True, label_suffix=True, decimals=1):
+                 remarks=True, label_suffix=True, decimals=1, smd=False):
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -197,6 +197,7 @@ class TableOne(object):
         self._remarks = remarks
         self._label_suffix = label_suffix
         self._decimals = decimals
+        self._smd = smd
 
         # output column names that cannot be contained in a groupby
         self._reserved_columns = ['Missing', 'P-Value', 'Test',
@@ -213,7 +214,7 @@ class TableOne(object):
 
         # forgive me jraffa
         if self._pval:
-            self._significance_table = self._create_significance_table(data)
+            self._significance_table, self._smd_table  = self._create_significance_table(data)
 
         # correct for multiple testing
         if self._pval and self._pval_adjust:
@@ -641,6 +642,8 @@ class TableOne(object):
         ----------
             df : pandas DataFrame
                 A table containing the P-Values, test name, etc.
+            df_smd : pandas DataFrame
+                A table containing pairwise standardized mean differences (SMDs).
         """
         # list features of the variable e.g. matched, paired, n_expected
         df = pd.DataFrame(index=self._continuous+self._categorical,
@@ -654,6 +657,9 @@ class TableOne(object):
         df['nonnormal'] = np.where(df.index.isin(self._nonnormal),
                                    True, False)
 
+        # create the SMD table if required.
+        df_smd = pd.DataFrame()
+
         # list values for each variable, grouped by groupby levels
         for v in df.index:
             is_continuous = df.loc[v]['continuous']
@@ -663,21 +669,23 @@ class TableOne(object):
             # if continuous, group data into list of lists
             if is_continuous:
                 catlevels = None
-                grouped_data = []
+                grouped_data = {}
                 for s in self._groupbylvls:
                     lvl_data = data.loc[data[self._groupby] == s, v]
                     # coerce to numeric and drop non-numeric data
                     lvl_data = lvl_data.apply(pd.to_numeric,
                                               errors='coerce').dropna()
                     # append to overall group data
-                    grouped_data.append(lvl_data.values)
-                min_observed = len(min(grouped_data, key=len))
+                    grouped_data[s] = lvl_data.values
+                min_observed = min([len(x) for x in grouped_data.values()])
             # if categorical, create contingency table
             elif is_categorical:
                 catlevels = sorted(data[v].astype('category').cat.categories)
-                grouped_data = pd.crosstab(data[self._groupby].rename('_groupby_var_'),
+                cross_tab = pd.crosstab(data[self._groupby].rename('_groupby_var_'),
                                            data[v])
-                min_observed = grouped_data.sum(axis=1).min()
+                min_observed = cross_tab.sum(axis=1).min()
+                grouped_data = cross_tab.T.to_dict('list')
+                
 
             # minimum number of observations across all levels
             df.loc[v, 'min_observed'] = min_observed
@@ -691,7 +699,7 @@ class TableOne(object):
                                                                    min_observed,
                                                                    catlevels)
 
-        return df
+        return df, df_smd
 
     def _p_test(self, v, grouped_data, is_continuous, is_categorical,
                 is_normal, min_observed, catlevels):
@@ -702,8 +710,8 @@ class TableOne(object):
         ----------
             v : str
                 Name of the variable to be tested.
-            grouped_data : list
-                List of Numpy Arrays to be tested.
+            grouped_data : dict
+                Dictionary of Numpy Arrays to be tested.
             is_continuous : bool
                 True if the variable is continuous.
             is_categorical : bool
@@ -729,7 +737,7 @@ class TableOne(object):
 
         # apply user defined test
         if self._pval_test and v in self._pval_test:
-            pval = self._pval_test[v](*grouped_data)
+            pval = self._pval_test[v](*grouped_data.values())
             ptest = self._pval_test[v].__name__
             return pval, ptest
 
@@ -742,26 +750,28 @@ class TableOne(object):
         # continuous
         if is_continuous and is_normal and len(grouped_data) == 2:
             ptest = 'Two Sample T-test'
-            test_stat, pval = stats.ttest_ind(*grouped_data, equal_var=False)
+            test_stat, pval = stats.ttest_ind(*grouped_data.values(), 
+                                              equal_var=False)
         elif is_continuous and is_normal:
             # normally distributed
             ptest = 'One-way ANOVA'
-            test_stat, pval = stats.f_oneway(*grouped_data)
+            test_stat, pval = stats.f_oneway(*grouped_data.values())
         elif is_continuous and not is_normal:
             # non-normally distributed
             ptest = 'Kruskal-Wallis'
-            test_stat, pval = stats.kruskal(*grouped_data)
+            test_stat, pval = stats.kruskal(*grouped_data.values())
         # categorical
         elif is_categorical:
             # default to chi-squared
             ptest = 'Chi-squared'
-            chi2, pval, dof, expected = stats.chi2_contingency(grouped_data)
+            grouped_val_list = [x for x in grouped_data.values()]
+            chi2, pval, dof, expected = stats.chi2_contingency(grouped_val_list)
             # if any expected cell counts are < 5, chi2 may not be valid
             # if this is a 2x2, switch to fisher exact
             if expected.min() < 5:
-                if grouped_data.shape == (2, 2):
+                if np.shape(grouped_val_list) == (2, 2):
                     ptest = "Fisher's exact"
-                    oddsratio, pval = stats.fisher_exact(grouped_data)
+                    odds_ratio, pval = stats.fisher_exact(grouped_val_list)
                 else:
                     ptest = "Chi-squared (warning: expected count < 5)"
                     msg = """Chi-squared test for {variable} may be invalid
