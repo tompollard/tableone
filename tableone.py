@@ -67,13 +67,13 @@ class TableOne(object):
         `simes-hochberg` : step-up method (independent)
         `hommel` : closed method based on Simes tests (non-negative)
 
-    pval_test : dict, optional
-        Dictionary of custom hypothesis test functions. Keys are variable names
-        and values are functions. Functions must take a list of Numpy Arrays as
-        the input argument and must return a test result.
-        e.g. pval_test = {'age': myfunc}
     pval_test_name : bool, optional
         Display a column with the names of statistical tests (default: False).
+    custom_test : dict, optional
+        Dictionary of custom statistical tests. Keys are variable names and
+        values are functions. Functions must take a list of Numpy Arrays as
+        the input argument and must return a test result.
+        e.g. custom_test = {'age': myfunc}
     missing : bool, optional
         Display a count of null values (default: True).
     ddof : int, optional
@@ -117,11 +117,11 @@ class TableOne(object):
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
-                 nonnormal=None, pval=False, pval_adjust=None, pval_test=None,
-                 pval_test_name=False, isnull=None, missing=True, ddof=1,
-                 labels=None, rename=None, sort=False, limit=None, order=None,
-                 remarks=True, label_suffix=True, decimals=1, smd=False,
-                 display_all=False):
+                 nonnormal=None, pval=False, pval_adjust=None,
+                 pval_test_name=False, custom_test=None, isnull=None,
+                 missing=True, ddof=1, labels=None, rename=None, sort=False,
+                 limit=None, order=None, remarks=True, label_suffix=True,
+                 decimals=1, smd=False, display_all=False):
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -191,7 +191,7 @@ class TableOne(object):
         self._nonnormal = nonnormal
         self._pval = pval
         self._pval_adjust = pval_adjust
-        self._pval_test = pval_test
+        self._custom_test = custom_test
         self._pval_test_name = pval_test_name
         self._sort = sort
         self._groupby = groupby
@@ -981,9 +981,9 @@ class TableOne(object):
         ptest = 'Not tested'
 
         # apply user defined test
-        if self._pval_test and v in self._pval_test:
-            pval = self._pval_test[v](*grouped_data.values())
-            ptest = self._pval_test[v].__name__
+        if self._custom_test and v in self._custom_test:
+            pval = self._custom_test[v](*grouped_data.values())
+            ptest = self._custom_test[v].__name__
             return pval, ptest
 
         # do not test if the variable has no observations in a level

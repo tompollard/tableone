@@ -801,7 +801,7 @@ class TestTableOne(object):
                                                         'lemon'])
 
     @with_setup(setup, teardown)
-    def test_self_defined_statistical_tests(self):
+    def test_custom_statistical_tests(self):
         """
         Test that the user can specify custom statistical functions.
         """
@@ -840,7 +840,7 @@ class TestTableOne(object):
         # Table 1 for different distributions
         different = df1.append(df2)
         t1_diff = TableOne(data=different, columns=["val"], pval=True,
-                           groupby="rvs", pval_test={"val": func})
+                           groupby="rvs", custom_test={"val": func})
 
         assert_almost_equal(t1_diff._significance_table['P-Value'].val,
                             stats.ks_2samp(rvs1, rvs2)[1])
@@ -848,7 +848,7 @@ class TestTableOne(object):
         # Table 1 for similar distributions
         similar = df1.append(df3)
         t1_similar = TableOne(data=similar, columns=["val"], pval=True,
-                              groupby="rvs", pval_test={"val": func})
+                              groupby="rvs", custom_test={"val": func})
 
         assert_almost_equal(t1_similar._significance_table['P-Value'].val,
                             stats.ks_2samp(rvs1, rvs3)[1])
@@ -856,7 +856,7 @@ class TestTableOne(object):
         # Table 1 for identical distributions
         identical = df1.append(df4)
         t1_identical = TableOne(data=identical, columns=["val"], pval=True,
-                                groupby="rvs", pval_test={"val": func})
+                                groupby="rvs", custom_test={"val": func})
 
         assert_almost_equal(t1_identical._significance_table['P-Value'].val,
                             stats.ks_2samp(rvs1, rvs4)[1])
