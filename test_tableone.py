@@ -839,7 +839,7 @@ class TestTableOne(object):
 
         # Table 1 for different distributions
         different = df1.append(df2)
-        t1_diff = TableOne(data=different, columns = ["val"], pval=True,
+        t1_diff = TableOne(data=different, columns=["val"], pval=True,
                            groupby="rvs", pval_test={"val": func})
 
         assert_almost_equal(t1_diff._significance_table['P-Value'].val,
@@ -847,7 +847,7 @@ class TestTableOne(object):
 
         # Table 1 for similar distributions
         similar = df1.append(df3)
-        t1_similar = TableOne(data=similar, columns = ["val"], pval=True,
+        t1_similar = TableOne(data=similar, columns=["val"], pval=True,
                               groupby="rvs", pval_test={"val": func})
 
         assert_almost_equal(t1_similar._significance_table['P-Value'].val,
@@ -855,8 +855,114 @@ class TestTableOne(object):
 
         # Table 1 for identical distributions
         identical = df1.append(df4)
-        t1_identical = TableOne(data=identical, columns = ["val"], pval=True,
+        t1_identical = TableOne(data=identical, columns=["val"], pval=True,
                                 groupby="rvs", pval_test={"val": func})
 
         assert_almost_equal(t1_identical._significance_table['P-Value'].val,
                             stats.ks_2samp(rvs1, rvs4)[1])
+
+    @with_setup(setup, teardown)
+    def test_compute_standardized_mean_difference_continuous(self):
+        """
+        Test that pairwise standardized mean difference is computer correctly
+        for continuous variables.
+
+        # Ref: Introduction to Meta-Analysis. Michael Borenstein,
+        # L. V. Hedges, J. P. T. Higgins and H. R. Rothstein
+        # Wiley (2011). Chapter 4. Effect Sizes Based on Means.
+        """
+
+        # Example from Hedges 2011:
+        # "For example, suppose that a study has sample means X1=103.00,
+        #  X2=100.00, sample standard deviations S1=5.5, S2=4.5, and
+        #  sample sizes n1=50 and n2=50".
+
+        t = TableOne(pd.DataFrame([1, 2, 3]))
+
+        mean1 = 103.0
+        mean2 = 100.0
+        n1 = 50
+        n2 = 50
+        sd1 = 5.5
+        sd2 = 4.5
+
+        smd, se = t._cont_smd(mean1=mean1, mean2=mean2, sd1=sd1, sd2=sd2,
+                              n1=n1, n2=n2)
+
+        assert_equal(round(smd, 4), -0.5970)
+        assert_equal(round(se, 4), 0.2044)
+
+        # Test unbiased estimate using Hedges correction (Hedges, 2011)
+        smd, se = t._cont_smd(mean1=mean1, mean2=mean2, sd1=sd1, sd2=sd2,
+                              n1=n1, n2=n2, unbiased=True)
+
+        assert_equal(round(smd, 4), -0.5924)
+        assert_equal(round(se, 4), 0.2028)
+
+        # Test on input data
+        data1 = [1, 2, 3, 4, 5, 6, 7, 8]
+        data2 = [2, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        smd_data, se_data = t._cont_smd(data1=data1, data2=data2)
+
+        mean1 = np.mean(data1)
+        mean2 = np.mean(data2)
+        n1 = len(data1)
+        n2 = len(data2)
+        sd1 = np.std(data1)
+        sd2 = np.std(data2)
+        smd_summary, se_summary = t._cont_smd(mean1=mean1, mean2=mean2,
+                                              sd1=sd1, sd2=sd2, n1=n1, n2=n2)
+
+        assert_equal(round(smd_data, 4), round(smd_summary, 4))
+        assert_equal(round(se_data, 4), round(se_summary, 4))
+
+        # test with the physionet data
+        cols = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'MechVent', 'LOS',
+                'death']
+        categorical = ['ICU', 'MechVent', 'death']
+        strata = "MechVent"
+
+        t = TableOne(self.data_pn, categorical=categorical, label_suffix=False,
+                     groupby=strata, pval=True, pval_test_name=False, smd=True)
+
+        # consistent with R StdDiff() and R tableone
+        exp_smd = {'Age': '-0.129',
+                   'SysABP': '-0.177',
+                   'Height': '-0.073',
+                   'Weight': '0.124',
+                   'LOS': '0.121'}
+
+        for k in exp_smd:
+            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'][0]
+            assert_equal(smd, exp_smd[k])
+
+    @with_setup(setup, teardown)
+    def test_compute_standardized_mean_difference_categorical(self):
+        """
+        Test that pairwise standardized mean difference is computer correctly
+        for categorical variables.
+
+        # Ref: Introduction to Meta-Analysis. Michael Borenstein,
+        # L. V. Hedges, J. P. T. Higgins and H. R. Rothstein
+        # Wiley (2011). Chapter 4. Effect Sizes Based on Means.
+        """
+
+        t = TableOne(pd.DataFrame([1, 2, 3]))
+
+        # test with the physionet data
+        cols = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'MechVent', 'LOS',
+                'death']
+        categorical = ['ICU', 'MechVent', 'death']
+        strata = "MechVent"
+
+        t = TableOne(self.data_pn, categorical=categorical, label_suffix=False,
+                     groupby=strata, pval=True, pval_test_name=False, smd=True)
+
+        # consistent with R StdDiff() and R tableone
+        exp_smd = {'ICU': '0.747',
+                   'MechVent': 'nan',
+                   'death': '0.017'}
+
+        for k in exp_smd:
+            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'][0]
+            assert_equal(smd, exp_smd[k])
