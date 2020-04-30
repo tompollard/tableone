@@ -292,7 +292,12 @@ class TableOne(object):
                            'display.max_colwidth': None}
 
         for k in display_options:
-            pd.set_option(k, display_options[k])
+            try:
+                pd.set_option(k, display_options[k])
+            except ValueError:
+                msg = """Newer version of Pandas required to set the '{}'
+                         option.""".format(k)
+                warnings.warn(msg)
 
     def tabulate(self, headers=None, tablefmt='grid', **kwargs):
         """
