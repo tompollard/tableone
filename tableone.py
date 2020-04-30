@@ -394,7 +394,7 @@ class TableOne(object):
         likely_cat = list(likely_cat - date_cols)
         # check proportion of unique values if numerical
         for var in data._get_numeric_data().columns:
-            likely_flag = 1.0 * data[var].nunique()/data[var].count() < 0.05
+            likely_flag = 1.0 * data[var].nunique()/data[var].count() < 0.005
             if likely_flag:
                 likely_cat.append(var)
         return likely_cat
