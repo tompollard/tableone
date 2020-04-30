@@ -9,6 +9,7 @@ __version__ = "0.6.7"
 import warnings
 
 import numpy as np
+from numpy.linalg import LinAlgError
 import pandas as pd
 from scipy import stats
 from statsmodels.stats import multitest
@@ -67,7 +68,7 @@ class TableOne(object):
         `hommel` : closed method based on Simes tests (non-negative)
 
     pval_test : dict, optional
-        Dictionary of custom hypothesis test functions. Keys are variable names 
+        Dictionary of custom hypothesis test functions. Keys are variable names
         and values are functions. Functions must take a list of Numpy Arrays as
         the input argument and must return a test result.
         e.g. pval_test = {'age': myfunc}
@@ -105,6 +106,10 @@ class TableOne(object):
         variables. For continuous variables, applies to all summary statistics
         (e.g. mean and standard deviation). For categorical variables, applies
         to percentage only.
+    display_options : dict:
+        Custom options for pd.set_option. For example, `display_options =
+        {'display.max_rows', 10}` will set the maximum number of rows for
+        pandas DataFrames to 10. Default is display all rows and columns.
 
     Attributes
     ----------
@@ -114,24 +119,25 @@ class TableOne(object):
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
                  nonnormal=None, pval=False, pval_adjust=None, pval_test=None,
-                 pval_test_name=False, isnull=None, missing=True, ddof=1, 
-                 labels=None, rename=None, sort=False, limit=None, order=None, 
-                 remarks=True, label_suffix=True, decimals=1, smd=False):
+                 pval_test_name=False, isnull=None, missing=True, ddof=1,
+                 labels=None, rename=None, sort=False, limit=None, order=None,
+                 remarks=True, label_suffix=True, decimals=1, smd=False,
+                 display_options=None):
 
         # labels is now rename
         if labels is not None and rename is not None:
             raise TypeError("TableOne received both labels and rename.")
         elif labels is not None:
-            warnings.warn("The labels argument is deprecated; use " +
-                          "rename instead.", DeprecationWarning)
+            warnings.warn("""The labels argument is deprecated; use
+                             rename instead.""", DeprecationWarning)
             self._alt_labels = labels
         else:
             self._alt_labels = rename
 
         # isnull is now missing
         if isnull is not None:
-            warnings.warn("The isnull argument is deprecated; use " +
-                          "missing instead.", DeprecationWarning)
+            warnings.warn("""The isnull argument is deprecated; use
+                             missing instead.""", DeprecationWarning)
             self._isnull = isnull
         else:
             self._isnull = missing
@@ -150,7 +156,7 @@ class TableOne(object):
 
         # if the input dataframe is empty, raise error
         if data.empty:
-            raise InputError('The input dataframe is empty.')
+            raise InputError("The input dataframe is empty.")
 
         # if columns are not specified, use all columns
         if not columns:
@@ -159,14 +165,14 @@ class TableOne(object):
         # check that the columns exist in the dataframe
         if not set(columns).issubset(data.columns):
             notfound = list(set(columns) - set(data.columns))
-            raise InputError("Columns not found in " +
-                             "dataset: {}".format(notfound))
+            raise InputError("""Columns not found in
+                                dataset: {}""".format(notfound))
 
         # check for duplicate columns
         dups = data[columns].columns[data[columns].columns.duplicated()].unique()
         if not dups.empty:
-            raise InputError("Input contains duplicate " +
-                             "columns: {}".format(dups))
+            raise InputError("""Input contains duplicate
+                                columns: {}""".format(dups))
 
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
@@ -201,20 +207,28 @@ class TableOne(object):
 
         # output column names that cannot be contained in a groupby
         self._reserved_columns = ['Missing', 'P-Value', 'Test',
-                                  'P-Value (adjusted)']
+                                  'P-Value (adjusted)', 'SMD']
+
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
+
+            # reorder the groupby levels if order is provided
+            if self._order and self._groupby in self._order:
+                unordered = [x for x in self._groupbylvls
+                             if x not in self._order[self._groupby]]
+                self._groupbylvls = self._order[self._groupby] + unordered
+
             # check that the group levels do not include reserved words
             for level in self._groupbylvls:
                 if level in self._reserved_columns:
-                    raise InputError('Group level contains "{}", a reserved' +
-                                     ' keyword.'.format(level))
+                    raise InputError("""Group level contains '{}', a reserved
+                                        keyword.""".format(level))
         else:
             self._groupbylvls = ['Overall']
 
         # forgive me jraffa
         if self._pval:
-            self._significance_table, self._smd_table  = self._create_significance_table(data)
+            self._significance_table = self._create_significance_table(data)
 
         # correct for multiple testing
         if self._pval and self._pval_adjust:
@@ -228,11 +242,19 @@ class TableOne(object):
         # create descriptive tables
         if self._categorical:
             self.cat_describe = self._create_cat_describe(data)
-            self.cat_table = self._create_cat_table(data)
 
-        # create continuous tables
         if self._continuous:
             self.cont_describe = self._create_cont_describe(data)
+
+        # compute standardized mean differences
+        if self._smd:
+            self.smd_table = self._create_smd_table(data)
+
+        # create continuous and categorical tables
+        if self._categorical:
+            self.cat_table = self._create_cat_table(data)
+
+        if self._continuous:
             self.cont_table = self._create_cont_table(data)
 
         # combine continuous variables and categorical variables into table 1
@@ -248,6 +270,9 @@ class TableOne(object):
         self.to_json = self.tableone.to_json
         self.to_latex = self.tableone.to_latex
 
+        # set display options
+        self._set_display_options(display_options)
+
     def __str__(self):
         return self.tableone.to_string() + self._generate_remark_str('\n')
 
@@ -256,6 +281,20 @@ class TableOne(object):
 
     def _repr_html_(self):
         return self.tableone._repr_html_() + self._generate_remark_str('<br />')
+
+    def _set_display_options(self, display_options):
+        """
+        Set pandas display options. Display all rows and columns by default.
+        """
+
+        if not display_options:
+            display_options = {'display.max_rows': None,
+                               'display.max_columns': None,
+                               'display.width': None,
+                               'display.max_colwidth': None}
+
+        for k in display_options:
+            pd.set_option(k, display_options[k])
 
     def tabulate(self, headers=None, tablefmt='grid', **kwargs):
         """
@@ -306,24 +345,23 @@ class TableOne(object):
             outlier_mask = self.cont_describe.far_outliers > 1
             outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].dropna(how='all').index)
             if outlier_vars:
-                warnings["Tukey test indicates far " +
-                         "outliers in"] = outlier_vars
+                warnings["Tukey test indicates far outliers in"] = outlier_vars
 
             # highlight possible multimodal distributions using hartigan's dip
             # test -1 values indicate NaN
             modal_mask = (self.cont_describe.diptest >= 0) & (self.cont_describe.diptest <= 0.05)
             modal_vars = list(self.cont_describe.diptest[modal_mask].dropna(how='all').index)
             if modal_vars:
-                warnings["Hartigan's Dip Test reports possible " +
-                         "multimodal distributions for"] = modal_vars
+                warnings["""Hartigan's Dip Test reports possible
+                            multimodal distributions for"""] = modal_vars
 
             # highlight non normal distributions
             # -1 values indicate NaN
             modal_mask = (self.cont_describe.normaltest >= 0) & (self.cont_describe.normaltest <= 0.001)
             modal_vars = list(self.cont_describe.normaltest[modal_mask].dropna(how='all').index)
             if modal_vars:
-                warnings["Normality test reports " +
-                         "non-normal distributions for"] = modal_vars
+                warnings["""Normality test reports non-normal
+                            distributions for"""] = modal_vars
 
         # create the warning string
         for n, k in enumerate(sorted(warnings)):
@@ -357,6 +395,163 @@ class TableOne(object):
             if likely_flag:
                 likely_cat.append(var)
         return likely_cat
+
+    def _cont_smd(self, data1=None, data2=None, mean1=None, mean2=None,
+                  sd1=None, sd2=None, n1=None, n2=None, unbiased=False):
+        """
+        Compute the standardized mean difference (regular or unbiased) using
+        either raw data or summary measures.
+
+        Parameters
+        ----------
+        data1 : list
+            List of values in dataset 1 (control).
+        data2 : list
+            List of values in dataset 2 (treatment).
+        mean1 : float
+            Mean of dataset 1 (control).
+        mean2 : float
+            Mean of dataset 2 (treatment).
+        sd1 : float
+            Standard deviation of dataset 1 (control).
+        sd2 : float
+            Standard deviation of dataset 2 (treatment).
+        n1 : int
+            Sample size of dataset 1 (control).
+        n2 : int
+            Sample size of dataset 2 (treatment).
+        unbiased : bool
+            Return an unbiased estimate using Hedges' correction. Correction
+            factor approximated using the formula proposed in Hedges 2011.
+            (default = False)
+
+        Returns
+        -------
+        smd : float
+            Estimated standardized mean difference.
+        se : float
+            Standard error of the estimated standardized mean difference.
+        """
+        if (data1 and not data2) or (data2 and not data1):
+            raise InputError('Two sets of data must be provided.')
+        elif data1 and data2:
+            if any([mean1, mean2, sd1, sd2, n1, n2]):
+                warnings.warn("""Mean, n, and sd were computed from the data.
+                                 These input args were ignored.""")
+            mean1 = np.mean(data1)
+            mean2 = np.mean(data2)
+            sd1 = np.std(data1)
+            sd2 = np.std(data2)
+            n1 = len(data1)
+            n2 = len(data2)
+
+        if (mean1 and not mean2) or (mean2 and not mean1):
+            raise InputError('mean1 and mean2 must both be provided.')
+
+        if (sd1 and not sd2) or (sd2 and not sd1):
+            raise InputError('sd1 and sd2 must both be provided.')
+
+        if (n1 and not n2) or (n2 and not n1):
+            raise InputError('n1 and n2 must both be provided.')
+
+        # cohens_d
+        smd = (mean2 - mean1) / np.sqrt((sd1 ** 2 + sd2 ** 2) / 2)
+
+        # standard error
+        v_d = ((n1+n2) / (n1*n2)) + ((smd ** 2) / (2*(n1+n2)))
+        se = np.sqrt(v_d)
+
+        if unbiased:
+            # Hedges correction (J. Hedges, 1981)
+            # Approximation for the the correction factor from:
+            # Introduction to Meta-Analysis. Michael Borenstein,
+            # L. V. Hedges, J. P. T. Higgins and H. R. Rothstein
+            # Wiley (2011). Chapter 4. Effect Sizes Based on Means.
+            j = 1 - (3/(4*(n1+n2-2)-1))
+            smd = j * smd
+            v_g = (j ** 2) * v_d
+            se = np.sqrt(v_g)
+
+        return smd, se
+
+    def _cat_smd(self, prop1=None, prop2=None, n1=None, n2=None,
+                 unbiased=False):
+        """
+        Compute the standardized mean difference (regular or unbiased) using
+        either raw data or summary measures.
+
+        Parameters
+        ----------
+        prop1 : list
+            Proportions (range 0-1) for each categorical value in dataset 1
+            (control).
+        prop2 : list
+            Proportions (range 0-1) for each categorical value in dataset 2
+            (treatment).
+        n1 : int
+            Sample size of dataset 1 (control).
+        n2 : int
+            Sample size of dataset 2 (treatment).
+        unbiased : bool
+            Return an unbiased estimate using Hedges' correction. Correction
+            factor approximated using the formula proposed in Hedges 2011.
+            (default = False)
+
+        Returns
+        -------
+        smd : float
+            Estimated standardized mean difference.
+        se : float
+            Standard error of the estimated standardized mean difference.
+        """
+        # Categorical SMD Yang & Dalton 2012
+        # https://support.sas.com/resources/papers/proceedings12/335-2012.pdf
+        prop1 = np.asarray(prop1)
+        prop2 = np.asarray(prop2)
+
+        # Drop first level for consistency with R tableone
+        # "to eliminate dependence if more than two levels"
+        prop1 = prop1[1:]
+        prop2 = prop2[1:]
+
+        lst_cov = []
+        for p in [prop1, prop2]:
+            variance = p * (1 - p)
+            covariance = - np.outer(p, p)
+            covariance[np.diag_indices_from(covariance)] = variance
+            lst_cov.append(covariance)
+
+        mean_diff = np.matrix(prop2 - prop1)
+        mean_cov = (lst_cov[0] + lst_cov[1])/2
+
+        # TODO: add steps to deal with nulls
+
+        try:
+            sq_md = mean_diff * np.linalg.inv(mean_cov) * mean_diff.T
+        except LinAlgError:
+            sq_md = np.nan
+
+        try:
+            smd = np.asarray(np.sqrt(sq_md))[0][0]
+        except IndexError:
+            smd = np.nan
+
+        # standard error
+        v_d = ((n1+n2) / (n1*n2)) + ((smd ** 2) / (2*(n1+n2)))
+        se = np.sqrt(v_d)
+
+        if unbiased:
+            # Hedges correction (J. Hedges, 1981)
+            # Approximation for the the correction factor from:
+            # Introduction to Meta-Analysis. Michael Borenstein,
+            # L. V. Hedges, J. P. T. Higgins and H. R. Rothstein
+            # Wiley (2011). Chapter 4. Effect Sizes Based on Means.
+            j = 1 - (3/(4*(n1+n2-2)-1))
+            smd = j * smd
+            v_g = (j ** 2) * v_d
+            se = np.sqrt(v_g)
+
+        return smd, se
 
     def _q25(self, x):
         """
@@ -465,8 +660,9 @@ class TableOne(object):
                 n = 1
         else:
             n = 1
-            warnings.warn("The decimals arg must be an int or dict. " +
-                          "Defaulting to {} d.p.".format(n))
+            msg = """The decimals arg must be an int or dict.
+                     Defaulting to {} d.p.""".format(n)
+            warnings.warn(msg)
 
         if x.name in self._nonnormal:
             f = '{{:.{}f}} [{{:.{}f}},{{:.{}f}}]'.format(n, n, n)
@@ -589,13 +785,13 @@ class TableOne(object):
             if isinstance(self._decimals, int):
                 n = self._decimals
                 f = '{{:.{}f}}'.format(n)
-                df['percent'] = df['percent'].astype(float).map(f.format)
+                df['percent_str'] = df['percent'].astype(float).map(f.format)
             elif isinstance(self._decimals, dict):
-                df.loc[:, 'percent'] = df.apply(self._format_cat, axis=1)
+                df.loc[:, 'percent_str'] = df.apply(self._format_cat, axis=1)
             else:
                 n = 1
                 f = '{{:.{}f}}'.format(n)
-                df['percent'] = df['percent'].astype(float).map(f.format)
+                df['percent_str'] = df['percent'].astype(float).map(f.format)
 
             # add n column, listing total non-null values for each variable
             ct = d_slice.count().to_frame(name='n')
@@ -616,7 +812,7 @@ class TableOne(object):
             df = df.join(nulls)
 
             # add summary column
-            df['t1_summary'] = df.freq.map(str) + ' (' + df.percent.map(str) + ')'
+            df['t1_summary'] = df.freq.map(str)+' ('+df.percent_str.map(str)+')'
 
             # add to dictionary
             group_dict[g] = df
@@ -642,8 +838,6 @@ class TableOne(object):
         ----------
             df : pandas DataFrame
                 A table containing the P-Values, test name, etc.
-            df_smd : pandas DataFrame
-                A table containing pairwise standardized mean differences (SMDs).
         """
         # list features of the variable e.g. matched, paired, n_expected
         df = pd.DataFrame(index=self._continuous+self._categorical,
@@ -656,9 +850,6 @@ class TableOne(object):
 
         df['nonnormal'] = np.where(df.index.isin(self._nonnormal),
                                    True, False)
-
-        # create the SMD table if required.
-        df_smd = pd.DataFrame()
 
         # list values for each variable, grouped by groupby levels
         for v in df.index:
@@ -682,10 +873,9 @@ class TableOne(object):
             elif is_categorical:
                 catlevels = sorted(data[v].astype('category').cat.categories)
                 cross_tab = pd.crosstab(data[self._groupby].rename('_groupby_var_'),
-                                           data[v])
+                                        data[v])
                 min_observed = cross_tab.sum(axis=1).min()
                 grouped_data = cross_tab.T.to_dict('list')
-                
 
             # minimum number of observations across all levels
             df.loc[v, 'min_observed'] = min_observed
@@ -699,7 +889,59 @@ class TableOne(object):
                                                                    min_observed,
                                                                    catlevels)
 
-        return df, df_smd
+        return df
+
+    def _create_smd_table(self, data):
+        """
+        Create a table containing pairwise Standardized Mean Differences
+        (SMDs).
+
+        Parameters
+        ----------
+            data : pandas DataFrame
+                The input dataset.
+
+        Returns
+        ----------
+            df : pandas DataFrame
+                A table containing pairwise standardized mean differences
+                (SMDs).
+        """
+        # create the SMD table
+        permutations = [sorted((x, y), key=lambda f: self._groupbylvls.index(f))
+                        for x in self._groupbylvls
+                        for y in self._groupbylvls if x is not y]
+
+        p_set = set(tuple(x) for x in permutations)
+
+        colname = 'SMD ({0},{1})'
+        columns = [colname.format(x[0], x[1]) for x in p_set]
+        df = pd.DataFrame(index=self._continuous+self._categorical,
+                          columns=columns)
+        df.index = df.index.rename('variable')
+
+        for p in p_set:
+            for v in self.cont_describe.index:
+                smd, _ = self._cont_smd(
+                            mean1=self.cont_describe['mean'][p[0]].loc[v],
+                            mean2=self.cont_describe['mean'][p[1]].loc[v],
+                            sd1=self.cont_describe['std'][p[0]].loc[v],
+                            sd2=self.cont_describe['std'][p[1]].loc[v],
+                            n1=self.cont_describe['count'][p[0]].loc[v],
+                            n2=self.cont_describe['count'][p[1]].loc[v],
+                            unbiased=False)
+                df[colname.format(p[0], p[1])].loc[v] = smd
+
+            for v, _ in self.cat_describe.groupby(level=0):
+                smd, _ = self._cat_smd(
+                    prop1=self.cat_describe.loc[[v]]['percent'][p[0]].values/100,
+                    prop2=self.cat_describe.loc[[v]]['percent'][p[1]].values/100,
+                    n1=self.cat_describe.loc[[v]]['freq'][p[0]].sum(),
+                    n2=self.cat_describe.loc[[v]]['freq'][p[1]].sum(),
+                    unbiased=False)
+                df[colname.format(p[0], p[1])].loc[v] = smd
+
+        return df
 
     def _p_test(self, v, grouped_data, is_continuous, is_categorical,
                 is_normal, min_observed, catlevels):
@@ -743,8 +985,9 @@ class TableOne(object):
 
         # do not test if the variable has no observations in a level
         if min_observed == 0:
-            warnings.warn("No P-Value was computed for {} due to the low " +
-                          "number of observations.".format(v))
+            msg = """No P-Value was computed for {variable} due to the low
+                     number of observations.""".format(variable=v)
+            warnings.warn(msg)
             return pval, ptest
 
         # continuous
@@ -813,6 +1056,10 @@ class TableOne(object):
         elif self._pval:
             table = table.join(self._significance_table[['P-Value', 'Test']])
 
+        # add standardized mean difference (SMD) column/s
+        if self._smd:
+            table = table.join(self.smd_table)
+
         return table
 
     def _create_cat_table(self, data):
@@ -841,6 +1088,10 @@ class TableOne(object):
                                                          'Test']])
         elif self._pval:
             table = table.join(self._significance_table[['P-Value', 'Test']])
+
+        # add standardized mean difference (SMD) column/s
+        if self._smd:
+            table = table.join(self.smd_table)
 
         return table
 
@@ -872,6 +1123,8 @@ class TableOne(object):
 
         # sort the table rows
         sort_columns = ['Missing', 'P-Value', 'P-Value (adjusted)', 'Test']
+        if self._smd:
+            sort_columns = sort_columns + list(self.smd_table.columns)
         if self._sort and isinstance(self._sort, bool):
             new_index = sorted(table.index.values, key=lambda x: x[0].lower())
         elif self._sort and isinstance(self._sort, str) and (self._sort in
@@ -903,6 +1156,12 @@ class TableOne(object):
             table['P-Value'] = table['P-Value'].apply('{:.3f}'.format).astype(str)
             table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
 
+        # round smd columns and convert to string
+        if self._smd:
+            for c in list(self.smd_table.columns):
+                table[c] = table[c].apply('{:.3f}'.format).astype(str)
+                table.loc[table[c] == '0.000', c] = '<0.001'
+
         # if an order is specified, apply it
         if self._order:
             for k in self._order:
@@ -911,7 +1170,8 @@ class TableOne(object):
                 try:
                     all_var = table.loc[k].index.unique(level='value')
                 except KeyError:
-                    warnings.warn('Order variable not found: {}'.format(k))
+                    if k not in self._groupby:
+                        warnings.warn('Order variable not found: {}'.format(k))
                     continue
 
                 # Remove value from order if it is not present
@@ -990,6 +1250,8 @@ class TableOne(object):
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
         dupe_columns = ['Missing']
         optional_columns = ['P-Value', 'P-Value (adjusted)', 'Test']
+        if self._smd:
+            optional_columns = optional_columns + list(self.smd_table.columns)
         for col in optional_columns:
             if col in table.columns.values:
                 dupe_columns.append(col)
@@ -1091,6 +1353,6 @@ class TableOne(object):
 
     # warnings
     def _non_continuous_warning(self, c):
-        warnings.warn('"{}" has all non-numeric values. Consider including ' +
-                      'it in the list of categorical ' +
-                      'variables.'.format(c), RuntimeWarning, stacklevel=2)
+        warnings.warn("""'{}' has all non-numeric values. Consider including
+                         it in the list of categorical variables.""".format(c),
+                         RuntimeWarning, stacklevel=2)
