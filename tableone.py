@@ -106,10 +106,9 @@ class TableOne(object):
         variables. For continuous variables, applies to all summary statistics
         (e.g. mean and standard deviation). For categorical variables, applies
         to percentage only.
-    display_options : dict:
-        Custom options for pd.set_option. For example, `display_options =
-        {'display.max_rows', 10}` will set the maximum number of rows for
-        pandas DataFrames to 10. Default is display all rows and columns.
+    display_all : bool:
+        If True, set pd. display_options to display all columns and rows.
+        (default: False)
 
     Attributes
     ----------
@@ -122,7 +121,7 @@ class TableOne(object):
                  pval_test_name=False, isnull=None, missing=True, ddof=1,
                  labels=None, rename=None, sort=False, limit=None, order=None,
                  remarks=True, label_suffix=True, decimals=1, smd=False,
-                 display_options=None):
+                 display_all=False):
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -271,7 +270,8 @@ class TableOne(object):
         self.to_latex = self.tableone.to_latex
 
         # set display options
-        self._set_display_options(display_options)
+        if display_all:
+            self._set_display_options()
 
     def __str__(self):
         return self.tableone.to_string() + self._generate_remark_str('\n')
@@ -282,16 +282,14 @@ class TableOne(object):
     def _repr_html_(self):
         return self.tableone._repr_html_() + self._generate_remark_str('<br />')
 
-    def _set_display_options(self, display_options):
+    def _set_display_options(self):
         """
         Set pandas display options. Display all rows and columns by default.
         """
-
-        if not display_options:
-            display_options = {'display.max_rows': None,
-                               'display.max_columns': None,
-                               'display.width': None,
-                               'display.max_colwidth': None}
+        display_options = {'display.max_rows': None,
+                           'display.max_columns': None,
+                           'display.width': None,
+                           'display.max_colwidth': None}
 
         for k in display_options:
             pd.set_option(k, display_options[k])
