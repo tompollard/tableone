@@ -4,7 +4,7 @@ research papers.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
-__version__ = "0.6.7"
+__version__ = "0.7.0"
 
 import warnings
 
@@ -68,12 +68,12 @@ class TableOne(object):
         `hommel` : closed method based on Simes tests (non-negative)
 
     pval_test_name : bool, optional
-        Display a column with the names of statistical tests (default: False).
-    custom_test : dict, optional
-        Dictionary of custom statistical tests. Keys are variable names and
+        Display a column with the names of hypothesis tests (default: False).
+    htest : dict, optional
+        Dictionary of custom hypothesis tests. Keys are variable names and
         values are functions. Functions must take a list of Numpy Arrays as
         the input argument and must return a test result.
-        e.g. custom_test = {'age': myfunc}
+        e.g. htest = {'age': myfunc}
     missing : bool, optional
         Display a count of null values (default: True).
     ddof : int, optional
@@ -118,7 +118,7 @@ class TableOne(object):
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
                  nonnormal=None, pval=False, pval_adjust=None,
-                 pval_test_name=False, custom_test=None, isnull=None,
+                 pval_test_name=False, htest=None, isnull=None,
                  missing=True, ddof=1, labels=None, rename=None, sort=False,
                  limit=None, order=None, remarks=True, label_suffix=True,
                  decimals=1, smd=False, display_all=False):
@@ -186,12 +186,13 @@ class TableOne(object):
             raise InputError("If pval=True then groupby must be specified.")
 
         self._columns = list(columns)
-        self._continuous = [c for c in columns if c not in categorical + [groupby]]
+        self._continuous = [c for c in columns
+                            if c not in categorical + [groupby]]
         self._categorical = categorical
         self._nonnormal = nonnormal
         self._pval = pval
         self._pval_adjust = pval_adjust
-        self._custom_test = custom_test
+        self._htest = htest
         self._pval_test_name = pval_test_name
         self._sort = sort
         self._groupby = groupby
@@ -815,7 +816,8 @@ class TableOne(object):
             df = df.join(nulls)
 
             # add summary column
-            df['t1_summary'] = df.freq.map(str)+' ('+df.percent_str.map(str)+')'
+            df['t1_summary'] = (df.freq.map(str) + ' ('
+                                + df.percent_str.map(str)+')')
 
             # add to dictionary
             group_dict[g] = df
@@ -911,7 +913,8 @@ class TableOne(object):
                 (SMDs).
         """
         # create the SMD table
-        permutations = [sorted((x, y), key=lambda f: self._groupbylvls.index(f))
+        permutations = [sorted((x, y),
+                        key=lambda f: self._groupbylvls.index(f))
                         for x in self._groupbylvls
                         for y in self._groupbylvls if x is not y]
 
@@ -981,9 +984,9 @@ class TableOne(object):
         ptest = 'Not tested'
 
         # apply user defined test
-        if self._custom_test and v in self._custom_test:
-            pval = self._custom_test[v](*grouped_data.values())
-            ptest = self._custom_test[v].__name__
+        if self._htest and v in self._htest:
+            pval = self._htest[v](*grouped_data.values())
+            ptest = self._htest[v].__name__
             return pval, ptest
 
         # do not test if the variable has no observations in a level
@@ -996,7 +999,7 @@ class TableOne(object):
         # continuous
         if is_continuous and is_normal and len(grouped_data) == 2:
             ptest = 'Two Sample T-test'
-            test_stat, pval = stats.ttest_ind(*grouped_data.values(), 
+            test_stat, pval = stats.ttest_ind(*grouped_data.values(),
                                               equal_var=False)
         elif is_continuous and is_normal:
             # normally distributed
