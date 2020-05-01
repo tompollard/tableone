@@ -209,6 +209,9 @@ class TableOne(object):
         self._smd = smd
         self._overall = overall
 
+        # display notes and warnings below the table
+        self._warnings = {}
+
         # output column names that cannot be contained in a groupby
         self._reserved_columns = ['Missing', 'P-Value', 'Test',
                                   'P-Value (adjusted)', 'SMD', 'Overall']
@@ -349,44 +352,47 @@ class TableOne(object):
 
         return tabulate(df, headers=headers, tablefmt=tablefmt, **kwargs)
 
-    def _generate_remark_str(self, end_of_line='\n'):
+    def _generate_remark_str(self, newline='\n'):
         """
         Generate a series of remarks that the user should consider
         when interpreting the summary statistics.
         """
-        warnings = {}
-        msg = '{}'.format(end_of_line)
-
         # generate warnings for continuous variables
         if self._continuous:
             # highlight far outliers
             outlier_mask = self.cont_describe.far_outliers > 1
-            outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].dropna(how='all').index)
+            outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].
+                                dropna(how='all').index)
             if outlier_vars:
-                warnings["Tukey test indicates far outliers in"] = outlier_vars
+                self._warnings["""Tukey test indicates far outliers
+                                  in"""] = outlier_vars
 
             # highlight possible multimodal distributions using hartigan's dip
             # test -1 values indicate NaN
             modal_mask = ((self.cont_describe.diptest >= 0) &
                           (self.cont_describe.diptest <= 0.05))
-            modal_vars = list(self.cont_describe.diptest[modal_mask].dropna(how='all').index)
+            modal_vars = list(self.cont_describe.diptest[modal_mask].
+                              dropna(how='all').index)
             if modal_vars:
-                warnings["""Hartigan's Dip Test reports possible
-                            multimodal distributions for"""] = modal_vars
+                self._warnings["""Hartigan's Dip Test reports possible
+                                  multimodal distributions for"""] = modal_vars
 
             # highlight non normal distributions
             # -1 values indicate NaN
             modal_mask = ((self.cont_describe.normaltest >= 0) &
                           (self.cont_describe.normaltest <= 0.001))
-            modal_vars = list(self.cont_describe.normaltest[modal_mask].dropna(how='all').index)
+            modal_vars = list(self.cont_describe.normaltest[modal_mask].
+                              dropna(how='all').index)
             if modal_vars:
-                warnings["""Normality test reports non-normal
-                            distributions for"""] = modal_vars
+                self._warnings["""Normality test reports non-normal
+                                  distributions for"""] = modal_vars
 
         # create the warning string
-        for n, k in enumerate(sorted(warnings)):
-            msg += '[{}] {}: {}.{}'.format(n+1, k, ', '.join(warnings[k]),
-                                           end_of_line)
+        msg = '{}'.format(newline)
+        for n, k in enumerate(sorted(self._warnings)):
+            msg += '[{}] {}: {}.{}'.format(n+1, k,
+                                           ', '.join(self._warnings[k]),
+                                           newline)
 
         return msg
 
@@ -1037,9 +1043,13 @@ class TableOne(object):
                     odds_ratio, pval = stats.fisher_exact(grouped_val_list)
                 else:
                     ptest = "Chi-squared (warning: expected count < 5)"
-                    msg = ("Chi-squared test for {variable} may be invalid"
-                           "(expected cell counts are < 5).").format(variable=v)
-                    warnings.warn(msg)
+                    chi_warn = ("Chi-squared tests for the following "
+                                "variables may be invalid due to the low "
+                                "number of observations")
+                    try:
+                        self._warnings[chi_warn].append(v)
+                    except KeyError:
+                        self._warnings[chi_warn] = [v]
 
         return pval, ptest
 
