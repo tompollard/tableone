@@ -106,6 +106,9 @@ class TableOne(object):
         variables. For continuous variables, applies to all summary statistics
         (e.g. mean and standard deviation). For categorical variables, applies
         to percentage only.
+    overall : bool:
+        If True, add an "overall" column to the table. Smd and p-value
+        calculations are performed only using stratified columns.
     display_all : bool:
         If True, set pd. display_options to display all columns and rows.
         (default: False)
@@ -121,7 +124,7 @@ class TableOne(object):
                  pval_test_name=False, htest=None, isnull=None,
                  missing=True, ddof=1, labels=None, rename=None, sort=False,
                  limit=None, order=None, remarks=True, label_suffix=True,
-                 decimals=1, smd=False, display_all=False):
+                 decimals=1, smd=False, overall=True, display_all=False):
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -204,10 +207,11 @@ class TableOne(object):
         self._label_suffix = label_suffix
         self._decimals = decimals
         self._smd = smd
+        self._overall = overall
 
         # output column names that cannot be contained in a groupby
         self._reserved_columns = ['Missing', 'P-Value', 'Test',
-                                  'P-Value (adjusted)', 'SMD']
+                                  'P-Value (adjusted)', 'SMD', 'Overall']
 
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
@@ -239,12 +243,22 @@ class TableOne(object):
             self._significance_table['P-Value (adjusted)'] = adjusted[1]
             self._significance_table['adjust method'] = self._pval_adjust
 
+        # create overall tables if required
+        if self._categorical and self._groupby and overall:
+            self.cat_describe_all = self._create_cat_describe(data, False,
+                                                              ['Overall'])
+
+        if self._continuous and self._groupby and overall:
+            self.cont_describe_all = self._create_cont_describe(data, False)
+
         # create descriptive tables
         if self._categorical:
-            self.cat_describe = self._create_cat_describe(data)
+            self.cat_describe = self._create_cat_describe(data, self._groupby,
+                                                          self._groupbylvls)
 
         if self._continuous:
-            self.cont_describe = self._create_cont_describe(data)
+            self.cont_describe = self._create_cont_describe(data,
+                                                            self._groupby)
 
         # compute standardized mean differences
         if self._smd:
@@ -252,10 +266,10 @@ class TableOne(object):
 
         # create continuous and categorical tables
         if self._categorical:
-            self.cat_table = self._create_cat_table(data)
+            self.cat_table = self._create_cat_table(data, overall)
 
         if self._continuous:
-            self.cont_table = self._create_cont_table(data)
+            self.cont_table = self._create_cont_table(data, overall)
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
@@ -353,7 +367,8 @@ class TableOne(object):
 
             # highlight possible multimodal distributions using hartigan's dip
             # test -1 values indicate NaN
-            modal_mask = (self.cont_describe.diptest >= 0) & (self.cont_describe.diptest <= 0.05)
+            modal_mask = ((self.cont_describe.diptest >= 0) &
+                          (self.cont_describe.diptest <= 0.05))
             modal_vars = list(self.cont_describe.diptest[modal_mask].dropna(how='all').index)
             if modal_vars:
                 warnings["""Hartigan's Dip Test reports possible
@@ -361,7 +376,8 @@ class TableOne(object):
 
             # highlight non normal distributions
             # -1 values indicate NaN
-            modal_mask = (self.cont_describe.normaltest >= 0) & (self.cont_describe.normaltest <= 0.001)
+            modal_mask = ((self.cont_describe.normaltest >= 0) &
+                          (self.cont_describe.normaltest <= 0.001))
             modal_vars = list(self.cont_describe.normaltest[modal_mask].dropna(how='all').index)
             if modal_vars:
                 warnings["""Normality test reports non-normal
@@ -678,7 +694,7 @@ class TableOne(object):
             return f.format(np.nanmean(x.values),
                             np.nanstd(x.values, ddof=self._ddof))
 
-    def _create_cont_describe(self, data):
+    def _create_cont_describe(self, data, groupby):
         """
         Describe the continuous data.
 
@@ -714,15 +730,15 @@ class TableOne(object):
         for column in cont_data.columns[cont_data.count() == 0]:
             self._non_continuous_warning(column)
 
-        if self._groupby:
+        if groupby:
             # add the groupby column back
-            cont_data = cont_data.merge(data[[self._groupby]],
+            cont_data = cont_data.merge(data[[groupby]],
                                         left_index=True,
                                         right_index=True)
 
             # group and aggregate data
             df_cont = pd.pivot_table(cont_data,
-                                     columns=[self._groupby],
+                                     columns=[groupby],
                                      aggfunc=aggfuncs)
         else:
             # if no groupby, just add single group column
@@ -749,7 +765,7 @@ class TableOne(object):
         f = '{{:.{}f}}'.format(n)
         return f.format(row.percent)
 
-    def _create_cat_describe(self, data):
+    def _create_cat_describe(self, data, groupby, groupbylvls):
         """
         Describe the categorical data.
 
@@ -765,9 +781,9 @@ class TableOne(object):
         """
         group_dict = {}
 
-        for g in self._groupbylvls:
-            if self._groupby:
-                d_slice = data.loc[data[self._groupby] == g, self._categorical]
+        for g in groupbylvls:
+            if groupby:
+                d_slice = data.loc[data[groupby] == g, self._categorical]
             else:
                 d_slice = data[self._categorical].copy()
 
@@ -877,8 +893,8 @@ class TableOne(object):
             # if categorical, create contingency table
             elif is_categorical:
                 catlevels = sorted(data[v].astype('category').cat.categories)
-                cross_tab = pd.crosstab(data[self._groupby].rename('_groupby_var_'),
-                                        data[v])
+                cross_tab = pd.crosstab(data[self._groupby].
+                                        rename('_groupby_var_'), data[v])
                 min_observed = cross_tab.sum(axis=1).min()
                 grouped_data = cross_tab.T.to_dict('list')
 
@@ -886,13 +902,11 @@ class TableOne(object):
             df.loc[v, 'min_observed'] = min_observed
 
             # compute pvalues
-            df.loc[v, 'P-Value'], df.loc[v, 'Test'] = self._p_test(v,
-                                                                   grouped_data,
-                                                                   is_continuous,
-                                                                   is_categorical,
-                                                                   is_normal,
-                                                                   min_observed,
-                                                                   catlevels)
+            (df.loc[v, 'P-Value'],
+                df.loc[v, 'Test']) = self._p_test(v, grouped_data,
+                                                  is_continuous,
+                                                  is_categorical, is_normal,
+                                                  min_observed, catlevels)
 
         return df
 
@@ -1023,13 +1037,13 @@ class TableOne(object):
                     odds_ratio, pval = stats.fisher_exact(grouped_val_list)
                 else:
                     ptest = "Chi-squared (warning: expected count < 5)"
-                    msg = """Chi-squared test for {variable} may be invalid
-                             (expected cell counts are < 5).""".format(variable=v)
+                    msg = ("Chi-squared test for {variable} may be invalid"
+                           "(expected cell counts are < 5).").format(variable=v)
                     warnings.warn(msg)
 
         return pval, ptest
 
-    def _create_cont_table(self, data):
+    def _create_cont_table(self, data, overall):
         """
         Create tableone for continuous data.
 
@@ -1066,9 +1080,14 @@ class TableOne(object):
         if self._smd:
             table = table.join(self.smd_table)
 
+        # join the overall column if needed
+        if self._groupby and overall:
+            table = table.join(pd.concat([self.cont_describe_all['t1_summary'].
+                                          Overall], axis=1, keys=["Overall"]))
+
         return table
 
-    def _create_cat_table(self, data):
+    def _create_cat_table(self, data, overall):
         """
         Create table one for categorical data.
 
@@ -1078,6 +1097,7 @@ class TableOne(object):
             A table summarising the categorical variables.
         """
         table = self.cat_describe['t1_summary'].copy()
+
         # add the total count of null values across all levels
         isnull = data[self._categorical].isnull().sum().to_frame(name='Missing')
         isnull.index = isnull.index.rename('variable')
@@ -1099,6 +1119,11 @@ class TableOne(object):
         if self._smd:
             table = table.join(self.smd_table)
 
+        # join the overall column if needed
+        if self._groupby and overall:
+            table = table.join(pd.concat([self.cat_describe_all['t1_summary'].
+                                          Overall], axis=1, keys=["Overall"]))
+
         return table
 
     def _create_tableone(self, data):
@@ -1111,7 +1136,6 @@ class TableOne(object):
             The complete table one.
         """
         if self._continuous and self._categorical:
-
             # support pandas<=0.22
             try:
                 table = pd.concat([self.cont_table, self.cat_table],
@@ -1131,6 +1155,7 @@ class TableOne(object):
         sort_columns = ['Missing', 'P-Value', 'P-Value (adjusted)', 'Test']
         if self._smd:
             sort_columns = sort_columns + list(self.smd_table.columns)
+
         if self._sort and isinstance(self._sort, bool):
             new_index = sorted(table.index.values, key=lambda x: x[0].lower())
         elif self._sort and isinstance(self._sort, str) and (self._sort in
@@ -1155,11 +1180,13 @@ class TableOne(object):
 
         # round pval column and convert to string
         if self._pval and self._pval_adjust:
-            table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply('{:.3f}'.format).astype(str)
+            table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply(
+                                                '{:.3f}'.format).astype(str)
             table.loc[table['P-Value (adjusted)'] == '0.000',
                       'P-Value (adjusted)'] = '<0.001'
         elif self._pval:
-            table['P-Value'] = table['P-Value'].apply('{:.3f}'.format).astype(str)
+            table['P-Value'] = table['P-Value'].apply(
+                                     '{:.3f}'.format).astype(str)
             table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
 
         # round smd columns and convert to string
@@ -1177,7 +1204,7 @@ class TableOne(object):
                     all_var = table.loc[k].index.unique(level='value')
                 except KeyError:
                     if k not in self._groupby:
-                        warnings.warn('Order variable not found: {}'.format(k))
+                        warnings.warn("Order variable not found: {}".format(k))
                     continue
 
                 # Remove value from order if it is not present
@@ -1185,8 +1212,8 @@ class TableOne(object):
                     rm_var = [i for i in self._order[k] if i not in all_var]
                     self._order[k] = [i for i in self._order[k]
                                       if i in all_var]
-                    warnings.warn('Order value not found: {}: {}'.format(k,
-                                                                         rm_var))
+                    warnings.warn(("Order value not found: "
+                                   "{}: {}").format(k, rm_var))
 
                 new_seq = [(k, '{}'.format(v)) for v in self._order[k]]
                 new_seq += [(k, '{}'.format(v)) for v in all_var
@@ -1248,6 +1275,8 @@ class TableOne(object):
         if self._groupbylvls == ['Overall']:
             table.loc['n', 'Overall'] = len(data.index)
         else:
+            if self._overall:
+                table.loc['n', 'Overall'] = len(data.index)
             for g in self._groupbylvls:
                 ct = data[self._groupby][data[self._groupby] == g].count()
                 table.loc['n', '{}'.format(g)] = ct
@@ -1302,6 +1331,9 @@ class TableOne(object):
 
         if 'Missing' in cols:
             cols = ['Missing'] + [x for x in cols if x != 'Missing']
+
+        if self._groupby and self._overall:
+            cols = ['Overall'] + [x for x in cols if x != 'Overall']
 
         # move optional_columns to the end of the dataframe
         for col in optional_columns:
@@ -1359,6 +1391,6 @@ class TableOne(object):
 
     # warnings
     def _non_continuous_warning(self, c):
-        warnings.warn("""'{}' has all non-numeric values. Consider including
-                         it in the list of categorical variables.""".format(c),
-                         RuntimeWarning, stacklevel=2)
+        msg = ("'{}' has all non-numeric values. Consider including "
+               "it in the list of categorical variables.").format(c)
+        warnings.warn(msg, RuntimeWarning, stacklevel=2)

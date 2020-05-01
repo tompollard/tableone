@@ -265,7 +265,8 @@ class TestTableOne(object):
         groupby = 'group'
         t = TableOne(self.data_groups, columns=columns,
                      categorical=categorical, groupby=groupby,
-                     missing=False, decimals=2, label_suffix=False)
+                     missing=False, decimals=2, label_suffix=False,
+                     overall=False)
 
         # n and weight rows are already ordered, so sorting should
         # not change the order
@@ -526,7 +527,7 @@ class TestTableOne(object):
         groupby = ['death']
 
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
-                         pval_test_name=True)
+                         pval_test_name=True, overall=False)
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
         assert table.tableone.columns.levels[1][-1] == 'Test'
@@ -534,10 +535,22 @@ class TestTableOne(object):
 
         df.loc[df['death'] == 0, 'death'] = 2
 
+        # without overall column
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
-                         pval_adjust='bonferroni', pval_test_name=True)
+                         pval_adjust='bonferroni', pval_test_name=True,
+                         overall=False)
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
+        assert table.tableone.columns.levels[1][-1] == 'Test'
+        assert table.tableone.columns.levels[1][-2] == 'P-Value (adjusted)'
+
+        # with overall column
+        table = TableOne(df, columns=columns, groupby=groupby, pval=True,
+                         pval_adjust='bonferroni', pval_test_name=True,
+                         overall=True)
+
+        assert table.tableone.columns.levels[1][0] == 'Overall'
+        assert table.tableone.columns.levels[1][1] == 'Missing'
         assert table.tableone.columns.levels[1][-1] == 'Test'
         assert table.tableone.columns.levels[1][-2] == 'P-Value (adjusted)'
 
