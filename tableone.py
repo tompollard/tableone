@@ -235,16 +235,16 @@ class TableOne(object):
 
         # forgive me jraffa
         if self._pval:
-            self._significance_table = self._create_significance_table(data)
+            self._htest_table = self._create_htest_table(data)
 
         # correct for multiple testing
         if self._pval and self._pval_adjust:
             alpha = 0.05
-            adjusted = multitest.multipletests(self._significance_table['P-Value'],
+            adjusted = multitest.multipletests(self._htest_table['P-Value'],
                                                alpha=alpha,
                                                method=self._pval_adjust)
-            self._significance_table['P-Value (adjusted)'] = adjusted[1]
-            self._significance_table['adjust method'] = self._pval_adjust
+            self._htest_table['P-Value (adjusted)'] = adjusted[1]
+            self._htest_table['adjust method'] = self._pval_adjust
 
         # create overall tables if required
         if self._categorical and self._groupby and overall:
@@ -852,7 +852,7 @@ class TableOne(object):
 
         return df_cat
 
-    def _create_significance_table(self, data):
+    def _create_htest_table(self, data):
         """
         Create a table containing P-Values for significance tests. Add features
         of the distributions and the P-Values to the dataframe.
@@ -1084,10 +1084,10 @@ class TableOne(object):
 
         # add pval column
         if self._pval and self._pval_adjust:
-            table = table.join(self._significance_table[['P-Value (adjusted)',
-                                                        'Test']])
+            table = table.join(self._htest_table[['P-Value (adjusted)',
+                                                  'Test']])
         elif self._pval:
-            table = table.join(self._significance_table[['P-Value', 'Test']])
+            table = table.join(self._htest_table[['P-Value', 'Test']])
 
         # add standardized mean difference (SMD) column/s
         if self._smd:
@@ -1123,10 +1123,10 @@ class TableOne(object):
 
         # add pval column
         if self._pval and self._pval_adjust:
-            table = table.join(self._significance_table[['P-Value (adjusted)',
-                                                         'Test']])
+            table = table.join(self._htest_table[['P-Value (adjusted)',
+                                                  'Test']])
         elif self._pval:
-            table = table.join(self._significance_table[['P-Value', 'Test']])
+            table = table.join(self._htest_table[['P-Value', 'Test']])
 
         # add standardized mean difference (SMD) column/s
         if self._smd:

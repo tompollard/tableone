@@ -250,9 +250,8 @@ class TestTableOne(object):
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
-        assert (table._significance_table.loc['group1', 'Test'] ==
-                "Fisher's exact")
-        assert (table._significance_table.loc['group3', 'Test'] ==
+        assert (table._htest_table.loc['group1', 'Test'] == "Fisher's exact")
+        assert (table._htest_table.loc['group3', 'Test'] ==
                 'Chi-squared (warning: expected count < 5)')
 
     @with_setup(setup, teardown)
@@ -861,7 +860,7 @@ class TestTableOne(object):
         t1_diff = TableOne(data=different, columns=["val"], pval=True,
                            groupby="rvs", htest={"val": func})
 
-        assert_almost_equal(t1_diff._significance_table['P-Value'].val,
+        assert_almost_equal(t1_diff._htest_table['P-Value'].val,
                             stats.ks_2samp(rvs1, rvs2)[1])
 
         # Table 1 for similar distributions
@@ -869,7 +868,7 @@ class TestTableOne(object):
         t1_similar = TableOne(data=similar, columns=["val"], pval=True,
                               groupby="rvs", htest={"val": func})
 
-        assert_almost_equal(t1_similar._significance_table['P-Value'].val,
+        assert_almost_equal(t1_similar._htest_table['P-Value'].val,
                             stats.ks_2samp(rvs1, rvs3)[1])
 
         # Table 1 for identical distributions
@@ -877,7 +876,7 @@ class TestTableOne(object):
         t1_identical = TableOne(data=identical, columns=["val"], pval=True,
                                 groupby="rvs", htest={"val": func})
 
-        assert_almost_equal(t1_identical._significance_table['P-Value'].val,
+        assert_almost_equal(t1_identical._htest_table['P-Value'].val,
                             stats.ks_2samp(rvs1, rvs4)[1])
 
     @with_setup(setup, teardown)
