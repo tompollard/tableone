@@ -276,7 +276,6 @@ class TableOne(object):
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
-        # self._remarks_str = self._generate_remark_str()
 
         # wrap dataframe methods
         self.head = self.tableone.head
@@ -292,13 +291,13 @@ class TableOne(object):
             self._set_display_options()
 
     def __str__(self):
-        return self.tableone.to_string() + self._generate_remark_str('\n')
+        return self.tableone.to_string() + self._generate_remarks('\n')
 
     def __repr__(self):
-        return self.tableone.to_string() + self._generate_remark_str('\n')
+        return self.tableone.to_string() + self._generate_remarks('\n')
 
     def _repr_html_(self):
-        return self.tableone._repr_html_() + self._generate_remark_str('<br />')
+        return self.tableone._repr_html_() + self._generate_remarks('<br />')
 
     def _set_display_options(self):
         """
@@ -352,7 +351,7 @@ class TableOne(object):
 
         return tabulate(df, headers=headers, tablefmt=tablefmt, **kwargs)
 
-    def _generate_remark_str(self, newline='\n'):
+    def _generate_remarks(self, newline='\n'):
         """
         Generate a series of remarks that the user should consider
         when interpreting the summary statistics.
