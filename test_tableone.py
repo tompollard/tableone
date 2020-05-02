@@ -549,8 +549,8 @@ class TestTableOne(object):
                          pval_adjust='bonferroni', pval_test_name=True,
                          overall=True)
 
-        assert table.tableone.columns.levels[1][0] == 'Overall'
-        assert table.tableone.columns.levels[1][1] == 'Missing'
+        assert table.tableone.columns.levels[1][0] == 'Missing'
+        assert table.tableone.columns.levels[1][1] == 'Overall'
         assert table.tableone.columns.levels[1][-1] == 'Test'
         assert table.tableone.columns.levels[1][-2] == 'P-Value (adjusted)'
 

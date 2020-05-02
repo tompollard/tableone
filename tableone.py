@@ -471,14 +471,14 @@ class TableOne(object):
             n1 = len(data1)
             n2 = len(data2)
 
-        if (mean1 and not mean2) or (mean2 and not mean1):
-            raise InputError('mean1 and mean2 must both be provided.')
+        # if (mean1 and not mean2) or (mean2 and not mean1):
+        #     raise InputError('mean1 and mean2 must both be provided.')
 
-        if (sd1 and not sd2) or (sd2 and not sd1):
-            raise InputError('sd1 and sd2 must both be provided.')
+        # if (sd1 and not sd2) or (sd2 and not sd1):
+        #     raise InputError('sd1 and sd2 must both be provided.')
 
-        if (n1 and not n2) or (n2 and not n1):
-            raise InputError('n1 and n2 must both be provided.')
+        # if (n1 and not n2) or (n2 and not n1):
+        #     raise InputError('n1 and n2 must both be provided.')
 
         # cohens_d
         smd = (mean2 - mean1) / np.sqrt((sd1 ** 2 + sd2 ** 2) / 2)
@@ -595,7 +595,10 @@ class TableOne(object):
         """
         Compute standard deviation with ddof degrees of freedom
         """
-        return np.nanstd(x.values, ddof=self._ddof)
+        if len(x) == 1:
+            return 0.0
+        else:
+            return np.nanstd(x.values, ddof=self._ddof)
 
     def _diptest(self, x):
         """
@@ -618,7 +621,7 @@ class TableOne(object):
         Null hypothesis: x comes from a normal distribution
         p < alpha suggests the null hypothesis can be rejected.
         """
-        if len(x.values[~np.isnan(x.values)]) > 10:
+        if len(x.values[~np.isnan(x.values)]) >= 20:
             stat, p = stats.normaltest(x.values, nan_policy='omit')
         else:
             p = None
@@ -697,8 +700,7 @@ class TableOne(object):
                             np.nanpercentile(x.values, 75))
         else:
             f = '{{:.{}f}} ({{:.{}f}})'.format(n, n)
-            return f.format(np.nanmean(x.values),
-                            np.nanstd(x.values, ddof=self._ddof))
+            return f.format(np.nanmean(x.values), self._std(x))
 
     def _create_cont_describe(self, data, groupby):
         """
@@ -726,10 +728,10 @@ class TableOne(object):
         bad_cols = cont_data.count() != data[self._continuous].count()
         bad_cols = cont_data.columns[bad_cols]
         if len(bad_cols) > 0:
-            msg = """The following continuous column(s) have
-                     non-numeric values: {variables}. Either specify the
-                     column(s) as categorical or remove the
-                     non-numeric values.""".format(variables=bad_cols.values)
+            msg = ("The following continuous column(s) have "
+                   "non-numeric values: {variables}. Either specify the "
+                   "column(s) as categorical or remove the "
+                   "non-numeric values.").format(variables=bad_cols.values)
             raise InputError(msg)
 
         # check for coerced column containing all NaN to warn user
@@ -1011,16 +1013,18 @@ class TableOne(object):
 
         # do not test if the variable has no observations in a level
         if min_observed == 0:
-            msg = """No P-Value was computed for {variable} due to the low
-                     number of observations.""".format(variable=v)
+            msg = ("No P-Value was computed for {variable} due to the low "
+                   "number of observations.""").format(variable=v)
             warnings.warn(msg)
             return pval, ptest
 
         # continuous
-        if is_continuous and is_normal and len(grouped_data) == 2:
+        if (is_continuous and is_normal and len(grouped_data) == 2
+            and min_observed >= 2):
             ptest = 'Two Sample T-test'
             test_stat, pval = stats.ttest_ind(*grouped_data.values(),
-                                              equal_var=False)
+                                              equal_var=False,
+                                              nan_policy="omit")
         elif is_continuous and is_normal:
             # normally distributed
             ptest = 'One-way ANOVA'
@@ -1037,7 +1041,7 @@ class TableOne(object):
             chi2, pval, dof, expected = stats.chi2_contingency(grouped_val_list)
             # if any expected cell counts are < 5, chi2 may not be valid
             # if this is a 2x2, switch to fisher exact
-            if expected.min() < 5:
+            if expected.min() < 5 or min_observed < 5:
                 if np.shape(grouped_val_list) == (2, 2):
                     ptest = "Fisher's exact"
                     odds_ratio, pval = stats.fisher_exact(grouped_val_list)
@@ -1339,11 +1343,11 @@ class TableOne(object):
         else:
             cols = ['{}'.format(v) for v in table.columns.values]
 
-        if 'Missing' in cols:
-            cols = ['Missing'] + [x for x in cols if x != 'Missing']
-
         if self._groupby and self._overall:
             cols = ['Overall'] + [x for x in cols if x != 'Overall']
+
+        if 'Missing' in cols:
+            cols = ['Missing'] + [x for x in cols if x != 'Missing']
 
         # move optional_columns to the end of the dataframe
         for col in optional_columns:
