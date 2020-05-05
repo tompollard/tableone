@@ -22,7 +22,7 @@ Bohn.
 Documentation
 -------------
 
-Documentation is available on `readthedocs <http://tableone.readthedocs.io/en/latest/>`_. An executable demonstration of the package is available on `GitHub as a Jupyter Notebook <https://github.com/tompollard/tableone/blob/master/tableone.ipynb>`_.
+Documentation is available on `readthedocs <http://tableone.readthedocs.io/en/latest/>`_. An executable demonstration of the package is available `on GitHub <https://github.com/tompollard/tableone/blob/master/tableone.ipynb>`_ as a Jupyter Notebook. The easiest way to try out this notebook is to `open it in Google Colaboratory <https://colab.research.google.com/github/tompollard/tableone/blob/master/tableone.ipynb>`_.
 
 Suggested citation
 ------------------

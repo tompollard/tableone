@@ -14,7 +14,7 @@ If you use tableone in your study, please cite the following paper:
 
 ## Documentation
 
-For documentation, see: [http://tableone.readthedocs.io/en/latest/](http://tableone.readthedocs.io/en/latest/). An executable demonstration of the package is available as a Jupyter Notebook: [https://github.com/tompollard/tableone/blob/master/tableone.ipynb](https://github.com/tompollard/tableone/blob/master/tableone.ipynb). A paper describing our motivations for creating the package is available at: [https://doi.org/10.1093/jamiaopen/ooy012](https://doi.org/10.1093/jamiaopen/ooy012).
+For documentation, see: [http://tableone.readthedocs.io/en/latest/](http://tableone.readthedocs.io/en/latest/). An executable demonstration of the package is available [on GitHub](https://github.com/tompollard/tableone/blob/master/tableone.ipynb) as a Jupyter Notebook. The easiest way to try out this notebook is to [open it in Google Colaboratory](https://colab.research.google.com/github/tompollard/tableone/blob/master/tableone.ipynb). A paper describing our motivations for creating the package is available at: [https://doi.org/10.1093/jamiaopen/ooy012](https://doi.org/10.1093/jamiaopen/ooy012).
 
 ## A note for users of `tableone`
 
