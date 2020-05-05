@@ -591,15 +591,17 @@ class TestTableOne(object):
     # @with_setup(setup, teardown)
     # def test_binary_columns_are_not_converted_to_true_false(self):
     #     """
-    #     Fix issue where 0 and 1 were being converted to False and True when set as 
-    #     categorical variables.
+    #     Fix issue where 0 and 1 were being converted to False and True
+    # when set as categorical variables.
     #     """
-    #     df = pd.DataFrame({'Feature': [True,True,False,True,False,False,True,False,False,True], 
+    #     df = pd.DataFrame({'Feature': [True,True,False,True,False,False,
+    #                                    True,False,False,True],
     #         'ID': [1,1,0,0,1,1,0,0,1,0],
     #         'Stuff1': [23,54,45,38,32,59,37,76,32,23],
     #         'Stuff2': [12,12,67,29,24,39,32,65,12,15]})
 
-    #     t = TableOne(df, columns=['Feature','ID'], categorical=['Feature','ID'])
+    #     t = TableOne(df, columns=['Feature','ID'], categorical=['Feature',
+    #                                                             'ID'])
 
     #     # not boolean
     #     assert type(t.tableone.loc['ID'].index[0]) != bool
@@ -817,6 +819,38 @@ class TestTableOne(object):
 
         assert all(t1.tableone.loc['basket4'].index == ['apple', 'banana',
                                                         'lemon'])
+
+    @with_setup(setup, teardown)
+    def test_pval_correction(self):
+        """
+        Test the pval_adjust argument
+        """
+        df = pd.DataFrame({'numbers': [1, 2, 6, 1, 1, 1],
+                           'other': [1, 2, 3, 3, 3, 4],
+                           'colors': ['red', 'white', 'blue', 'red', 'blue', 'blue'],
+                           'even': ['yes', 'no', 'yes', 'yes', 'no', 'yes']})
+
+        t1 = TableOne(df, groupby="even", pval=True, pval_adjust="bonferroni")
+
+        # check the multiplier is correct (3 = no. of reported values)
+        pvals_expected = {'numbers, mean (SD)': '1.000',
+                          'other, mean (SD)': '1.000',
+                          'colors, n (%)': '0.669'}
+
+        group = 'Grouped by even'
+        col = 'P-Value (adjusted)'
+        for k in pvals_expected:
+            assert_equal(t1.tableone.loc[k][group][col].values[0],
+                         pvals_expected[k])
+
+        # catch the pval_adjust=True
+        with warnings.catch_warnings(record=False) as w:
+            warnings.simplefilter('ignore', category=UserWarning)
+            t2 = TableOne(df, groupby="even", pval=True, pval_adjust=True)
+
+        for k in pvals_expected:
+            assert_equal(t1.tableone.loc[k][group][col].values[0],
+                         pvals_expected[k])
 
     @with_setup(setup, teardown)
     def test_custom_statistical_tests(self):
