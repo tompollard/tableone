@@ -16,7 +16,7 @@ Run demo
 
 The easiest way to understand what this package does is to evaluate it on data.
 
-This `Google Colaboratory Notebook <https://github.com/tompollard/tableone/blob/master/tableone.ipynb>`_ is an executable document that allows you to explore `tableone`. At a high level, you can use the package as follows:
+This `Google Colaboratory Notebook <https://colab.research.google.com/github/tompollard/tableone/blob/master/tableone.ipynb>`_ is an executable document that allows you to explore `tableone`. At a high level, you can use the package as follows:
 
 * Import the data into a pandas DataFrame
   
