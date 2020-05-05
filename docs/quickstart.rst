@@ -21,19 +21,19 @@ This `Google Colaboratory Notebook <https://github.com/tompollard/tableone/blob/
 * Import the data into a pandas DataFrame
   
 .. image:: images/input_data.png
-  :width: 400
+  :width: 600
   :alt: Starting DataFrame 
 
 * Run tableone on this dataframe to output summary statistics
   
 .. image:: images/table1.png
-  :width: 400
+  :width: 600
   :alt: Table 1
 
 * Specify your desired output format: text, latex, markdown, etc.
   
 .. image:: images/table1_latex.png
-  :width: 400
+  :width: 600
   :alt: Export to LaTex
 
 Additional options include:

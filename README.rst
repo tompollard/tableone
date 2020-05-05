@@ -45,6 +45,40 @@ It is beyond the scope of our documentation to provide detailed guidance on summ
 
 *Guidance should be sought from a statistician when using `tableone` for a research study, especially prior to submitting the study for publication*.
 
+Overview
+---------
+
+At a high level, you can use the package as follows:
+
+* Import the data into a pandas DataFrame
+  
+.. image:: docs/images/input_data.png
+  :width: 600
+  :alt: Starting DataFrame 
+
+* Run tableone on this dataframe to output summary statistics
+  
+.. image:: docs/images/table1.png
+  :width: 600
+  :alt: Table 1
+
+* Specify your desired output format: text, latex, markdown, etc.
+  
+.. image:: docs/images/table1_latex.png
+  :width: 600
+  :alt: Export to LaTex
+
+Additional options include:
+
+* Select a subset of columns.
+* Specify the data type (e.g. `categorical`, `numerical`, `nonnormal`).
+* Compute p-values, and adjust for multiple testing (e.g. with the Bonferroni correction).
+* Compute standardized mean differences (SMDs).
+* Provide a list of alternative labels for variables
+* Limit the output of categorical variables to the top N rows.
+* Display remarks relating to the appopriateness of summary measures (for example, computing tests for multimodality and normality).
+
+
 Installation
 ------------
 
