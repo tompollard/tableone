@@ -117,6 +117,31 @@ class TableOne(object):
     ----------
     tableone : dataframe
         Summary of the data (i.e., the "Table 1").
+
+    Examples
+    --------
+    >>> df = pd.DataFrame({'size': [1, 2, 60, 1, 1],
+    ...                   'fruit': ['peach', 'orange', 'peach', 'peach', 'orange'],
+    ...                   'tasty': ['yes', 'yes', 'no', 'yes', 'no']})
+
+    >>> df
+       size   fruit tasty
+    0     1   peach   yes
+    1     2  orange   yes
+    2    60   peach    no
+    3     1   peach   yes
+    4     1  orange    no
+
+    >>> TableOne(df, overall=False, groupby="fruit", pval=True)
+
+                        Grouped by fruit
+                                 Missing     orange        peach P-Value
+    n                                             2            3
+    size, mean (SD)                    0  1.5 (0.7)  20.7 (34.1)   0.433
+    tasty, n (%)    no                 0   1 (50.0)     1 (33.3)   1.000
+                    yes                    1 (50.0)     2 (66.7)
+
+    ...
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
