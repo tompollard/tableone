@@ -4,7 +4,7 @@ research papers.
 """
 
 __author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
-__version__ = "0.7.1"
+__version__ = "0.7.2"
 
 import warnings
 
@@ -179,6 +179,9 @@ class TableOne(object):
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
             categorical = self._detect_categorical_columns(data[columns])
+            # omit categorical row if it is specified in groupby
+            if groupby:
+                categorical = [x for x in categorical if x != groupby]
 
         # ensure that values to order are strings
         if order:
@@ -948,25 +951,31 @@ class TableOne(object):
         df.index = df.index.rename('variable')
 
         for p in p_set:
-            for v in self.cont_describe.index:
-                smd, _ = self._cont_smd(
-                            mean1=self.cont_describe['mean'][p[0]].loc[v],
-                            mean2=self.cont_describe['mean'][p[1]].loc[v],
-                            sd1=self.cont_describe['std'][p[0]].loc[v],
-                            sd2=self.cont_describe['std'][p[1]].loc[v],
-                            n1=self.cont_describe['count'][p[0]].loc[v],
-                            n2=self.cont_describe['count'][p[1]].loc[v],
-                            unbiased=False)
-                df[colname.format(p[0], p[1])].loc[v] = smd
+            try:
+                for v in self.cont_describe.index:
+                    smd, _ = self._cont_smd(
+                                mean1=self.cont_describe['mean'][p[0]].loc[v],
+                                mean2=self.cont_describe['mean'][p[1]].loc[v],
+                                sd1=self.cont_describe['std'][p[0]].loc[v],
+                                sd2=self.cont_describe['std'][p[1]].loc[v],
+                                n1=self.cont_describe['count'][p[0]].loc[v],
+                                n2=self.cont_describe['count'][p[1]].loc[v],
+                                unbiased=False)
+                    df[colname.format(p[0], p[1])].loc[v] = smd
+            except AttributeError:
+                pass
 
-            for v, _ in self.cat_describe.groupby(level=0):
-                smd, _ = self._cat_smd(
-                    prop1=self.cat_describe.loc[[v]]['percent'][p[0]].values/100,
-                    prop2=self.cat_describe.loc[[v]]['percent'][p[1]].values/100,
-                    n1=self.cat_describe.loc[[v]]['freq'][p[0]].sum(),
-                    n2=self.cat_describe.loc[[v]]['freq'][p[1]].sum(),
-                    unbiased=False)
-                df[colname.format(p[0], p[1])].loc[v] = smd
+            try:
+                for v, _ in self.cat_describe.groupby(level=0):
+                    smd, _ = self._cat_smd(
+                        prop1=self.cat_describe.loc[[v]]['percent'][p[0]].values/100,
+                        prop2=self.cat_describe.loc[[v]]['percent'][p[1]].values/100,
+                        n1=self.cat_describe.loc[[v]]['freq'][p[0]].sum(),
+                        n2=self.cat_describe.loc[[v]]['freq'][p[1]].sum(),
+                        unbiased=False)
+                    df[colname.format(p[0], p[1])].loc[v] = smd
+            except AttributeError:
+                pass
 
         return df
 
