@@ -183,6 +183,12 @@ class TableOne(object):
             if groupby:
                 categorical = [x for x in categorical if x != groupby]
 
+        if isinstance(pval_adjust, bool):
+            msg = ("pval_adjust expects a string, but a boolean was specified."
+                   " Defaulting to the 'bonferroni' correction.")
+            warnings.warn(msg)
+            pval_adjust = "bonferroni"
+
         # ensure that values to order are strings
         if order:
             for k in order:
