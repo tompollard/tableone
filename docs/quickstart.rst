@@ -18,9 +18,23 @@ The easiest way to understand what this package does is to evaluate it on data.
 
 This `Google Colaboratory Notebook <https://github.com/tompollard/tableone/blob/master/tableone.ipynb>`_ is an executable document that allows you to explore `tableone`. At a high level, you can use the package as follows:
 
-* Import the data into a pandas dataframe
-* Run tableone on this dataframe
+* Import the data into a pandas DataFrame
+  
+.. image:: images/input_data.png
+  :width: 400
+  :alt: Starting DataFrame 
+
+* Run tableone on this dataframe to output summary statistics
+  
+.. image:: images/table1.png
+  :width: 400
+  :alt: Table 1
+
 * Specify your desired output format: text, latex, markdown, etc.
+  
+.. image:: images/table1_latex.png
+  :width: 400
+  :alt: Export to LaTex
 
 Additional options include:
 
