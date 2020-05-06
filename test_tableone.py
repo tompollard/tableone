@@ -4,13 +4,13 @@ import warnings
 from nose.tools import (with_setup, assert_raises, assert_equal,
                         assert_almost_equal)
 import numpy as np
-import modality
 import pandas as pd
 from scipy import stats
 
 import tableone
 from tableone import TableOne
 from tableone.tableone import InputError
+from tableone.modality import hartigan_diptest, generate_data
 
 
 def mytest(*args):
@@ -297,16 +297,16 @@ class TestTableOne(object):
         Ensure that the package runs Fisher exact if cell counts are <=5
         and it is a 2x2
         """
-        dist_1_peak = modality.generate_data(peaks=1, n=[10000])
-        t1 = modality.hartigan_diptest(dist_1_peak)
+        dist_1_peak = generate_data(peaks=1, n=[10000])
+        t1 = hartigan_diptest(dist_1_peak)
         assert t1 > 0.95
 
-        dist_2_peak = modality.generate_data(peaks=2, n=[10000, 10000])
-        t2 = modality.hartigan_diptest(dist_2_peak)
+        dist_2_peak = generate_data(peaks=2, n=[10000, 10000])
+        t2 = hartigan_diptest(dist_2_peak)
         assert t2 < 0.05
 
-        dist_3_peak = modality.generate_data(peaks=3, n=[10000, 10000, 10000])
-        t3 = modality.hartigan_diptest(dist_3_peak)
+        dist_3_peak = generate_data(peaks=3, n=[10000, 10000, 10000])
+        t3 = hartigan_diptest(dist_3_peak)
         assert t3 < 0.05
 
     @with_setup(setup, teardown)

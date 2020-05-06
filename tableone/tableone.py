@@ -12,7 +12,7 @@ from scipy import stats
 from statsmodels.stats import multitest
 from tabulate import tabulate
 
-from tableone import hartigan_diptest
+from tableone.modality import hartigan_diptest
 
 # display deprecation warnings
 warnings.simplefilter('always', DeprecationWarning)
