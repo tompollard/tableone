@@ -3,9 +3,6 @@ The tableone package is used for creating "Table 1" summary statistics for
 research papers.
 """
 
-__author__ = "Tom Pollard <tpollard@mit.edu>, Alistair Johnson, Jesse Raffa"
-__version__ = "0.7.2"
-
 import warnings
 
 import numpy as np

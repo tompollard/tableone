@@ -10,7 +10,7 @@ from scipy import stats
 
 import tableone
 from tableone import TableOne
-from tableone import InputError
+from tableone.tableone import InputError
 
 
 def mytest(*args):
