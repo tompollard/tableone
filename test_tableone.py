@@ -519,7 +519,7 @@ class TestTableOne(object):
         groupby = ['death']
 
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
-                         pval_test_name=True, overall=False)
+                         htest_name=True, overall=False)
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
         assert table.tableone.columns.levels[1][-1] == 'Test'
@@ -529,7 +529,7 @@ class TestTableOne(object):
 
         # without overall column
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
-                         pval_adjust='bonferroni', pval_test_name=True,
+                         pval_adjust='bonferroni', htest_name=True,
                          overall=False)
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
@@ -538,7 +538,7 @@ class TestTableOne(object):
 
         # with overall column
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
-                         pval_adjust='bonferroni', pval_test_name=True,
+                         pval_adjust='bonferroni', htest_name=True,
                          overall=True)
 
         assert table.tableone.columns.levels[1][0] == 'Missing'
@@ -968,7 +968,7 @@ class TestTableOne(object):
         strata = "MechVent"
 
         t = TableOne(self.data_pn, categorical=categorical, label_suffix=False,
-                     groupby=strata, pval=True, pval_test_name=False, smd=True)
+                     groupby=strata, pval=True, htest_name=False, smd=True)
 
         # consistent with R StdDiff() and R tableone
         exp_smd = {'Age': '-0.129',
@@ -1001,7 +1001,7 @@ class TestTableOne(object):
         strata = "MechVent"
 
         t = TableOne(self.data_pn, categorical=categorical, label_suffix=False,
-                     groupby=strata, pval=True, pval_test_name=False, smd=True)
+                     groupby=strata, pval=True, htest_name=False, smd=True)
 
         # consistent with R StdDiff() and R tableone
         exp_smd = {'ICU': '0.747',

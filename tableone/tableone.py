@@ -89,7 +89,7 @@ class TableOne(object):
         `simes-hochberg` : step-up method (independent)
         `hommel` : closed method based on Simes tests (non-negative)
 
-    pval_test_name : bool, optional
+    htest_name : bool, optional
         Display a column with the names of hypothesis tests (default: False).
     htest : dict, optional
         Dictionary of custom hypothesis tests. Keys are variable names and
@@ -168,28 +168,37 @@ class TableOne(object):
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
                  nonnormal=None, pval=False, pval_adjust=None,
-                 pval_test_name=False, htest=None, isnull=None,
-                 missing=True, ddof=1, labels=None, rename=None, sort=False,
-                 limit=None, order=None, remarks=True, label_suffix=True,
-                 decimals=1, smd=False, overall=True, display_all=False):
+                 htest_name=False, pval_test_name=False, htest=None,
+                 isnull=None, missing=True, ddof=1, labels=None, rename=None,
+                 sort=False, limit=None, order=None, remarks=True,
+                 label_suffix=True, decimals=1, smd=False, overall=True,
+                 display_all=False):
 
         # labels is now rename
         if labels is not None and rename is not None:
             raise TypeError("TableOne received both labels and rename.")
         elif labels is not None:
-            warnings.warn("""The labels argument is deprecated; use
-                             rename instead.""", DeprecationWarning)
+            warnings.warn("The labels argument is deprecated; use "
+                          "rename instead.", DeprecationWarning)
             self._alt_labels = labels
         else:
             self._alt_labels = rename
 
         # isnull is now missing
         if isnull is not None:
-            warnings.warn("""The isnull argument is deprecated; use
-                             missing instead.""", DeprecationWarning)
+            warnings.warn("The isnull argument is deprecated; use "
+                          "missing instead.", DeprecationWarning)
             self._isnull = isnull
         else:
             self._isnull = missing
+
+        # pval_test_name is now htest_name
+        if pval_test_name:
+            warnings.warn("The pval_test_name argument is deprecated; use "
+                          "htest_name instead.", DeprecationWarning)
+            self._pval_test_name = pval_test_name
+        else:
+            self._pval_test_name = htest_name
 
         # groupby should be a string
         if not groupby:
@@ -252,7 +261,6 @@ class TableOne(object):
         self._pval = pval
         self._pval_adjust = pval_adjust
         self._htest = htest
-        self._pval_test_name = pval_test_name
         self._sort = sort
         self._groupby = groupby
         # degrees of freedom for standard deviation
