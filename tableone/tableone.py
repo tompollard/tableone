@@ -18,6 +18,31 @@ from tableone.modality import hartigan_diptest
 warnings.simplefilter('always', DeprecationWarning)
 
 
+def load_dataset(name):
+    """
+    Load an example dataset from the online repository (requires internet).
+
+    These datasets are useful for documentation and testing.
+
+    Parameters
+    ----------
+    name : str
+        Name of the dataset.
+
+    Returns
+    -------
+    df : :class:`pandas.DataFrame`
+        Tabular data.
+    """
+    path = ("https://raw.githubusercontent.com/"
+            "tompollard/tableone/master/datasets/{}.csv")
+    full_path = path.format(name)
+
+    df = pd.read_csv(full_path)
+
+    return df
+
+
 class InputError(Exception):
     """
     Exception raised for errors in the input.

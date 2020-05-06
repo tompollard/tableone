@@ -8,7 +8,7 @@ import pandas as pd
 from scipy import stats
 
 import tableone
-from tableone import TableOne
+from tableone import TableOne, load_dataset
 from tableone.tableone import InputError
 from tableone.modality import hartigan_diptest, generate_data
 
@@ -33,19 +33,12 @@ class TestTableOne(object):
         """
         seed = 12345
         np.random.seed(seed)
-        self.data_pn = self.create_pn_dataset()
+        self.data_pn = load_dataset('pn2012')
         self.data_sample = self.create_sample_dataset(n=10000)
         self.data_small = self.create_small_dataset()
         self.data_groups = self.create_another_dataset(n=20)
         self.data_categorical = self.create_categorical_dataset()
         self.data_mixed = self.create_mixed_datatypes_dataset()
-
-    def create_pn_dataset(self):
-        """
-        create pn dataset
-        """
-        url = "https://raw.githubusercontent.com/tompollard/tableone/master/data/pn2012_demo.csv"
-        return pd.read_csv(url)
 
     def create_sample_dataset(self, n):
         """
