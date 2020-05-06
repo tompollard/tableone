@@ -12,7 +12,7 @@ from scipy import stats
 from statsmodels.stats import multitest
 from tabulate import tabulate
 
-import modality
+from tableone import hartigan_diptest
 
 # display deprecation warnings
 warnings.simplefilter('always', DeprecationWarning)
@@ -636,7 +636,7 @@ class TableOne(object):
 
         p < 0.05 suggests possible multimodality.
         """
-        p = modality.hartigan_diptest(x.values)
+        p = hartigan_diptest(x.values)
         # dropna=False argument in pivot_table does not function as expected
         # https://github.com/pandas-dev/pandas/issues/22159
         # return -1 instead of None
