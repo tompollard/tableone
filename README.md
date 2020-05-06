@@ -30,15 +30,15 @@ At a high level, you can use the package as follows:
 
 - Import the data into a pandas DataFrame
 
-![Starting DataFrame ](docs/images/input_data.png "Starting DataFrame")
+![Starting DataFrame ](https://raw.githubusercontent.com/tompollard/tableone/master/docs/images/input_data.png "Starting DataFrame")
 
 - Run tableone on this dataframe to output summary statistics
   
-![Table 1](docs/images/table1.png "Table 1")
+![Table 1](https://raw.githubusercontent.com/tompollard/tableone/master/docs/images/table1.png "Table 1")
 
 - Specify your desired output format: text, latex, markdown, etc.
   
-![Export to LaTex](docs/images/table1_latex.png "Export to LaTex")
+![Export to LaTex](https://raw.githubusercontent.com/tompollard/tableone/master/docs/images/table1_latex.png "Export to LaTex")
 
 Additional options include:
 

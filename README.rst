@@ -52,19 +52,19 @@ At a high level, you can use the package as follows:
 
 * Import the data into a pandas DataFrame
   
-.. image:: docs/images/input_data.png
+.. image:: https://raw.githubusercontent.com/tompollard/tableone/master/docs/images/input_data.png
   :width: 600
   :alt: Starting DataFrame 
 
 * Run tableone on this dataframe to output summary statistics
   
-.. image:: docs/images/table1.png
+.. image:: https://raw.githubusercontent.com/tompollard/tableone/master/docs/images/table1.png
   :width: 600
   :alt: Table 1
 
 * Specify your desired output format: text, latex, markdown, etc.
   
-.. image:: docs/images/table1_latex.png
+.. image:: https://raw.githubusercontent.com/tompollard/tableone/master/docs/images/table1_latex.png
   :width: 600
   :alt: Export to LaTex
 
