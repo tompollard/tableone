@@ -2,7 +2,7 @@ import random
 import warnings
 
 from nose.tools import (with_setup, assert_raises, assert_equal,
-                        assert_almost_equal)
+                        assert_almost_equal, assert_list_equal)
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -1011,3 +1011,47 @@ class TestTableOne(object):
         for k in exp_smd:
             smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'][0]
             assert_equal(smd, exp_smd[k])
+
+    @with_setup(setup, teardown)
+    def test_order_of_order_categorical_columns(self):
+        """
+        Test that the order of ordered categorical columns is retained.
+        """
+        day_cat = pd.Categorical(["mon", "wed", "tue", "thu"],
+                                 categories=["wed", "thu", "mon", "tue"], ordered=True)
+
+        alph_cat = pd.Categorical(["a", "b", "c", "a"],
+                                 categories=["b", "c", "d", "a"], ordered=False)
+
+        mon_cat = pd.Categorical(["jan", "feb", "mar", "apr"],
+                                 categories=["feb", "jan", "mar", "apr"], ordered=True)
+
+        data = pd.DataFrame({"A": ["a", "b", "c", "a"]})
+        data["day"] = day_cat
+        data["alph"] = alph_cat
+        data["month"] = mon_cat
+
+        order = {"month": ["jan"], "day": ["mon", "tue", "wed"]}
+
+        # if a custom order is not specified, the categorical order
+        # specified above should apply
+        t1 = TableOne(data, label_suffix=False)
+
+        t1_expected_order = {'month': ["feb", "jan", "mar", "apr"],
+                             'day': ["wed", "thu", "mon", "tue"]}
+
+        for k in order:
+            assert_list_equal(t1._order[k], t1_expected_order[k])
+            assert_list_equal(t1.tableone.loc[k].index.to_list(),
+                              t1_expected_order[k])
+
+        # if a desired order is set, it should override the order
+        t2 = TableOne(data, order=order, label_suffix=False)
+
+        t2_expected_order = {'month': ["jan", "feb", "mar", "apr"],
+                             'day': ["mon", "tue", "wed", "thu"]}
+
+        for k in order:
+            assert_list_equal(t2._order[k], t2_expected_order[k])
+            assert_list_equal(t2.tableone.loc[k].index.to_list(),
+                              t2_expected_order[k])

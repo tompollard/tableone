@@ -245,10 +245,26 @@ class TableOne(object):
             warnings.warn(msg)
             pval_adjust = "bonferroni"
 
-        # ensure that values to order are strings
+        # if custom order is provided, ensure that values are strings
         if order:
+            order = {k: ["{}".format(v) for v in order[k]] for k in order}
+
+        # if input df has ordered categorical variables, get the order.
+        order_cats = [x for x in data.select_dtypes("category")
+                      if data[x].dtype.ordered]
+        if any(order_cats):
+            d_order_cats = {v: data[v].cat.categories for v in order_cats}
+            d_order_cats = {k: ["{}".format(v) for v in d_order_cats[k]]
+                            for k in d_order_cats}
+
+        # combine the orders. custom order takes precedence.
+        if order_cats and order:
+            new = {**order, **d_order_cats}
             for k in order:
-                order[k] = ["{}".format(v) for v in order[k]]
+                new[k] = order[k] + [x for x in new[k] if x not in order[k]]
+            order = new
+        elif order_cats:
+            order = d_order_cats
 
         if pval and not groupby:
             raise InputError("If pval=True then groupby must be specified.")
