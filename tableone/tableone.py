@@ -75,6 +75,8 @@ class TableOne(object):
         Optional column for stratifying the final table (default: None).
     nonnormal : list, optional
         List of columns that contain non-normal variables (default: None).
+    min_max: bool, optional
+        Whether the nonnormal column uses Q1-Q3 or min-max.
     pval : bool, optional
         Display computed P-Values (default: False).
     pval_adjust : str, optional
@@ -167,7 +169,7 @@ class TableOne(object):
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
-                 nonnormal=None, pval=False, pval_adjust=None,
+                 nonnormal=None, min_max=False, pval=False, pval_adjust=None,
                  htest_name=False, pval_test_name=False, htest=None,
                  isnull=None, missing=True, ddof=1, labels=None, rename=None,
                  sort=False, limit=None, order=None, remarks=True,
@@ -274,6 +276,7 @@ class TableOne(object):
                             if c not in categorical + [groupby]]
         self._categorical = categorical
         self._nonnormal = nonnormal
+        self._min_max = min_max
         self._pval = pval
         self._pval_adjust = pval_adjust
         self._htest = htest
@@ -773,10 +776,18 @@ class TableOne(object):
             warnings.warn(msg)
 
         if x.name in self._nonnormal:
-            f = '{{:.{}f}} [{{:.{}f}},{{:.{}f}}]'.format(n, n, n)
-            return f.format(np.nanmedian(x.values),
-                            np.nanpercentile(x.values, 25),
-                            np.nanpercentile(x.values, 75))
+            f = "{{:.{}f}} [{{:.{}f}},{{:.{}f}}]".format(n, n, n)
+            if self._min_max:
+                return f.format(
+                    np.nanmedian(x.values), np.nanmin(x.values),
+                    np.nanmax(x.values),
+                )
+            else:
+                return f.format(
+                    np.nanmedian(x.values),
+                    np.nanpercentile(x.values, 25),
+                    np.nanpercentile(x.values, 75),
+                )
         else:
             f = '{{:.{}f}} ({{:.{}f}})'.format(n, n)
             return f.format(np.nanmean(x.values), self._std(x))
@@ -1480,7 +1491,10 @@ class TableOne(object):
         if self._label_suffix:
             for k in labels.keys():
                 if k in self._nonnormal:
-                    labels[k] = "{}, {}".format(labels[k], "median [Q1,Q3]")
+                    if self._min_max:
+                        labels[k] = "{}, {}".format(labels[k], "median [min,max]")
+                    else:
+                        labels[k] = "{}, {}".format(labels[k], "median [Q1,Q3]")
                 elif k in self._categorical:
                     labels[k] = "{}, {}".format(labels[k], "n (%)")
                 else:
