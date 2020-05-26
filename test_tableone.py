@@ -1078,9 +1078,9 @@ class TestTableOne(object):
 
         self.data_pn
 
-        t1 = TableOne(self.data_pn, columns=columns, categorical=categorical, 
+        t1 = TableOne(self.data_pn, columns=columns, categorical=categorical,
                       groupby=groupby, nonnormal=nonnormal, decimals=decimals,
-                      min_max=True)
+                      min_max=['Age'])
 
         k = "Age, median [min,max]"
         group = "Grouped by death"
