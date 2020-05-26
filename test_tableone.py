@@ -1055,3 +1055,37 @@ class TestTableOne(object):
             assert_list_equal(t2._order[k], t2_expected_order[k])
             assert_list_equal(t2.tableone.loc[k].index.to_list(),
                               t2_expected_order[k])
+
+    @with_setup(setup, teardown)
+    def test_min_max_for_nonnormal_variables(self):
+        """
+        Test the min_max argument returns expected results.
+        """
+        # columns to summarize
+        columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
+
+        # columns containing categorical variables
+        categorical = ['ICU']
+
+        # set decimal places for age to 0
+        decimals = {"Age": 0}
+
+        # non-normal variables
+        nonnormal = ['Age']
+
+        # optionally, a categorical variable for stratification
+        groupby = ['death']
+
+        self.data_pn
+
+        t1 = TableOne(self.data_pn, columns=columns, categorical=categorical,
+                      groupby=groupby, nonnormal=nonnormal, decimals=decimals,
+                      min_max=['Age'])
+
+        k = "Age, median [min,max]"
+        group = "Grouped by death"
+        t1_columns = ["Overall", "0", "1"]
+        expected = ["68 [16,90]", "66 [16,90]", "75 [26,90]"]
+        for c,e in zip(t1_columns, expected):
+            cell = t1.tableone.loc[k][group][c].values[0]
+            assert_equal(cell, e)

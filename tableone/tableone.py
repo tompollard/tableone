@@ -75,6 +75,9 @@ class TableOne(object):
         Optional column for stratifying the final table (default: None).
     nonnormal : list, optional
         List of columns that contain non-normal variables (default: None).
+    min_max: list, optional
+        List of variables that should report minimum and maximum, instead of
+        standard deviation (for normal) or Q1-Q3 (for non-normal).
     pval : bool, optional
         Display computed P-Values (default: False).
     pval_adjust : str, optional
@@ -167,7 +170,7 @@ class TableOne(object):
     """
 
     def __init__(self, data, columns=None, categorical=None, groupby=None,
-                 nonnormal=None, pval=False, pval_adjust=None,
+                 nonnormal=None, min_max=None, pval=False, pval_adjust=None,
                  htest_name=False, pval_test_name=False, htest=None,
                  isnull=None, missing=True, ddof=1, labels=None, rename=None,
                  sort=False, limit=None, order=None, remarks=True,
@@ -211,6 +214,11 @@ class TableOne(object):
             nonnormal = []
         elif nonnormal and type(nonnormal) == str:
             nonnormal = [nonnormal]
+
+        # min_max should be a list
+        if min_max and isinstance(min_max, bool):
+            warnings.warn("min_max should specify a list of variables.")
+            min_max = None
 
         # if the input dataframe is empty, raise error
         if data.empty:
@@ -274,6 +282,7 @@ class TableOne(object):
                             if c not in categorical + [groupby]]
         self._categorical = categorical
         self._nonnormal = nonnormal
+        self._min_max = min_max
         self._pval = pval
         self._pval_adjust = pval_adjust
         self._htest = htest
@@ -773,13 +782,28 @@ class TableOne(object):
             warnings.warn(msg)
 
         if x.name in self._nonnormal:
-            f = '{{:.{}f}} [{{:.{}f}},{{:.{}f}}]'.format(n, n, n)
-            return f.format(np.nanmedian(x.values),
-                            np.nanpercentile(x.values, 25),
-                            np.nanpercentile(x.values, 75))
+            f = "{{:.{}f}} [{{:.{}f}},{{:.{}f}}]".format(n, n, n)
+            if self._min_max and x.name in self._min_max:
+                return f.format(
+                    np.nanmedian(x.values), np.nanmin(x.values),
+                    np.nanmax(x.values),
+                )
+            else:
+                return f.format(
+                    np.nanmedian(x.values),
+                    np.nanpercentile(x.values, 25),
+                    np.nanpercentile(x.values, 75),
+                )
         else:
-            f = '{{:.{}f}} ({{:.{}f}})'.format(n, n)
-            return f.format(np.nanmean(x.values), self._std(x))
+            if self._min_max and x.name in self._min_max:
+                f = "{{:.{}f}} [{{:.{}f}},{{:.{}f}}]".format(n, n, n)
+                return f.format(
+                    np.nanmean(x.values), np.nanmin(x.values),
+                    np.nanmax(x.values),
+                )
+            else:
+                f = '{{:.{}f}} ({{:.{}f}})'.format(n, n)
+                return f.format(np.nanmean(x.values), self._std(x))
 
     def _create_cont_describe(self, data, groupby):
         """
@@ -1480,11 +1504,17 @@ class TableOne(object):
         if self._label_suffix:
             for k in labels.keys():
                 if k in self._nonnormal:
-                    labels[k] = "{}, {}".format(labels[k], "median [Q1,Q3]")
+                    if self._min_max and k in self._min_max:
+                        labels[k] = "{}, {}".format(labels[k], "median [min,max]")
+                    else:
+                        labels[k] = "{}, {}".format(labels[k], "median [Q1,Q3]")
                 elif k in self._categorical:
                     labels[k] = "{}, {}".format(labels[k], "n (%)")
                 else:
-                    labels[k] = "{}, {}".format(labels[k], "mean (SD)")
+                    if self._min_max and k in self._min_max:
+                        labels[k] = "{}, {}".format(labels[k], "mean [min,max]")
+                    else:
+                        labels[k] = "{}, {}".format(labels[k], "mean (SD)")
 
         return labels
 

@@ -65,15 +65,14 @@ To install this package with conda, run:
 1. Import libraries:
 
 ```python
-from tableone import TableOne
+from tableone import TableOne, load_dataset
 import pandas as pd
 ```
 
 2. Load sample data into a pandas dataframe:
 
 ```python
-url="https://raw.githubusercontent.com/tompollard/tableone/master/data/pn2012_demo.csv"
-data=pd.read_csv(url)
+data=load_dataset('pn2012')
 ```
 
 3. Optionally, a list of columns to be included in Table 1:
@@ -99,7 +98,7 @@ labels={'death': 'mortality'}
 6. Create an instance of TableOne with the input arguments:
 
 ```python
-mytable = TableOne(data, columns, categorical, groupby, nonnormal, rename=labels, pval=False)
+mytable = TableOne(data, columns=columns, categorical=categorical, groupby=groupby, nonnormal=nonnormal, rename=labels, pval=False)
 ```
 
 7. Display the table using the `tabulate` method. The `tablefmt` argument allows the table to be displayed in multiple formats, including "github", "grid", "fancy_grid", "rst", "html", and "latex".

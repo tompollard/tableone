@@ -95,13 +95,12 @@ Example
 
 #. Import libraries::
 
-    from tableone import TableOne
+    from tableone import TableOne, load_dataset
     import pandas as pd
 
 #. Load sample data into a pandas dataframe::
 
-    url="https://raw.githubusercontent.com/tompollard/data/master/primary-biliary-cirrhosis/pbc.csv"
-    data=pd.read_csv(url)
+    data=load_dataset('pn2012')
 
 #. Optionally, a list of columns to be included in Table 1::
 
@@ -119,7 +118,8 @@ Example
 
 #. Create an instance of TableOne with the input arguments::
 
-    mytable = TableOne(data, columns, categorical, groupby, nonnormal)
+    mytable = TableOne(data, columns=columns, categorical=categorical,
+                       groupby=groupby, nonnormal=nonnormal)
 
 #. Display the table using the ``tabulate`` method. The ``tablefmt`` argument allows the table to be displayed in multiple formats, including "github", "grid", "fancy_grid", "rst", "html", and "latex".::
 
@@ -171,7 +171,8 @@ Example
 
 #. Compute p values by setting the ``pval`` argument to `True`::
 
-    mytable = TableOne(data, columns, categorical, groupby, nonnormal, pval=True)
+    mytable = TableOne(data, columns=columns, categorical=categorical,
+                       groupby=groupby, nonnormal=nonnormal, pval=True)
 
 #. ...which prints::
 
