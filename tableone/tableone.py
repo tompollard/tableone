@@ -82,7 +82,7 @@ class TableOne(object):
         Display computed P-Values (default: False).
     pval_adjust : str, optional
         Method used to adjust P-Values for multiple testing.
-        The P-values from the unadjusted table (default whe pval=True)
+        The P-values from the unadjusted table (default when pval=True)
         are adjusted to account for the number of total tests that were performed.
         These adjustments would be useful when many variables are being screened
         to assess if their distribution varies by the variable in the groupby argument.
