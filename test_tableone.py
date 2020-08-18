@@ -157,6 +157,28 @@ class TestTableOne(object):
                            nonnormal=nonnormal, pval=False)
 
     @with_setup(setup, teardown)
+    def test_robust_to_duplicates_in_input_df_index(self):
+
+        d_control = pd.DataFrame(data={'group': [0, 0, 0, 0, 0, 0, 0],
+                                 'value': [3, 4, 4, 4, 4, 4, 5]})
+
+        d_case = pd.DataFrame(data={'group': [1, 1, 1], 'value': [1, 2, 3]})
+        d = pd.concat([d_case, d_control])
+
+        with assert_raises(InputError):
+            t = TableOne(d, ['value'], groupby='group', pval=True)
+
+        d_idx_reset = pd.concat([d_case, d_control], ignore_index=True)
+        t2 = TableOne(d_idx_reset, ['value'], groupby='group', pval=True)
+
+        header = "Grouped by group"
+        mean_std_0 = t2.tableone[header].at[("value, mean (SD)", ""), "0"]
+        mean_std_1 = t2.tableone[header].at[("value, mean (SD)", ""), "1"]
+
+        assert mean_std_0 == '4.0 (0.6)'
+        assert mean_std_1 == '2.0 (1.0)'
+
+    @with_setup(setup, teardown)
     def test_overall_mean_and_std_as_expected_for_cont_variable(self):
 
         columns = ['normal', 'nonnormal', 'height']
@@ -883,7 +905,7 @@ class TestTableOne(object):
         df4 = pd.DataFrame({'rvs': 'rvs4', 'val': rvs4})
 
         # Table 1 for different distributions
-        different = df1.append(df2)
+        different = df1.append(df2, ignore_index=True)
         t1_diff = TableOne(data=different, columns=["val"], pval=True,
                            groupby="rvs", htest={"val": func})
 
@@ -891,7 +913,7 @@ class TestTableOne(object):
                             stats.ks_2samp(rvs1, rvs2)[1])
 
         # Table 1 for similar distributions
-        similar = df1.append(df3)
+        similar = df1.append(df3, ignore_index=True)
         t1_similar = TableOne(data=similar, columns=["val"], pval=True,
                               groupby="rvs", htest={"val": func})
 
@@ -899,7 +921,7 @@ class TestTableOne(object):
                             stats.ks_2samp(rvs1, rvs3)[1])
 
         # Table 1 for identical distributions
-        identical = df1.append(df4)
+        identical = df1.append(df4, ignore_index=True)
         t1_identical = TableOne(data=identical, columns=["val"], pval=True,
                                 groupby="rvs", htest={"val": func})
 
@@ -1086,6 +1108,6 @@ class TestTableOne(object):
         group = "Grouped by death"
         t1_columns = ["Overall", "0", "1"]
         expected = ["68 [16,90]", "66 [16,90]", "75 [26,90]"]
-        for c,e in zip(t1_columns, expected):
+        for c, e in zip(t1_columns, expected):
             cell = t1.tableone.loc[k][group][c].values[0]
             assert_equal(cell, e)
