@@ -222,7 +222,12 @@ class TableOne(object):
 
         # if the input dataframe is empty, raise error
         if data.empty:
-            raise InputError("The input dataframe is empty.")
+            raise InputError("The input data is empty.")
+
+        # if the input dataframe has a non-unique index, raise error
+        if not data.index.is_unique:
+            raise InputError("Input data contains duplicate values in the "
+                             "index. Reset the index and try again.")
 
         # if columns are not specified, use all columns
         if not columns:
@@ -237,7 +242,7 @@ class TableOne(object):
         # check for duplicate columns
         dups = data[columns].columns[data[columns].columns.duplicated()].unique()
         if not dups.empty:
-            raise InputError("""Input contains duplicate
+            raise InputError("""Input data contains duplicate
                                 columns: {}""".format(dups))
 
         # if categorical not specified, try to identify categorical
