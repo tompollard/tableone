@@ -222,7 +222,7 @@ class TableOne(object):
 
         # if the input dataframe is empty, raise error
         if data.empty:
-            raise InputError("The input data is empty.")
+            raise InputError("Input data is empty.")
 
         # if the input dataframe has a non-unique index, raise error
         if not data.index.is_unique:
