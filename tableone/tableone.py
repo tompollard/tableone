@@ -43,6 +43,16 @@ def load_dataset(name):
     return df
 
 
+def docstring_copier(*sub):
+    """
+    Wrap the TableOne docstring (not ideal :/)
+    """
+    def dec(obj):
+        obj.__doc__ = obj.__doc__.format(*sub)
+        return obj
+    return dec
+
+
 class InputError(Exception):
     """
     Exception raised for errors in the input.
@@ -172,7 +182,6 @@ class TableOne(object):
 
     ...
     """
-
     def __init__(self, data, columns=None, categorical=None, groupby=None,
                  nonnormal=None, min_max=None, pval=False, pval_adjust=None,
                  htest_name=False, pval_test_name=False, htest=None,
@@ -1532,3 +1541,11 @@ class TableOne(object):
         msg = ("'{}' has all non-numeric values. Consider including "
                "it in the list of categorical variables.").format(c)
         warnings.warn(msg, RuntimeWarning, stacklevel=2)
+
+
+# Allow TableOne to be called as a function.
+# Refactor this out at some point!
+@docstring_copier(TableOne.__doc__)
+def tableone(*args, **kwargs):
+    """{0}"""
+    return TableOne(*args, **kwargs)
