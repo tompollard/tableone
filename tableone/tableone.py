@@ -2,7 +2,7 @@
 The tableone package is used for creating "Table 1" summary statistics for
 research papers.
 """
-
+from typing import Callable, Optional, Union
 import warnings
 
 import numpy as np
@@ -18,7 +18,7 @@ from tableone.modality import hartigan_diptest
 warnings.simplefilter('always', DeprecationWarning)
 
 
-def load_dataset(name):
+def load_dataset(name: str):
     """
     Load an example dataset from the online repository (requires internet).
 
@@ -182,13 +182,21 @@ class TableOne(object):
 
     ...
     """
-    def __init__(self, data, columns=None, categorical=None, groupby=None,
-                 nonnormal=None, min_max=None, pval=False, pval_adjust=None,
-                 htest_name=False, pval_test_name=False, htest=None,
-                 isnull=None, missing=True, ddof=1, labels=None, rename=None,
-                 sort=False, limit=None, order=None, remarks=True,
-                 label_suffix=True, decimals=1, smd=False, overall=True,
-                 display_all=False):
+    def __init__(self, data: pd.DataFrame, columns: Optional[list] = None,
+                 categorical: Optional[list] = None,
+                 groupby: Optional[str] = None,
+                 nonnormal: Optional[list] = None,
+                 min_max: Optional[list] = None, pval: Optional[bool] = False,
+                 pval_adjust: Optional[str] = None, htest_name: bool = False,
+                 pval_test_name: bool = False, htest: Optional[dict] = None,
+                 isnull: Optional[bool] = None, missing: bool = True,
+                 ddof: int = 1, labels: Optional[dict] = None,
+                 rename: Optional[dict] = None, sort: Union[bool, str] = False,
+                 limit: Union[int, dict, None] = None,
+                 order: Optional[dict] = None, remarks: bool = True,
+                 label_suffix: bool = True, decimals: Union[int, dict] = 1,
+                 smd: bool = False, overall: bool = True,
+                 display_all: bool = False) -> None:
 
         # labels is now rename
         if labels is not None and rename is not None:
