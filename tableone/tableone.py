@@ -132,9 +132,6 @@ class TableOne(object):
     order : dict, optional
         Specify an order for categorical variables. Key is the variable, value
         is a list of values in order.  {e.g. 'sex': ['f', 'm', 'other']}
-    remarks : bool, optional
-        Add remarks on the appropriateness of the summary measures and the
-        statistical tests (default: True).
     label_suffix : bool, optional
         Append summary type (e.g. "mean (SD); median [Q1,Q3], n (%); ") to the
         row label (default: True).
@@ -145,11 +142,24 @@ class TableOne(object):
         variables. For continuous variables, applies to all summary statistics
         (e.g. mean and standard deviation). For categorical variables, applies
         to percentage only.
-    overall : bool:
+    overall : bool, optional
         If True, add an "overall" column to the table. Smd and p-value
         calculations are performed only using stratified columns.
-    display_all : bool:
+    display_all : bool, optional
         If True, set pd. display_options to display all columns and rows.
+        (default: False)
+    dip_test : bool, optional
+        Run Hartigan's Dip Test for multimodality. If variables are found to
+        have multimodal distributions, a remark will be added below the Table 1.
+        (default: False)
+    normal_test : bool, optional
+        Test the null hypothesis that a sample come from a normal distribution.
+        Uses scipy.stats.normaltest. If variables are found to have non-normal
+        distributions, a remark will be added below the Table 1.
+        (default: False)
+    tukey_test : bool, optional
+        Run Tukey's test for far outliers. If variables are found to
+        have far outliers, a remark will be added below the Table 1.
         (default: False)
 
     Attributes
@@ -193,10 +203,13 @@ class TableOne(object):
                  ddof: int = 1, labels: Optional[dict] = None,
                  rename: Optional[dict] = None, sort: Union[bool, str] = False,
                  limit: Union[int, dict, None] = None,
-                 order: Optional[dict] = None, remarks: bool = True,
+                 order: Optional[dict] = None, remarks: bool = False,
                  label_suffix: bool = True, decimals: Union[int, dict] = 1,
                  smd: bool = False, overall: bool = True,
-                 display_all: bool = False) -> None:
+                 display_all: bool = False,
+                 dip_test: bool = False,
+                 normal_test: bool = False,
+                 tukey_test: bool = False) -> None:
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -223,6 +236,19 @@ class TableOne(object):
             self._pval_test_name = pval_test_name
         else:
             self._pval_test_name = htest_name
+
+        # remarks are now specified by individual test names
+        if remarks:
+            warnings.warn("The remarks argument is deprecated; specify tests "
+                          "by name instead (e.g. diptest = True)",
+                          DeprecationWarning)
+            self._dip_test = remarks
+            self._normal_test = remarks
+            self._tukey_test = remarks
+        else:
+            self._dip_test = dip_test
+            self._normal_test = normal_test
+            self._tukey_test = tukey_test
 
         # groupby should be a string
         if not groupby:
@@ -318,7 +344,6 @@ class TableOne(object):
         self._ddof = ddof
         self._limit = limit
         self._order = order
-        self._remarks = remarks
         self._label_suffix = label_suffix
         self._decimals = decimals
         self._smd = smd
@@ -472,7 +497,7 @@ class TableOne(object):
         when interpreting the summary statistics.
         """
         # generate warnings for continuous variables
-        if self._continuous:
+        if self._continuous and self._tukey_test:
             # highlight far outliers
             outlier_mask = self.cont_describe.far_outliers > 1
             outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].
@@ -481,21 +506,23 @@ class TableOne(object):
                 self._warnings["""Tukey test indicates far outliers
                                   in"""] = outlier_vars
 
+        if self._continuous and self._dip_test:
             # highlight possible multimodal distributions using hartigan's dip
             # test -1 values indicate NaN
-            modal_mask = ((self.cont_describe.diptest >= 0) &
-                          (self.cont_describe.diptest <= 0.05))
-            modal_vars = list(self.cont_describe.diptest[modal_mask].
+            modal_mask = ((self.cont_describe.hartigan_dip >= 0) &
+                          (self.cont_describe.hartigan_dip <= 0.05))
+            modal_vars = list(self.cont_describe.hartigan_dip[modal_mask].
                               dropna(how='all').index)
             if modal_vars:
                 self._warnings["""Hartigan's Dip Test reports possible
                                   multimodal distributions for"""] = modal_vars
 
+        if self._continuous and self._normal_test:
             # highlight non normal distributions
             # -1 values indicate NaN
-            modal_mask = ((self.cont_describe.normaltest >= 0) &
-                          (self.cont_describe.normaltest <= 0.001))
-            modal_vars = list(self.cont_describe.normaltest[modal_mask].
+            modal_mask = ((self.cont_describe.normality >= 0) &
+                          (self.cont_describe.normality <= 0.001))
+            modal_vars = list(self.cont_describe.normality[modal_mask].
                               dropna(how='all').index)
             if modal_vars:
                 self._warnings["""Normality test reports non-normal
@@ -714,7 +741,7 @@ class TableOne(object):
         else:
             return np.nanstd(x.values, ddof=self._ddof)
 
-    def _diptest(self, x):
+    def _hartigan_dip(self, x):
         """
         Compute Hartigan Dip Test for modality.
 
@@ -728,7 +755,7 @@ class TableOne(object):
             return -1
         return p
 
-    def _normaltest(self, x):
+    def _normality(self, x):
         """
         Compute test for normal distribution.
 
@@ -846,9 +873,17 @@ class TableOne(object):
                 Summarise the continuous variables.
         """
         aggfuncs = [pd.Series.count, np.mean, np.median, self._std,
-                    self._q25, self._q75, min, max, self._t1_summary,
-                    self._diptest, self._outliers, self._far_outliers,
-                    self._normaltest]
+                    self._q25, self._q75, min, max, self._t1_summary]
+
+        if self._dip_test:
+            aggfuncs.append(self._hartigan_dip)
+
+        if self._tukey_test:
+            aggfuncs.append(self._outliers)
+            aggfuncs.append(self._far_outliers)
+
+        if self._normal_test:
+            aggfuncs.append(self._normality)
 
         # coerce continuous data to numeric
         cont_data = data[self._continuous].apply(pd.to_numeric,

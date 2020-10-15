@@ -246,7 +246,6 @@ class TestTableOne(object):
 
         assert table_no_args._columns == table_with_args._columns
         assert table_no_args._categorical == table_with_args._categorical
-        assert table_no_args._remarks == table_with_args._remarks
         assert (table_no_args.tableone.columns ==
                 table_with_args.tableone.columns).all()
         assert (table_no_args.tableone['Overall'].values ==
