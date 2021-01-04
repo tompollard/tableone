@@ -2,7 +2,8 @@ import random
 import warnings
 
 from nose.tools import (with_setup, assert_raises, assert_equal,
-                        assert_almost_equal, assert_list_equal)
+                        assert_almost_equal, assert_list_equal,
+                        assert_count_equal)
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -1097,8 +1098,6 @@ class TestTableOne(object):
         # optionally, a categorical variable for stratification
         groupby = ['death']
 
-        self.data_pn
-
         t1 = TableOne(self.data_pn, columns=columns, categorical=categorical,
                       groupby=groupby, nonnormal=nonnormal, decimals=decimals,
                       min_max=['Age'])
@@ -1110,3 +1109,156 @@ class TestTableOne(object):
         for c, e in zip(t1_columns, expected):
             cell = t1.tableone.loc[k][group][c].values[0]
             assert_equal(cell, e)
+
+    @with_setup(setup, teardown)
+    def test_row_percent_false(self):
+        """
+        Test row_percent=False displays n(%) for the column.
+        """
+        # columns to summarize
+        columns = ['Age', 'SysABP', 'Height', 'MechVent', 'ICU', 'death']
+
+        # columns containing categorical variables
+        categorical = ['ICU', 'MechVent']
+
+        # set decimal places for age to 0
+        decimals = {"Age": 0}
+
+        # non-normal variables
+        nonnormal = ['Age']
+
+        # optionally, a categorical variable for stratification
+        groupby = ['death']
+        group = "Grouped by death"
+
+        # row_percent = False
+        t1 = TableOne(self.data_pn, columns=columns,
+                      categorical=categorical, groupby=groupby,
+                      nonnormal=nonnormal, decimals=decimals,
+                      row_percent=False)
+
+        row1 = list(t1.tableone.loc["MechVent, n (%)"][group].values[0])
+        row1_expect = [0, '540 (54.0)', '468 (54.2)', '72 (52.9)']
+        assert_list_equal(row1, row1_expect)
+
+        row2 = list(t1.tableone.loc["MechVent, n (%)"][group].values[1])
+        row2_expect = ['', '460 (46.0)', '396 (45.8)', '64 (47.1)']
+        assert_list_equal(row2, row2_expect)
+
+        row3 = list(t1.tableone.loc["ICU, n (%)"][group].values[0])
+        row3_expect = [0, '162 (16.2)', '137 (15.9)', '25 (18.4)']
+        assert_list_equal(row3, row3_expect)
+
+        row4 = list(t1.tableone.loc["ICU, n (%)"][group].values[1])
+        row4_expect = ['', '202 (20.2)', '194 (22.5)', '8 (5.9)']
+        assert_list_equal(row4, row4_expect)
+
+        row5 = list(t1.tableone.loc["ICU, n (%)"][group].values[2])
+        row5_expect = ['', '380 (38.0)', '318 (36.8)', '62 (45.6)']
+        assert_list_equal(row5, row5_expect)
+
+        row6 = list(t1.tableone.loc["ICU, n (%)"][group].values[3])
+        row6_expect = ['', '256 (25.6)', '215 (24.9)', '41 (30.1)']
+        assert_list_equal(row6, row6_expect)
+
+    @with_setup(setup, teardown)
+    def test_row_percent_true(self):
+        """
+        Test row_percent=True displays n(%) for the row rather than the column.
+        """
+        # columns to summarize
+        columns = ['Age', 'SysABP', 'Height', 'MechVent', 'ICU', 'death']
+
+        # columns containing categorical variables
+        categorical = ['ICU', 'MechVent']
+
+        # set decimal places for age to 0
+        decimals = {"Age": 0}
+
+        # non-normal variables
+        nonnormal = ['Age']
+
+        # optionally, a categorical variable for stratification
+        groupby = ['death']
+        group = "Grouped by death"
+
+        # row_percent = True
+        t2 = TableOne(self.data_pn, columns=columns,
+                      categorical=categorical, groupby=groupby,
+                      nonnormal=nonnormal, decimals=decimals,
+                      row_percent=True)
+
+        row1 = list(t2.tableone.loc["MechVent, n (%)"][group].values[0])
+        row1_expect = [0, '540 (100.0)', '468 (86.7)', '72 (13.3)']
+        assert_list_equal(row1, row1_expect)
+
+        row2 = list(t2.tableone.loc["MechVent, n (%)"][group].values[1])
+        row2_expect = ['', '460 (100.0)', '396 (86.1)', '64 (13.9)']
+        assert_list_equal(row2, row2_expect)
+
+        row3 = list(t2.tableone.loc["ICU, n (%)"][group].values[0])
+        row3_expect = [0, '162 (100.0)', '137 (84.6)', '25 (15.4)']
+        assert_list_equal(row3, row3_expect)
+
+        row4 = list(t2.tableone.loc["ICU, n (%)"][group].values[1])
+        row4_expect = ['', '202 (100.0)', '194 (96.0)', '8 (4.0)']
+        assert_list_equal(row4, row4_expect)
+
+        row5 = list(t2.tableone.loc["ICU, n (%)"][group].values[2])
+        row5_expect = ['', '380 (100.0)', '318 (83.7)', '62 (16.3)']
+        assert_list_equal(row5, row5_expect)
+
+        row6 = list(t2.tableone.loc["ICU, n (%)"][group].values[3])
+        row6_expect = ['', '256 (100.0)', '215 (84.0)', '41 (16.0)']
+        assert_list_equal(row6, row6_expect)
+
+    @with_setup(setup, teardown)
+    def test_row_percent_true_and_overall_false(self):
+        """
+        Test row_percent=True displays n(%) for the row rather than the column.
+        """
+        # columns to summarize
+        columns = ['Age', 'SysABP', 'Height', 'MechVent', 'ICU', 'death']
+
+        # columns containing categorical variables
+        categorical = ['ICU', 'MechVent']
+
+        # set decimal places for age to 0
+        decimals = {"Age": 0}
+
+        # non-normal variables
+        nonnormal = ['Age']
+
+        # optionally, a categorical variable for stratification
+        groupby = ['death']
+        group = "Grouped by death"
+
+        # row_percent = True
+        t1 = TableOne(self.data_pn, columns=columns, overall=False,
+                      categorical=categorical, groupby=groupby,
+                      nonnormal=nonnormal, decimals=decimals,
+                      row_percent=True)
+
+        row1 = list(t1.tableone.loc["MechVent, n (%)"][group].values[0])
+        row1_expect = [0, '468 (86.7)', '72 (13.3)']
+        assert_list_equal(row1, row1_expect)
+
+        row2 = list(t1.tableone.loc["MechVent, n (%)"][group].values[1])
+        row2_expect = ['', '396 (86.1)', '64 (13.9)']
+        assert_list_equal(row2, row2_expect)
+
+        row3 = list(t1.tableone.loc["ICU, n (%)"][group].values[0])
+        row3_expect = [0, '137 (84.6)', '25 (15.4)']
+        assert_list_equal(row3, row3_expect)
+
+        row4 = list(t1.tableone.loc["ICU, n (%)"][group].values[1])
+        row4_expect = ['', '194 (96.0)', '8 (4.0)']
+        assert_list_equal(row4, row4_expect)
+
+        row5 = list(t1.tableone.loc["ICU, n (%)"][group].values[2])
+        row5_expect = ['', '318 (83.7)', '62 (16.3)']
+        assert_list_equal(row5, row5_expect)
+
+        row6 = list(t1.tableone.loc["ICU, n (%)"][group].values[3])
+        row6_expect = ['', '215 (84.0)', '41 (16.0)']
+        assert_list_equal(row6, row6_expect)

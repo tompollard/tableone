@@ -145,6 +145,9 @@ class TableOne(object):
     overall : bool, optional
         If True, add an "overall" column to the table. Smd and p-value
         calculations are performed only using stratified columns.
+    row_percent : bool, optional
+        If True, compute "n (%)" percentages for categorical variables across
+        "groupby" rows rather than columns.
     display_all : bool, optional
         If True, set pd. display_options to display all columns and rows.
         (default: False)
@@ -206,9 +209,8 @@ class TableOne(object):
                  order: Optional[dict] = None, remarks: bool = False,
                  label_suffix: bool = True, decimals: Union[int, dict] = 1,
                  smd: bool = False, overall: bool = True,
-                 display_all: bool = False,
-                 dip_test: bool = False,
-                 normal_test: bool = False,
+                 row_percent: bool = False, display_all: bool = False,
+                 dip_test: bool = False, normal_test: bool = False,
                  tukey_test: bool = False) -> None:
 
         # labels is now rename
@@ -348,6 +350,7 @@ class TableOne(object):
         self._decimals = decimals
         self._smd = smd
         self._overall = overall
+        self._row_percent = row_percent
 
         # display notes and warnings below the table
         self._warnings = {}
@@ -928,14 +931,14 @@ class TableOne(object):
 
         return df_cont
 
-    def _format_cat(self, row):
+    def _format_cat(self, row, col):
         var = row.name[0]
         if var in self._decimals:
             n = self._decimals[var]
         else:
             n = 1
         f = '{{:.{}f}}'.format(n)
-        return f.format(row.percent)
+        return f.format(row[col])
 
     def _create_cat_describe(self, data, groupby, groupbylvls):
         """
@@ -945,6 +948,10 @@ class TableOne(object):
         ----------
             data : pandas DataFrame
                 The input dataset.
+            groupby : Str
+                Variable to group by.
+            groupbylvls : List
+                List of levels in the groupby variable.
 
         Returns
         ----------
@@ -953,46 +960,64 @@ class TableOne(object):
         """
         group_dict = {}
 
+        cat_slice = data[self._categorical].copy()
+
         for g in groupbylvls:
             if groupby:
-                d_slice = data.loc[data[groupby] == g, self._categorical]
+                df = cat_slice.loc[data[groupby] == g, self._categorical]
             else:
-                d_slice = data[self._categorical].copy()
+                df = cat_slice.copy()
 
-            # create a dataframe with freq, proportion
-            df = d_slice.copy()
+            # create n column and null count column
+            # must be done before converting values to strings
+            ct = df.count().to_frame(name='n')
+            ct.index.name = 'variable'
+            nulls = df.isnull().sum().to_frame(name='Missing')
+            nulls.index.name = 'variable'
 
-            # convert to str to handle int converted to boolean. Avoid nans.
+            # Convert to str to handle int converted to boolean in the index.
+            # Also avoid nans.
             for column in df.columns:
                 df[column] = [str(row) if not pd.isnull(row)
                               else None for row in df[column].values]
+                cat_slice[column] = [str(row) if not pd.isnull(row)
+                                     else None for row
+                                     in cat_slice[column].values]
 
+            # create a dataframe with freq, proportion
             df = df.melt().groupby(['variable',
                                     'value']).size().to_frame(name='freq')
 
             df['percent'] = df['freq'].div(df.freq.sum(level=0),
                                            level=0).astype(float) * 100
 
+            # add row percent
+            df['percent_row'] = df['freq'].div(cat_slice[self._categorical]
+                                               .melt()
+                                               .groupby(['variable', 'value'])
+                                               .size()) * 100
+
             # set number of decimal places for percent
             if isinstance(self._decimals, int):
                 n = self._decimals
                 f = '{{:.{}f}}'.format(n)
                 df['percent_str'] = df['percent'].astype(float).map(f.format)
+                df['percent_row_str'] = df['percent_row'].astype(float).map(f.format)
             elif isinstance(self._decimals, dict):
-                df.loc[:, 'percent_str'] = df.apply(self._format_cat, axis=1)
+                df.loc[:, 'percent_str'] = df.apply(self._format_cat, axis=1,
+                                                    args=['percent'])
+                df.loc[:, 'percent_row_str'] = df.apply(self._format_cat,
+                                                        axis=1,
+                                                        args=['percent_row'])
             else:
                 n = 1
                 f = '{{:.{}f}}'.format(n)
                 df['percent_str'] = df['percent'].astype(float).map(f.format)
+                df['percent_row_str'] = df['percent_row'].astype(float).map(f.format)
 
-            # add n column, listing total non-null values for each variable
-            ct = d_slice.count().to_frame(name='n')
-            ct.index.name = 'variable'
+            # join count column
             df = df.join(ct)
 
-            # add null count
-            nulls = d_slice.isnull().sum().to_frame(name='Missing')
-            nulls.index.name = 'variable'
             # only save null count to the first category for each variable
             # do this by extracting the first category from the df row index
             levels = df.reset_index()[['variable',
@@ -1004,8 +1029,12 @@ class TableOne(object):
             df = df.join(nulls)
 
             # add summary column
-            df['t1_summary'] = (df.freq.map(str) + ' ('
-                                + df.percent_str.map(str)+')')
+            if self._row_percent:
+                df['t1_summary'] = (df.freq.map(str) + ' ('
+                                    + df.percent_row_str.map(str)+')')
+            else:
+                df['t1_summary'] = (df.freq.map(str) + ' ('
+                                    + df.percent_str.map(str)+')')
 
             # add to dictionary
             group_dict[g] = df
