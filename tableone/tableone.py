@@ -195,6 +195,7 @@ class TableOne(object):
 
     ...
     """
+
     def __init__(self, data: pd.DataFrame, columns: Optional[list] = None,
                  categorical: Optional[list] = None,
                  groupby: Optional[str] = None,
@@ -204,6 +205,7 @@ class TableOne(object):
                  pval_test_name: bool = False, htest: Optional[dict] = None,
                  isnull: Optional[bool] = None, missing: bool = True,
                  ddof: int = 1, labels: Optional[dict] = None,
+                 chi_correction: bool = False,
                  rename: Optional[dict] = None, sort: Union[bool, str] = False,
                  limit: Union[int, dict, None] = None,
                  order: Optional[dict] = None, remarks: bool = False,
@@ -344,6 +346,7 @@ class TableOne(object):
         self._groupby = groupby
         # degrees of freedom for standard deviation
         self._ddof = ddof
+        self._chi_correction = chi_correction
         self._limit = limit
         self._order = order
         self._label_suffix = label_suffix
@@ -920,7 +923,7 @@ class TableOne(object):
             df_cont = cont_data.apply(aggfuncs).T
             df_cont.columns.name = 'Overall'
             df_cont.columns = pd.MultiIndex.from_product([df_cont.columns,
-                                                         ['Overall']])
+                                                          ['Overall']])
 
         df_cont.index = df_cont.index.rename('variable')
 
@@ -1129,7 +1132,7 @@ class TableOne(object):
         """
         # create the SMD table
         permutations = [sorted((x, y),
-                        key=lambda f: self._groupbylvls.index(f))
+                               key=lambda f: self._groupbylvls.index(f))
                         for x in self._groupbylvls
                         for y in self._groupbylvls if x is not y]
 
@@ -1145,13 +1148,13 @@ class TableOne(object):
             try:
                 for v in self.cont_describe.index:
                     smd, _ = self._cont_smd(
-                                mean1=self.cont_describe['mean'][p[0]].loc[v],
-                                mean2=self.cont_describe['mean'][p[1]].loc[v],
-                                sd1=self.cont_describe['std'][p[0]].loc[v],
-                                sd2=self.cont_describe['std'][p[1]].loc[v],
-                                n1=self.cont_describe['count'][p[0]].loc[v],
-                                n2=self.cont_describe['count'][p[1]].loc[v],
-                                unbiased=False)
+                        mean1=self.cont_describe['mean'][p[0]].loc[v],
+                        mean2=self.cont_describe['mean'][p[1]].loc[v],
+                        sd1=self.cont_describe['std'][p[0]].loc[v],
+                        sd2=self.cont_describe['std'][p[1]].loc[v],
+                        n1=self.cont_describe['count'][p[0]].loc[v],
+                        n2=self.cont_describe['count'][p[1]].loc[v],
+                        unbiased=False)
                     df[colname.format(p[0], p[1])].loc[v] = smd
             except AttributeError:
                 pass
@@ -1213,13 +1216,13 @@ class TableOne(object):
         # do not test if the variable has no observations in a level
         if min_observed == 0:
             msg = ("No P-Value was computed for {variable} due to the low "
-                   "number of observations.""").format(variable=v)
+                   "number of observations."+"").format(variable=v)
             warnings.warn(msg)
             return pval, ptest
 
         # continuous
         if (is_continuous and is_normal and len(grouped_data) == 2
-            and min_observed >= 2):
+                and min_observed >= 2):
             ptest = 'Two Sample T-test'
             test_stat, pval = stats.ttest_ind(*grouped_data.values(),
                                               equal_var=False,
@@ -1237,7 +1240,8 @@ class TableOne(object):
             # default to chi-squared
             ptest = 'Chi-squared'
             grouped_val_list = [x for x in grouped_data.values()]
-            chi2, pval, dof, expected = stats.chi2_contingency(grouped_val_list)
+            chi2, pval, dof, expected = stats.chi2_contingency(
+                grouped_val_list, self._chi_correction)
             # if any expected cell counts are < 5, chi2 may not be valid
             # if this is a 2x2, switch to fisher exact
             if expected.min() < 5 or min_observed < 5:
@@ -1394,12 +1398,12 @@ class TableOne(object):
         # round pval column and convert to string
         if self._pval and self._pval_adjust:
             table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply(
-                                                '{:.3f}'.format).astype(str)
+                '{:.3f}'.format).astype(str)
             table.loc[table['P-Value (adjusted)'] == '0.000',
                       'P-Value (adjusted)'] = '<0.001'
         elif self._pval:
             table['P-Value'] = table['P-Value'].apply(
-                                     '{:.3f}'.format).astype(str)
+                '{:.3f}'.format).astype(str)
             table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
 
         # round smd columns and convert to string
