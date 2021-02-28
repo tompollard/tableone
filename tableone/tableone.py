@@ -218,7 +218,6 @@ class TableOne(object):
         missing: bool = True,
         ddof: int = 1,
         labels: Optional[dict] = None,
-        chi_correction: bool = False,
         rename: Optional[dict] = None,
         sort: Union[bool, str] = False,
         limit: Union[int, dict, None] = None,
@@ -1358,8 +1357,7 @@ class TableOne(object):
             ptest = "Chi-squared"
             grouped_val_list = [x for x in grouped_data.values()]
             chi2, pval, dof, expected = stats.chi2_contingency(
-                grouped_val_list, self._chi_correction
-            )
+                grouped_val_list)
             # if any expected cell counts are < 5, chi2 may not be valid
             # if this is a 2x2, switch to fisher exact
             if expected.min() < 5 or min_observed < 5:
