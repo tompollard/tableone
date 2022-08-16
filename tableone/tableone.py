@@ -2,7 +2,7 @@
 The tableone package is used for creating "Table 1" summary statistics for
 research papers.
 """
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 import warnings
 
 import numpy as np
@@ -93,10 +93,13 @@ class TableOne(object):
     pval_adjust : str, optional
         Method used to adjust P-Values for multiple testing.
         The P-values from the unadjusted table (default when pval=True)
-        are adjusted to account for the number of total tests that were performed.
-        These adjustments would be useful when many variables are being screened
-        to assess if their distribution varies by the variable in the groupby argument.
-        For a complete list of methods, see documentation for statsmodels multipletests.
+        are adjusted to account for the number of total tests that were
+        performed.
+        These adjustments would be useful when many variables are being
+        screened to assess if their distribution varies by the variable in the
+        groupby argument.
+        For a complete list of methods, see documentation for statsmodels
+        multipletests.
         Available methods include ::
 
         `None` : no correction applied.
@@ -153,7 +156,8 @@ class TableOne(object):
         (default: False)
     dip_test : bool, optional
         Run Hartigan's Dip Test for multimodality. If variables are found to
-        have multimodal distributions, a remark will be added below the Table 1.
+        have multimodal distributions, a remark will be added below the
+        Table 1.
         (default: False)
     normal_test : bool, optional
         Test the null hypothesis that a sample come from a normal distribution.
@@ -173,7 +177,8 @@ class TableOne(object):
     Examples
     --------
     >>> df = pd.DataFrame({'size': [1, 2, 60, 1, 1],
-    ...                   'fruit': ['peach', 'orange', 'peach', 'peach', 'orange'],
+    ...                   'fruit': ['peach', 'orange', 'peach', 'peach',
+    ...                             'orange'],
     ...                   'tasty': ['yes', 'yes', 'no', 'yes', 'no']})
 
     >>> df
@@ -289,7 +294,8 @@ class TableOne(object):
                                 dataset: {}""".format(notfound))
 
         # check for duplicate columns
-        dups = data[columns].columns[data[columns].columns.duplicated()].unique()
+        dups = data[columns].columns[
+            data[columns].columns.duplicated()].unique()
         if not dups.empty:
             raise InputError("""Input data contains duplicate
                                 columns: {}""".format(dups))
@@ -1002,7 +1008,8 @@ class TableOne(object):
                 n = self._decimals
                 f = '{{:.{}f}}'.format(n)
                 df['percent_str'] = df['percent'].astype(float).map(f.format)
-                df['percent_row_str'] = df['percent_row'].astype(float).map(f.format)
+                df['percent_row_str'] = df['percent_row'].astype(float).map(
+                    f.format)
             elif isinstance(self._decimals, dict):
                 df.loc[:, 'percent_str'] = df.apply(self._format_cat, axis=1,
                                                     args=['percent'])
@@ -1013,7 +1020,8 @@ class TableOne(object):
                 n = 1
                 f = '{{:.{}f}}'.format(n)
                 df['percent_str'] = df['percent'].astype(float).map(f.format)
-                df['percent_row_str'] = df['percent_row'].astype(float).map(f.format)
+                df['percent_row_str'] = df['percent_row'].astype(float).map(
+                    f.format)
 
             # join count column
             df = df.join(ct)
@@ -1159,8 +1167,10 @@ class TableOne(object):
             try:
                 for v, _ in self.cat_describe.groupby(level=0):
                     smd, _ = self._cat_smd(
-                        prop1=self.cat_describe.loc[[v]]['percent'][p[0]].values/100,
-                        prop2=self.cat_describe.loc[[v]]['percent'][p[1]].values/100,
+                        prop1=self.cat_describe.loc[[v]]['percent'][p[0]]
+                        .values/100,
+                        prop2=self.cat_describe.loc[[v]]['percent'][p[1]]
+                        .values/100,
                         n1=self.cat_describe.loc[[v]]['freq'][p[0]].sum(),
                         n2=self.cat_describe.loc[[v]]['freq'][p[1]].sum(),
                         unbiased=False)
@@ -1219,7 +1229,7 @@ class TableOne(object):
 
         # continuous
         if (is_continuous and is_normal and len(grouped_data) == 2
-            and min_observed >= 2):
+                and min_observed >= 2):
             ptest = 'Two Sample T-test'
             test_stat, pval = stats.ttest_ind(*grouped_data.values(),
                                               equal_var=False,
@@ -1237,7 +1247,8 @@ class TableOne(object):
             # default to chi-squared
             ptest = 'Chi-squared'
             grouped_val_list = [x for x in grouped_data.values()]
-            chi2, pval, dof, expected = stats.chi2_contingency(grouped_val_list)
+            _, pval, _, expected = stats.chi2_contingency(
+                grouped_val_list)
             # if any expected cell counts are < 5, chi2 may not be valid
             # if this is a 2x2, switch to fisher exact
             if expected.min() < 5 or min_observed < 5:
@@ -1270,7 +1281,8 @@ class TableOne(object):
         table.columns = table.columns.droplevel(level=0)
 
         # add a column of null counts as 1-count() from previous function
-        nulltable = data[self._continuous].isnull().sum().to_frame(name='Missing')
+        nulltable = data[self._continuous].isnull().sum().to_frame(
+            name='Missing')
         try:
             table = table.join(nulltable)
         # if columns form a CategoricalIndex, need to convert to string first
@@ -1312,7 +1324,8 @@ class TableOne(object):
         table = self.cat_describe['t1_summary'].copy()
 
         # add the total count of null values across all levels
-        isnull = data[self._categorical].isnull().sum().to_frame(name='Missing')
+        isnull = data[self._categorical].isnull().sum().to_frame(
+            name='Missing')
         isnull.index = isnull.index.rename('variable')
         try:
             table = table.join(isnull)
@@ -1595,16 +1608,20 @@ class TableOne(object):
             for k in labels.keys():
                 if k in self._nonnormal:
                     if self._min_max and k in self._min_max:
-                        labels[k] = "{}, {}".format(labels[k], "median [min,max]")
+                        labels[k] = "{}, {}".format(labels[k],
+                                                    "median [min,max]")
                     else:
-                        labels[k] = "{}, {}".format(labels[k], "median [Q1,Q3]")
+                        labels[k] = "{}, {}".format(labels[k],
+                                                    "median [Q1,Q3]")
                 elif k in self._categorical:
                     labels[k] = "{}, {}".format(labels[k], "n (%)")
                 else:
                     if self._min_max and k in self._min_max:
-                        labels[k] = "{}, {}".format(labels[k], "mean [min,max]")
+                        labels[k] = "{}, {}".format(labels[k],
+                                                    "mean [min,max]")
                     else:
-                        labels[k] = "{}, {}".format(labels[k], "mean (SD)")
+                        labels[k] = "{}, {}".format(labels[k],
+                                                    "mean (SD)")
 
         return labels
 
