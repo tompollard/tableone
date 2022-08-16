@@ -697,13 +697,13 @@ class TableOne(object):
             covariance[np.diag_indices_from(covariance)] = variance
             lst_cov.append(covariance)
 
-        mean_diff = np.matrix(prop2 - prop1)
+        mean_diff = np.asarray(prop2 - prop1).reshape((1, -1))
         mean_cov = (lst_cov[0] + lst_cov[1])/2
 
         # TODO: add steps to deal with nulls
 
         try:
-            sq_md = mean_diff * np.linalg.inv(mean_cov) * mean_diff.T
+            sq_md = mean_diff @ np.linalg.inv(mean_cov) @ mean_diff.T
         except LinAlgError:
             sq_md = np.nan
 
@@ -994,7 +994,7 @@ class TableOne(object):
             df = df.melt().groupby(['variable',
                                     'value']).size().to_frame(name='freq')
 
-            df['percent'] = df['freq'].div(df.freq.sum(level=0),
+            df['percent'] = df['freq'].div(df.groupby(level=0).freq.sum(),
                                            level=0).astype(float) * 100
 
             # add row percent

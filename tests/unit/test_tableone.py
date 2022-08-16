@@ -178,8 +178,8 @@ class TestTableOne(object):
         mean = table.cont_describe.loc['normal']['mean']['Overall']
         std = table.cont_describe.loc['normal']['std']['Overall']
 
-        print(data_sample.mean())
-        print(data_sample.std())
+        print(data_sample.mean(numeric_only=True))
+        print(data_sample.std(numeric_only=True))
 
         assert abs(mean - data_sample.normal.mean()) <= 0.02
         assert abs(std - data_sample.normal.std()) <= 0.02
@@ -875,7 +875,7 @@ class TestTableOne(object):
         df4 = pd.DataFrame({'rvs': 'rvs4', 'val': rvs4})
 
         # Table 1 for different distributions
-        different = df1.append(df2, ignore_index=True)
+        different = pd.concat([df1, df2], ignore_index=True)
         t1_diff = TableOne(data=different, columns=["val"], pval=True,
                            groupby="rvs", htest={"val": func})
 
@@ -883,7 +883,7 @@ class TestTableOne(object):
                 stats.ks_2samp(rvs1, rvs2)[1])
 
         # Table 1 for similar distributions
-        similar = df1.append(df3, ignore_index=True)
+        similar = pd.concat([df1, df3], ignore_index=True)
         t1_similar = TableOne(data=similar, columns=["val"], pval=True,
                               groupby="rvs", htest={"val": func})
 
@@ -891,7 +891,7 @@ class TestTableOne(object):
                 stats.ks_2samp(rvs1, rvs3)[1])
 
         # Table 1 for identical distributions
-        identical = df1.append(df4, ignore_index=True)
+        identical = pd.concat([df1, df4], ignore_index=True)
         t1_identical = TableOne(data=identical, columns=["val"], pval=True,
                                 groupby="rvs", htest={"val": func})
 
