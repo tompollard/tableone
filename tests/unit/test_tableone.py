@@ -1,9 +1,6 @@
 import random
 import warnings
 
-from nose.tools import (with_setup, assert_raises, assert_equal,
-                        assert_almost_equal, assert_list_equal,
-                        assert_count_equal)
 import numpy as np
 import pandas as pd
 from scipy import stats
