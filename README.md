@@ -4,7 +4,7 @@ tableone is a package for creating "Table 1" summary statistics for a patient
 population. It was inspired by the R package of the same name by Yoshida and 
 Bohn.
 
-[![Build Status](https://travis-ci.org/tompollard/tableone.svg?branch=master)](https://travis-ci.org/tompollard/tableone) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.837898.svg)](https://doi.org/10.5281/zenodo.837898) [![Documentation Status](https://readthedocs.org/projects/tableone/badge/?version=latest)](https://tableone.readthedocs.io/en/latest/?badge=latest) [![Anaconda-Server Badge](https://anaconda.org/conda-forge/tableone/badges/installer/conda.svg)](https://conda.anaconda.org/conda-forge) [![PyPI version](https://badge.fury.io/py/tableone.svg)](https://badge.fury.io/py/tableone)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.837898.svg)](https://doi.org/10.5281/zenodo.837898) [![Documentation Status](https://readthedocs.org/projects/tableone/badge/?version=latest)](https://tableone.readthedocs.io/en/latest/?badge=latest) [![Anaconda-Server Badge](https://anaconda.org/conda-forge/tableone/badges/installer/conda.svg)](https://conda.anaconda.org/conda-forge) [![PyPI version](https://badge.fury.io/py/tableone.svg)](https://badge.fury.io/py/tableone)
 
 ## Suggested citation
 
