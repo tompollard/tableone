@@ -1,17 +1,126 @@
-import random
 import warnings
+from math import isclose
 
-from nose.tools import (with_setup, assert_raises, assert_equal,
-                        assert_almost_equal, assert_list_equal,
-                        assert_count_equal)
+import pytest
 import numpy as np
 import pandas as pd
 from scipy import stats
 
-import tableone
 from tableone import TableOne, load_dataset
 from tableone.tableone import InputError
 from tableone.modality import hartigan_diptest, generate_data
+
+seed = 12345
+
+
+@pytest.fixture(scope="function")
+def data_pn():
+    return load_dataset('pn2012')
+
+
+@pytest.fixture(scope="function")
+def data_sample(n=10000):
+    """
+    create sample dataset
+    """
+    data_sample = pd.DataFrame(index=range(n))
+    np.random.seed(seed)
+
+    mu, sigma = 10, 1
+    data_sample['normal'] = np.random.normal(mu, sigma, n)
+    data_sample['nonnormal'] = np.random.noncentral_chisquare(20, nonc=2,
+                                                              size=n)
+
+    bears = ['Winnie', 'Paddington', 'Baloo', 'Blossom']
+    data_sample['bear'] = np.random.choice(bears, n,
+                                           p=[0.5, 0.1, 0.1, 0.3])
+
+    data_sample['likeshoney'] = np.nan
+    data_sample.loc[data_sample['bear'] == 'Winnie', 'likeshoney'] = 1
+    data_sample.loc[data_sample['bear'] == 'Baloo', 'likeshoney'] = 1
+
+    data_sample['likesmarmalade'] = 0
+    data_sample.loc[data_sample['bear'] == 'Paddington',
+                                           'likesmarmalade'] = 1
+
+    data_sample['height'] = 0
+    data_sample.loc[data_sample['bear'] == 'Winnie', 'height'] = 6
+    data_sample.loc[data_sample['bear'] == 'Paddington', 'height'] = 4
+    data_sample.loc[data_sample['bear'] == 'Baloo', 'height'] = 20
+    data_sample.loc[data_sample['bear'] == 'Blossom', 'height'] = 7
+
+    data_sample['fictional'] = 0
+    data_sample.loc[data_sample['bear'] == 'Winnie', 'fictional'] = 1
+    data_sample.loc[data_sample['bear'] == 'Paddington', 'fictional'] = 1
+    data_sample.loc[data_sample['bear'] == 'Baloo', 'fictional'] = 1
+    data_sample.loc[data_sample['bear'] == 'Blossom', 'fictional'] = 1
+
+    return data_sample
+
+
+@pytest.fixture(scope="function")
+def data_small():
+    """
+    create small dataset
+    """
+    data_small = pd.DataFrame(index=range(10))
+    data_small['group1'] = 0
+    data_small.loc[0:4, 'group1'] = 1
+    data_small['group2'] = 0
+    data_small.loc[2:7, 'group2'] = 1
+    data_small['group3'] = 0
+    data_small.loc[1:2, 'group3'] = 1
+    data_small.loc[3:7, 'group3'] = 2
+
+    return data_small
+
+
+@pytest.fixture(scope="function")
+def data_groups(n=20):
+    """
+    create another dataset
+    """
+    data_groups = pd.DataFrame(index=range(n))
+    data_groups['group'] = 'group1'
+    data_groups.loc[2:6, 'group'] = 'group2'
+    data_groups.loc[6:12, 'group'] = 'group3'
+    data_groups.loc[12: n, 'group'] = 'group4'
+    data_groups['age'] = range(n)
+    data_groups['weight'] = [x+100 for x in range(n)]
+
+    return data_groups
+
+
+@pytest.fixture(scope="function")
+def data_categorical(n_cat=100, n_obs_per_cat=1000,
+                     n_col=10):
+    """
+    create a dataframe with many categories of many levels
+    """
+    # dataframe with many categories of many levels
+    # generate integers to represent data
+    data = np.arange(n_cat*n_obs_per_cat*n_col)
+    # use modulus to create categories - unique for each column
+    data = np.mod(data, n_cat*n_col)
+    # reshape intro a matrix
+    data = data.reshape(n_cat*n_obs_per_cat, n_col)
+    return pd.DataFrame(data)
+
+
+@pytest.fixture(scope="function")
+def data_mixed(n=20):
+    """
+    create a dataframe with mixed datatypes in the same column
+    """
+    data_mixed = pd.DataFrame(index=range(n))
+    np.random.seed(seed)
+
+    data_mixed['string data'] = 'a'
+
+    mu, sigma = 50, 5
+    data_mixed['mixed numeric data'] = np.random.normal(mu, sigma, n)
+    data_mixed.loc[1, 'mixed numeric data'] = 'could not measure'
+    return data_mixed
 
 
 def mytest(*args):
@@ -28,136 +137,17 @@ class TestTableOne(object):
     Tests for TableOne
     """
 
-    def setup(self):
-        """
-        set up test fixtures
-        """
-        seed = 12345
-        np.random.seed(seed)
-        self.data_pn = load_dataset('pn2012')
-        self.data_sample = self.create_sample_dataset(n=10000)
-        self.data_small = self.create_small_dataset()
-        self.data_groups = self.create_another_dataset(n=20)
-        self.data_categorical = self.create_categorical_dataset()
-        self.data_mixed = self.create_mixed_datatypes_dataset()
-
-    def create_sample_dataset(self, n):
-        """
-        create sample dataset
-        """
-        data_sample = pd.DataFrame(index=range(n))
-
-        mu, sigma = 10, 1
-        data_sample['normal'] = np.random.normal(mu, sigma, n)
-        data_sample['nonnormal'] = np.random.noncentral_chisquare(20, nonc=2,
-                                                                  size=n)
-
-        bears = ['Winnie', 'Paddington', 'Baloo', 'Blossom']
-        data_sample['bear'] = np.random.choice(bears, n,
-                                               p=[0.5, 0.1, 0.1, 0.3])
-
-        data_sample['likeshoney'] = np.nan
-        data_sample.loc[data_sample['bear'] == 'Winnie', 'likeshoney'] = 1
-        data_sample.loc[data_sample['bear'] == 'Baloo', 'likeshoney'] = 1
-
-        data_sample['likesmarmalade'] = 0
-        data_sample.loc[data_sample['bear'] == 'Paddington',
-                                               'likesmarmalade'] = 1
-
-        data_sample['height'] = 0
-        data_sample.loc[data_sample['bear'] == 'Winnie', 'height'] = 6
-        data_sample.loc[data_sample['bear'] == 'Paddington', 'height'] = 4
-        data_sample.loc[data_sample['bear'] == 'Baloo', 'height'] = 20
-        data_sample.loc[data_sample['bear'] == 'Blossom', 'height'] = 7
-
-        data_sample['fictional'] = 0
-        data_sample.loc[data_sample['bear'] == 'Winnie', 'fictional'] = 1
-        data_sample.loc[data_sample['bear'] == 'Paddington', 'fictional'] = 1
-        data_sample.loc[data_sample['bear'] == 'Baloo', 'fictional'] = 1
-        data_sample.loc[data_sample['bear'] == 'Blossom', 'fictional'] = 1
-
-        return data_sample
-
-    def create_small_dataset(self):
-        """
-        create small dataset
-        """
-        data_small = pd.DataFrame(index=range(10))
-        data_small['group1'] = 0
-        data_small.loc[0:4, 'group1'] = 1
-        data_small['group2'] = 0
-        data_small.loc[2:7, 'group2'] = 1
-        data_small['group3'] = 0
-        data_small.loc[1:2, 'group3'] = 1
-        data_small.loc[3:7, 'group3'] = 2
-
-        return data_small
-
-    def create_another_dataset(self, n):
-        """
-        create another dataset
-        """
-        data_groups = pd.DataFrame(index=range(n))
-        data_groups['group'] = 'group1'
-        data_groups.loc[2:6, 'group'] = 'group2'
-        data_groups.loc[6:12, 'group'] = 'group3'
-        data_groups.loc[12: n, 'group'] = 'group4'
-        data_groups['age'] = range(n)
-        data_groups['weight'] = [x+100 for x in range(n)]
-
-        return data_groups
-
-    def create_categorical_dataset(self, n_cat=100, n_obs_per_cat=1000,
-                                   n_col=10):
-        """
-        create a dataframe with many categories of many levels
-        """
-        # dataframe with many categories of many levels
-        # generate integers to represent data
-        data = np.arange(n_cat*n_obs_per_cat*n_col)
-        # use modulus to create categories - unique for each column
-        data = np.mod(data, n_cat*n_col)
-        # reshape intro a matrix
-        data = data.reshape(n_cat*n_obs_per_cat, n_col)
-        return pd.DataFrame(data)
-
-    def create_mixed_datatypes_dataset(self, n=20):
-        """
-        create a dataframe with mixed datatypes in the same column
-        """
-        data_mixed = pd.DataFrame(index=range(n))
-
-        data_mixed['string data'] = 'a'
-
-        mu, sigma = 50, 5
-        data_mixed['mixed numeric data'] = np.random.normal(mu, sigma, n)
-        data_mixed.loc[1, 'mixed numeric data'] = 'could not measure'
-        return data_mixed
-
-    def teardown(self):
-        """
-        tear down test fixtures
-        """
-        pass
-
-    @with_setup(setup, teardown)
-    def test_hello_travis(self):
-        x = 'hello'
-        y = 'travis'
-        assert x != y
-
-    @with_setup(setup, teardown)
-    def test_examples_used_in_the_readme_run_without_raising_error_pn(self):
+    def test_examples_used_in_the_readme_run_without_raising_error_pn(
+            self, data_pn):
 
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         categorical = ['ICU', 'death']
         groupby = ['death']
         nonnormal = ['Age']
-        mytable = TableOne(self.data_pn, columns=columns,
-                           categorical=categorical, groupby=groupby,
-                           nonnormal=nonnormal, pval=False)
+        TableOne(data_pn, columns=columns,
+                 categorical=categorical, groupby=groupby,
+                 nonnormal=nonnormal, pval=False)
 
-    @with_setup(setup, teardown)
     def test_robust_to_duplicates_in_input_df_index(self):
 
         d_control = pd.DataFrame(data={'group': [0, 0, 0, 0, 0, 0, 0],
@@ -166,8 +156,8 @@ class TestTableOne(object):
         d_case = pd.DataFrame(data={'group': [1, 1, 1], 'value': [1, 2, 3]})
         d = pd.concat([d_case, d_control])
 
-        with assert_raises(InputError):
-            t = TableOne(d, ['value'], groupby='group', pval=True)
+        with pytest.raises(InputError):
+            TableOne(d, ['value'], groupby='group', pval=True)
 
         d_idx_reset = pd.concat([d_case, d_control], ignore_index=True)
         t2 = TableOne(d_idx_reset, ['value'], groupby='group', pval=True)
@@ -179,26 +169,26 @@ class TestTableOne(object):
         assert mean_std_0 == '4.0 (0.6)'
         assert mean_std_1 == '2.0 (1.0)'
 
-    @with_setup(setup, teardown)
-    def test_overall_mean_and_std_as_expected_for_cont_variable(self):
+    def test_overall_mean_and_std_as_expected_for_cont_variable(
+            self, data_sample):
 
         columns = ['normal', 'nonnormal', 'height']
-        table = TableOne(self.data_sample, columns=columns)
+        table = TableOne(data_sample, columns=columns)
 
         mean = table.cont_describe.loc['normal']['mean']['Overall']
         std = table.cont_describe.loc['normal']['std']['Overall']
 
-        print(self.data_sample.mean())
-        print(self.data_sample.std())
+        print(data_sample.mean())
+        print(data_sample.std())
 
-        assert abs(mean-self.data_sample.normal.mean()) <= 0.02
-        assert abs(std-self.data_sample.normal.std()) <= 0.02
+        assert abs(mean - data_sample.normal.mean()) <= 0.02
+        assert abs(std - data_sample.normal.std()) <= 0.02
 
-    @with_setup(setup, teardown)
-    def test_overall_n_and_percent_as_expected_for_binary_cat_variable(self):
+    def test_overall_n_and_percent_as_expected_for_binary_cat_variable(
+            self, data_sample):
 
         categorical = ['likesmarmalade']
-        table = TableOne(self.data_sample, columns=categorical,
+        table = TableOne(data_sample, columns=categorical,
                          categorical=categorical)
 
         lm = table.cat_describe.loc['likesmarmalade']
@@ -213,14 +203,14 @@ class TestTableOne(object):
         assert notlikefreq == 8977
         assert likefreq == 1023
 
-    @with_setup(setup, teardown)
-    def test_overall_n_and_percent_for_binary_cat_var_with_nan(self):
+    def test_overall_n_and_percent_for_binary_cat_var_with_nan(
+            self, data_sample):
         """
         Ignore NaNs when counting the number of values and the overall
         percentage
         """
         categorical = ['likeshoney']
-        table = TableOne(self.data_sample, columns=categorical,
+        table = TableOne(data_sample, columns=categorical,
                          categorical=categorical)
 
         lh = table.cat_describe.loc['likeshoney']
@@ -231,18 +221,18 @@ class TestTableOne(object):
         assert likefreq == 5993
         assert abs(100-likepercent) <= 0.01
 
-    @with_setup(setup, teardown)
-    def test_with_data_as_only_input_argument(self):
+    def test_with_data_as_only_input_argument(
+            self, data_groups):
         """
         Test with a simple dataset that a table generated with no pre-specified
         columns returns the same results as a table generated with specified
         columns
         """
-        table_no_args = TableOne(self.data_groups)
+        table_no_args = TableOne(data_groups)
 
         columns = ['group', 'age', 'weight']
         categorical = ['group']
-        table_with_args = TableOne(self.data_groups, columns=columns,
+        table_with_args = TableOne(data_groups, columns=columns,
                                    categorical=categorical)
 
         assert table_no_args._columns == table_with_args._columns
@@ -253,14 +243,13 @@ class TestTableOne(object):
                 table_with_args.tableone['Overall'].values).all()
         assert (table_no_args.tableone == table_with_args.tableone).all().all()
 
-    @with_setup(setup, teardown)
-    def test_fisher_exact_for_small_cell_count(self):
+    def test_fisher_exact_for_small_cell_count(self, data_small):
         """
         Ensure that the package runs Fisher exact if cell counts are <=5
         and it is a 2x2
         """
         categorical = ['group1', 'group3']
-        table = TableOne(self.data_small, categorical=categorical,
+        table = TableOne(data_small, categorical=categorical,
                          groupby='group2', pval=True)
 
         # group2 should be tested because it's a 2x2
@@ -269,15 +258,14 @@ class TestTableOne(object):
         assert (table._htest_table.loc['group3', 'Test'] ==
                 'Chi-squared (warning: expected count < 5)')
 
-    @with_setup(setup, teardown)
-    def test_sequence_of_cont_table(self):
+    def test_sequence_of_cont_table(self, data_groups):
         """
         Ensure that the columns align with the values
         """
         columns = ['age', 'weight']
         categorical = []
         groupby = 'group'
-        t = TableOne(self.data_groups, columns=columns,
+        t = TableOne(data_groups, columns=columns,
                      categorical=categorical, groupby=groupby,
                      missing=False, decimals=2, label_suffix=False,
                      overall=False)
@@ -290,13 +278,12 @@ class TestTableOne(object):
                 ['0.50 (0.71)', '3.50 (1.29)', '8.50 (1.87)',
                  '15.50 (2.45)']).any()
 
-    @with_setup(setup, teardown)
-    def test_categorical_cell_count(self):
+    def test_categorical_cell_count(self, data_categorical):
         """
         Check the categorical cell counts are correct
         """
         categorical = list(np.arange(10))
-        table = TableOne(self.data_categorical, columns=categorical,
+        table = TableOne(data_categorical, columns=categorical,
                          categorical=categorical)
         df = table.cat_describe
         # drop 'overall' level of column index
@@ -306,7 +293,6 @@ class TestTableOne(object):
             # each category should have 100 levels
             assert df.loc[i].shape[0] == 100
 
-    @with_setup(setup, teardown)
     def test_hartigan_diptest_for_modality(self):
         """
         Ensure that the package runs Fisher exact if cell counts are <=5
@@ -324,13 +310,11 @@ class TestTableOne(object):
         t3 = hartigan_diptest(dist_3_peak)
         assert t3 < 0.05
 
-    @with_setup(setup, teardown)
-    def test_limit_of_categorical_data_pn(self):
+    def test_limit_of_categorical_data_pn(self, data_pn):
         """
         Tests the `limit` keyword arg, which limits the number of categories
         presented
         """
-        data_pn = self.data_pn.copy()
         # 6 categories of age based on decade
         data_pn['age_group'] = data_pn['Age'].map(lambda x: int(x/10))
 
@@ -347,96 +331,95 @@ class TestTableOne(object):
         # test other categories are not affected if limit > num categories
         assert table.tableone.loc['death', :].shape[0] == 2
 
-    def test_input_data_not_modified(self):
+    def test_input_data_not_modified(self, data_groups):
         """
         Check the input dataframe is not modified by the package
         """
-        df_orig = self.data_groups.copy()
+        df_orig = data_groups.copy()
 
         # turn off warnings for this test
         # warnings.simplefilter("ignore")
 
         # no input arguments
-        df_no_args = self.data_groups.copy()
-        table_no_args = TableOne(df_no_args)
+        df_no_args = data_groups.copy()
+        TableOne(df_no_args)
         assert (df_no_args['group'] == df_orig['group']).all()
 
         # groupby
-        df_groupby = self.data_groups.copy()
-        table_groupby = TableOne(df_groupby,
-                                 columns=['group', 'age', 'weight'],
-                                 categorical=['group'], groupby=['group'])
+        df_groupby = data_groups.copy()
+        TableOne(df_groupby,
+                 columns=['group', 'age', 'weight'],
+                 categorical=['group'], groupby=['group'])
         assert (df_groupby['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
         assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # sorted
-        df_sorted = self.data_groups.copy()
-        table_sorted = TableOne(df_sorted, columns=['group', 'age', 'weight'],
-                                categorical=['group'], groupby=['group'],
-                                sort=True)
+        df_sorted = data_groups.copy()
+        TableOne(df_sorted, columns=['group', 'age', 'weight'],
+                 categorical=['group'], groupby=['group'],
+                 sort=True)
         assert (df_sorted['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
         assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # pval
-        df_pval = self.data_groups.copy()
-        table_pval = TableOne(df_pval, columns=['group', 'age', 'weight'],
-                              categorical=['group'], groupby=['group'],
-                              sort=True, pval=True)
+        df_pval = data_groups.copy()
+        TableOne(df_pval, columns=['group', 'age', 'weight'],
+                 categorical=['group'], groupby=['group'],
+                 sort=True, pval=True)
         assert (df_pval['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
         assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # pval_adjust
-        df_pval_adjust = self.data_groups.copy()
-        table_pval_adjust = TableOne(df_pval_adjust,
-                                     columns=['group', 'age', 'weight'],
-                                     categorical=['group'],
-                                     groupby=['group'], sort=True, pval=True,
-                                     pval_adjust='bonferroni')
+        df_pval_adjust = data_groups.copy()
+        TableOne(df_pval_adjust,
+                 columns=['group', 'age', 'weight'],
+                 categorical=['group'],
+                 groupby=['group'], sort=True, pval=True,
+                 pval_adjust='bonferroni')
         assert (df_pval_adjust['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
         assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # labels
-        df_labels = self.data_groups.copy()
-        table_labels = TableOne(df_labels,
-                                columns=['group', 'age', 'weight'],
-                                categorical=['group'], groupby=['group'],
-                                rename={'age': 'age, years'})
+        df_labels = data_groups.copy()
+        TableOne(df_labels,
+                 columns=['group', 'age', 'weight'],
+                 categorical=['group'], groupby=['group'],
+                 rename={'age': 'age, years'})
         assert (df_labels['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
         assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # limit
-        df_limit = self.data_groups.copy()
-        table_limit = TableOne(df_limit,
-                               columns=['group', 'age', 'weight'],
-                               categorical=['group'], groupby=['group'],
-                               limit=2)
+        df_limit = data_groups.copy()
+        TableOne(df_limit,
+                 columns=['group', 'age', 'weight'],
+                 categorical=['group'], groupby=['group'],
+                 limit=2)
         assert (df_limit['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
         assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # nonnormal
-        df_nonnormal = self.data_groups.copy()
-        table_nonnormal = TableOne(df_nonnormal,
-                                   columns=['group', 'age', 'weight'],
-                                   categorical=['group'], groupby=['group'],
-                                   nonnormal=['age'])
+        df_nonnormal = data_groups.copy()
+        TableOne(df_nonnormal,
+                 columns=['group', 'age', 'weight'],
+                 categorical=['group'], groupby=['group'],
+                 nonnormal=['age'])
         assert (df_nonnormal['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
         assert (df_groupby['weight'] == df_orig['weight']).all()
 
         # warnings.simplefilter("default")
 
-    @with_setup(setup, teardown)
-    def test_groupby_with_group_named_isnull_pn(self):
+    def test_groupby_with_group_named_isnull_pn(self, data_pn):
         """
         Test case with a group having the same name as a column in TableOne
         """
-        df = self.data_pn.copy()
+        df = data_pn.copy()
 
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU']
         groupby = 'ICU'
@@ -462,16 +445,15 @@ class TestTableOne(object):
             else:
                 pval_adjust = None
 
-            with assert_raises(InputError):
+            with pytest.raises(InputError):
                 table = TableOne(df, columns=columns, groupby=groupby,
                                  pval=True, pval_adjust=pval_adjust)
 
-    @with_setup(setup, teardown)
-    def test_label_dictionary_input_pn(self):
+    def test_label_dictionary_input_pn(self, data_pn):
         """
         Test columns and rows are relabelled with the label argument
         """
-        df = self.data_pn.copy()
+        df = data_pn.copy()
         columns = ['Age', 'ICU', 'death']
         categorical = ['death', 'ICU']
         groupby = 'death'
@@ -491,12 +473,11 @@ class TestTableOne(object):
         # check the continuous rows are updated
         assert 'Age, years' in table.tableone.index.levels[0]
 
-    @with_setup(setup, teardown)
-    def test_tableone_row_sort_pn(self):
+    def test_tableone_row_sort_pn(self, data_pn):
         """
         Test sort functionality of TableOne
         """
-        df = self.data_pn.copy()
+        df = data_pn.copy()
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         table = TableOne(df, columns=columns, label_suffix=False)
 
@@ -515,29 +496,23 @@ class TestTableOne(object):
             # i+1 because we skip the first row, 'n'
             assert tableone_rows[i+1] == c
 
-    @with_setup(setup, teardown)
-    def test_string_data_as_continuous_error(self):
+    def test_string_data_as_continuous_error(self, data_mixed):
         """
         Test raising an error when continuous columns contain non-numeric data
         """
         try:
             # Trigger the categorical warning
-            table = TableOne(self.data_mixed, categorical=[])
+            TableOne(data_mixed, categorical=[])
         except InputError as e:
             starts_str = "The following continuous column(s) have"
             assert e.args[0].startswith(starts_str)
-        except:
-            # unexpected error - raise it
-            raise
 
-    @with_setup(setup, teardown)
-    def test_tableone_columns_in_consistent_order_pn(self):
+    def test_tableone_columns_in_consistent_order_pn(self, data_pn):
         """
         Test output columns in TableOne are always in the same order
         """
-        df = self.data_pn.copy()
+        df = data_pn.copy()
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
-        categorical = ['ICU', 'death']
         groupby = ['death']
 
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
@@ -568,8 +543,7 @@ class TestTableOne(object):
         assert table.tableone.columns.levels[1][-1] == 'Test'
         assert table.tableone.columns.levels[1][-2] == 'P-Value (adjusted)'
 
-    @with_setup(setup, teardown)
-    def test_check_null_counts_are_correct_pn(self):
+    def test_check_null_counts_are_correct_pn(self, data_pn):
         """
         Test that the isnull column is correctly reporting number of nulls
         """
@@ -578,7 +552,7 @@ class TestTableOne(object):
         groupby = ['death']
 
         # test when not grouping
-        table = TableOne(self.data_pn, columns=columns,
+        table = TableOne(data_pn, columns=columns,
                          categorical=categorical)
 
         # get isnull column only
@@ -588,10 +562,10 @@ class TestTableOne(object):
             if 'float' in str(type(v)):
                 # check each null count is correct
                 col = isnull.index[i][0]
-                assert self.data_pn[col].isnull().sum() == v
+                assert data_pn[col].isnull().sum() == v
 
         # test when grouping by a variable
-        grouped_table = TableOne(self.data_pn, columns=columns,
+        grouped_table = TableOne(data_pn, columns=columns,
                                  categorical=categorical, groupby=groupby)
 
         # get isnull column only
@@ -601,7 +575,7 @@ class TestTableOne(object):
             if 'float' in str(type(v)):
                 # check each null count is correct
                 col = isnull.index[i][0]
-                assert self.data_pn[col].isnull().sum() == v
+                assert data_pn[col].isnull().sum() == v
 
     # @with_setup(setup, teardown)
     # def test_binary_columns_are_not_converted_to_true_false(self):
@@ -626,8 +600,7 @@ class TestTableOne(object):
     #     assert type(t.tableone.loc['ID'].index[0]) == int
     #     assert type(t.tableone.loc['ID'].index[1]) == int
 
-    @with_setup(setup, teardown)
-    def test_the_decimals_argument_for_continuous_variables(self):
+    def test_the_decimals_argument_for_continuous_variables(self, data_pn):
         """
         For continuous variables, the decimals argument should set the number
         of decimal places for all summary statistics (e.g. mean and standard
@@ -640,7 +613,7 @@ class TestTableOne(object):
 
         # no decimals argument
         # expected result is to default to 1
-        t_no_arg = TableOne(self.data_pn, columns=columns,
+        t_no_arg = TableOne(data_pn, columns=columns,
                             categorical=categorical, groupby=groupby,
                             nonnormal=nonnormal, pval=False,
                             label_suffix=False)
@@ -657,7 +630,7 @@ class TestTableOne(object):
         assert all(t_no_arg_group1 == t_no_arg_group1_expected)
 
         # decimals = 1
-        t1_decimal = TableOne(self.data_pn, columns=columns,
+        t1_decimal = TableOne(data_pn, columns=columns,
                               categorical=categorical, groupby=groupby,
                               nonnormal=nonnormal, pval=False, decimals=1,
                               label_suffix=False)
@@ -674,7 +647,7 @@ class TestTableOne(object):
         assert all(t1_group1 == t1_group1_expected)
 
         # decimals = 2
-        t2_decimal = TableOne(self.data_pn, columns=columns,
+        t2_decimal = TableOne(data_pn, columns=columns,
                               categorical=categorical, groupby=groupby,
                               nonnormal=nonnormal, pval=False, decimals=2,
                               label_suffix=False)
@@ -691,7 +664,7 @@ class TestTableOne(object):
         assert all(t2_group1 == t2_group1_expected)
 
         # decimals = {"Age": 0, "Weight":3}
-        t3_decimal = TableOne(self.data_pn, columns=columns,
+        t3_decimal = TableOne(data_pn, columns=columns,
                               categorical=categorical, groupby=groupby,
                               nonnormal=nonnormal, pval=False,
                               decimals={"Age": 0, "Weight": 3},
@@ -708,8 +681,7 @@ class TestTableOne(object):
         assert all(t3_group0 == t3_group0_expected)
         assert all(t3_group1 == t3_group1_expected)
 
-    @with_setup(setup, teardown)
-    def test_the_decimals_argument_for_categorical_variables(self):
+    def test_the_decimals_argument_for_categorical_variables(self, data_pn):
         """
         For categorical variables, the decimals argument should set the number
         of decimal places for the percent only.
@@ -720,7 +692,7 @@ class TestTableOne(object):
         nonnormal = ['Age']
 
         # decimals = 1
-        t1_decimal = TableOne(self.data_pn, columns=columns,
+        t1_decimal = TableOne(data_pn, columns=columns,
                               categorical=categorical, groupby=groupby,
                               nonnormal=nonnormal, pval=False, decimals=1,
                               label_suffix=False)
@@ -739,7 +711,7 @@ class TestTableOne(object):
         assert all(t1_group1 == t1_group1_expected)
 
         # decimals = 2
-        t2_decimal = TableOne(self.data_pn, columns=columns,
+        t2_decimal = TableOne(data_pn, columns=columns,
                               categorical=categorical, groupby=groupby,
                               nonnormal=nonnormal, pval=False, decimals=2,
                               label_suffix=False)
@@ -758,7 +730,7 @@ class TestTableOne(object):
         assert all(t2_group1 == t2_group1_expected)
 
         # decimals = {"ICU":3}
-        t3_decimal = TableOne(self.data_pn, columns=columns,
+        t3_decimal = TableOne(data_pn, columns=columns,
                               categorical=categorical, groupby=groupby,
                               nonnormal=nonnormal, pval=False,
                               decimals={"ICU": 3}, label_suffix=False)
@@ -778,7 +750,7 @@ class TestTableOne(object):
 
         # decimals = {"Age":3}
         # expected result is to default to 1 decimal place
-        t4_decimal = TableOne(self.data_pn, columns=columns,
+        t4_decimal = TableOne(data_pn, columns=columns,
                               categorical=categorical, groupby=groupby,
                               nonnormal=nonnormal, pval=False,
                               decimals={"Age": 3}, label_suffix=False)
@@ -796,7 +768,6 @@ class TestTableOne(object):
         assert all(t4_group0 == t4_group0_expected)
         assert all(t4_group1 == t4_group1_expected)
 
-    @with_setup(setup, teardown)
     def test_nan_rows_not_deleted_in_categorical_columns(self):
         """
         Test that rows in categorical columns are not deleted if there are null
@@ -835,14 +806,14 @@ class TestTableOne(object):
         assert all(t1.tableone.loc['basket4'].index == ['apple', 'banana',
                                                         'lemon'])
 
-    @with_setup(setup, teardown)
     def test_pval_correction(self):
         """
         Test the pval_adjust argument
         """
         df = pd.DataFrame({'numbers': [1, 2, 6, 1, 1, 1],
                            'other': [1, 2, 3, 3, 3, 4],
-                           'colors': ['red', 'white', 'blue', 'red', 'blue', 'blue'],
+                           'colors': ['red', 'white', 'blue', 'red', 'blue',
+                                      'blue'],
                            'even': ['yes', 'no', 'yes', 'yes', 'no', 'yes']})
 
         t1 = TableOne(df, groupby="even", pval=True, pval_adjust="bonferroni")
@@ -855,19 +826,18 @@ class TestTableOne(object):
         group = 'Grouped by even'
         col = 'P-Value (adjusted)'
         for k in pvals_expected:
-            assert_equal(t1.tableone.loc[k][group][col].values[0],
-                         pvals_expected[k])
+            assert (t1.tableone.loc[k][group][col].values[0] ==
+                    pvals_expected[k])
 
         # catch the pval_adjust=True
-        with warnings.catch_warnings(record=False) as w:
+        with warnings.catch_warnings(record=False):
             warnings.simplefilter('ignore', category=UserWarning)
-            t2 = TableOne(df, groupby="even", pval=True, pval_adjust=True)
+            TableOne(df, groupby="even", pval=True, pval_adjust=True)
 
         for k in pvals_expected:
-            assert_equal(t1.tableone.loc[k][group][col].values[0],
-                         pvals_expected[k])
+            assert (t1.tableone.loc[k][group][col].values[0] ==
+                    pvals_expected[k])
 
-    @with_setup(setup, teardown)
     def test_custom_statistical_tests(self):
         """
         Test that the user can specify custom statistical functions.
@@ -909,27 +879,26 @@ class TestTableOne(object):
         t1_diff = TableOne(data=different, columns=["val"], pval=True,
                            groupby="rvs", htest={"val": func})
 
-        assert_almost_equal(t1_diff._htest_table['P-Value'].val,
-                            stats.ks_2samp(rvs1, rvs2)[1])
+        isclose(t1_diff._htest_table['P-Value'].val,
+                stats.ks_2samp(rvs1, rvs2)[1])
 
         # Table 1 for similar distributions
         similar = df1.append(df3, ignore_index=True)
         t1_similar = TableOne(data=similar, columns=["val"], pval=True,
                               groupby="rvs", htest={"val": func})
 
-        assert_almost_equal(t1_similar._htest_table['P-Value'].val,
-                            stats.ks_2samp(rvs1, rvs3)[1])
+        isclose(t1_similar._htest_table['P-Value'].val,
+                stats.ks_2samp(rvs1, rvs3)[1])
 
         # Table 1 for identical distributions
         identical = df1.append(df4, ignore_index=True)
         t1_identical = TableOne(data=identical, columns=["val"], pval=True,
                                 groupby="rvs", htest={"val": func})
 
-        assert_almost_equal(t1_identical._htest_table['P-Value'].val,
-                            stats.ks_2samp(rvs1, rvs4)[1])
+        isclose(t1_identical._htest_table['P-Value'].val,
+                stats.ks_2samp(rvs1, rvs4)[1])
 
-    @with_setup(setup, teardown)
-    def test_compute_standardized_mean_difference_continuous(self):
+    def test_compute_standardized_mean_difference_continuous(self, data_pn):
         """
         Test that pairwise standardized mean difference is computer correctly
         for continuous variables.
@@ -956,15 +925,15 @@ class TestTableOne(object):
         smd, se = t._cont_smd(mean1=mean1, mean2=mean2, sd1=sd1, sd2=sd2,
                               n1=n1, n2=n2)
 
-        assert_equal(round(smd, 4), -0.5970)
-        assert_equal(round(se, 4), 0.2044)
+        assert round(smd, 4) == -0.5970
+        assert round(se, 4) == 0.2044
 
         # Test unbiased estimate using Hedges correction (Hedges, 2011)
         smd, se = t._cont_smd(mean1=mean1, mean2=mean2, sd1=sd1, sd2=sd2,
                               n1=n1, n2=n2, unbiased=True)
 
-        assert_equal(round(smd, 4), -0.5924)
-        assert_equal(round(se, 4), 0.2028)
+        assert round(smd, 4) == -0.5924
+        assert round(se, 4) == 0.2028
 
         # Test on input data
         data1 = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -980,16 +949,14 @@ class TestTableOne(object):
         smd_summary, se_summary = t._cont_smd(mean1=mean1, mean2=mean2,
                                               sd1=sd1, sd2=sd2, n1=n1, n2=n2)
 
-        assert_equal(round(smd_data, 4), round(smd_summary, 4))
-        assert_equal(round(se_data, 4), round(se_summary, 4))
+        assert round(smd_data, 4) == round(smd_summary, 4)
+        assert round(se_data, 4) == round(se_summary, 4)
 
         # test with the physionet data
-        cols = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'MechVent', 'LOS',
-                'death']
         categorical = ['ICU', 'MechVent', 'death']
         strata = "MechVent"
 
-        t = TableOne(self.data_pn, categorical=categorical, label_suffix=False,
+        t = TableOne(data_pn, categorical=categorical, label_suffix=False,
                      groupby=strata, pval=True, htest_name=False, smd=True)
 
         # consistent with R StdDiff() and R tableone
@@ -1001,10 +968,9 @@ class TestTableOne(object):
 
         for k in exp_smd:
             smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'][0]
-            assert_equal(smd, exp_smd[k])
+            assert smd == exp_smd[k]
 
-    @with_setup(setup, teardown)
-    def test_compute_standardized_mean_difference_categorical(self):
+    def test_compute_standardized_mean_difference_categorical(self, data_pn):
         """
         Test that pairwise standardized mean difference is computer correctly
         for categorical variables.
@@ -1017,12 +983,10 @@ class TestTableOne(object):
         t = TableOne(pd.DataFrame([1, 2, 3]))
 
         # test with the physionet data
-        cols = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'MechVent', 'LOS',
-                'death']
         categorical = ['ICU', 'MechVent', 'death']
         strata = "MechVent"
 
-        t = TableOne(self.data_pn, categorical=categorical, label_suffix=False,
+        t = TableOne(data_pn, categorical=categorical, label_suffix=False,
                      groupby=strata, pval=True, htest_name=False, smd=True)
 
         # consistent with R StdDiff() and R tableone
@@ -1032,21 +996,23 @@ class TestTableOne(object):
 
         for k in exp_smd:
             smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'][0]
-            assert_equal(smd, exp_smd[k])
+            assert smd == exp_smd[k]
 
-    @with_setup(setup, teardown)
     def test_order_of_order_categorical_columns(self):
         """
         Test that the order of ordered categorical columns is retained.
         """
         day_cat = pd.Categorical(["mon", "wed", "tue", "thu"],
-                                 categories=["wed", "thu", "mon", "tue"], ordered=True)
+                                 categories=["wed", "thu", "mon", "tue"],
+                                 ordered=True)
 
         alph_cat = pd.Categorical(["a", "b", "c", "a"],
-                                 categories=["b", "c", "d", "a"], ordered=False)
+                                  categories=["b", "c", "d", "a"],
+                                  ordered=False)
 
         mon_cat = pd.Categorical(["jan", "feb", "mar", "apr"],
-                                 categories=["feb", "jan", "mar", "apr"], ordered=True)
+                                 categories=["feb", "jan", "mar", "apr"],
+                                 ordered=True)
 
         data = pd.DataFrame({"A": ["a", "b", "c", "a"]})
         data["day"] = day_cat
@@ -1063,9 +1029,9 @@ class TestTableOne(object):
                              'day': ["wed", "thu", "mon", "tue"]}
 
         for k in order:
-            assert_list_equal(t1._order[k], t1_expected_order[k])
-            assert_list_equal(t1.tableone.loc[k].index.to_list(),
-                              t1_expected_order[k])
+            assert t1._order[k] == t1_expected_order[k]
+            assert (t1.tableone.loc[k].index.to_list() ==
+                    t1_expected_order[k])
 
         # if a desired order is set, it should override the order
         t2 = TableOne(data, order=order, label_suffix=False)
@@ -1074,12 +1040,11 @@ class TestTableOne(object):
                              'day': ["mon", "tue", "wed", "thu"]}
 
         for k in order:
-            assert_list_equal(t2._order[k], t2_expected_order[k])
-            assert_list_equal(t2.tableone.loc[k].index.to_list(),
-                              t2_expected_order[k])
+            assert t2._order[k] == t2_expected_order[k]
+            assert (t2.tableone.loc[k].index.to_list() ==
+                    t2_expected_order[k])
 
-    @with_setup(setup, teardown)
-    def test_min_max_for_nonnormal_variables(self):
+    def test_min_max_for_nonnormal_variables(self, data_pn):
         """
         Test the min_max argument returns expected results.
         """
@@ -1098,7 +1063,7 @@ class TestTableOne(object):
         # optionally, a categorical variable for stratification
         groupby = ['death']
 
-        t1 = TableOne(self.data_pn, columns=columns, categorical=categorical,
+        t1 = TableOne(data_pn, columns=columns, categorical=categorical,
                       groupby=groupby, nonnormal=nonnormal, decimals=decimals,
                       min_max=['Age'])
 
@@ -1108,10 +1073,9 @@ class TestTableOne(object):
         expected = ["68 [16,90]", "66 [16,90]", "75 [26,90]"]
         for c, e in zip(t1_columns, expected):
             cell = t1.tableone.loc[k][group][c].values[0]
-            assert_equal(cell, e)
+            assert cell == e
 
-    @with_setup(setup, teardown)
-    def test_row_percent_false(self):
+    def test_row_percent_false(self, data_pn):
         """
         Test row_percent=False displays n(%) for the column.
         """
@@ -1132,37 +1096,36 @@ class TestTableOne(object):
         group = "Grouped by death"
 
         # row_percent = False
-        t1 = TableOne(self.data_pn, columns=columns,
+        t1 = TableOne(data_pn, columns=columns,
                       categorical=categorical, groupby=groupby,
                       nonnormal=nonnormal, decimals=decimals,
                       row_percent=False)
 
         row1 = list(t1.tableone.loc["MechVent, n (%)"][group].values[0])
         row1_expect = [0, '540 (54.0)', '468 (54.2)', '72 (52.9)']
-        assert_list_equal(row1, row1_expect)
+        assert row1 == row1_expect
 
         row2 = list(t1.tableone.loc["MechVent, n (%)"][group].values[1])
         row2_expect = ['', '460 (46.0)', '396 (45.8)', '64 (47.1)']
-        assert_list_equal(row2, row2_expect)
+        assert row2 == row2_expect
 
         row3 = list(t1.tableone.loc["ICU, n (%)"][group].values[0])
         row3_expect = [0, '162 (16.2)', '137 (15.9)', '25 (18.4)']
-        assert_list_equal(row3, row3_expect)
+        assert row3 == row3_expect
 
         row4 = list(t1.tableone.loc["ICU, n (%)"][group].values[1])
         row4_expect = ['', '202 (20.2)', '194 (22.5)', '8 (5.9)']
-        assert_list_equal(row4, row4_expect)
+        assert row4 == row4_expect
 
         row5 = list(t1.tableone.loc["ICU, n (%)"][group].values[2])
         row5_expect = ['', '380 (38.0)', '318 (36.8)', '62 (45.6)']
-        assert_list_equal(row5, row5_expect)
+        assert row5 == row5_expect
 
         row6 = list(t1.tableone.loc["ICU, n (%)"][group].values[3])
         row6_expect = ['', '256 (25.6)', '215 (24.9)', '41 (30.1)']
-        assert_list_equal(row6, row6_expect)
+        assert row6 == row6_expect
 
-    @with_setup(setup, teardown)
-    def test_row_percent_true(self):
+    def test_row_percent_true(self, data_pn):
         """
         Test row_percent=True displays n(%) for the row rather than the column.
         """
@@ -1183,37 +1146,36 @@ class TestTableOne(object):
         group = "Grouped by death"
 
         # row_percent = True
-        t2 = TableOne(self.data_pn, columns=columns,
+        t2 = TableOne(data_pn, columns=columns,
                       categorical=categorical, groupby=groupby,
                       nonnormal=nonnormal, decimals=decimals,
                       row_percent=True)
 
         row1 = list(t2.tableone.loc["MechVent, n (%)"][group].values[0])
         row1_expect = [0, '540 (100.0)', '468 (86.7)', '72 (13.3)']
-        assert_list_equal(row1, row1_expect)
+        assert row1 == row1_expect
 
         row2 = list(t2.tableone.loc["MechVent, n (%)"][group].values[1])
         row2_expect = ['', '460 (100.0)', '396 (86.1)', '64 (13.9)']
-        assert_list_equal(row2, row2_expect)
+        assert row2 == row2_expect
 
         row3 = list(t2.tableone.loc["ICU, n (%)"][group].values[0])
         row3_expect = [0, '162 (100.0)', '137 (84.6)', '25 (15.4)']
-        assert_list_equal(row3, row3_expect)
+        assert row3 == row3_expect
 
         row4 = list(t2.tableone.loc["ICU, n (%)"][group].values[1])
         row4_expect = ['', '202 (100.0)', '194 (96.0)', '8 (4.0)']
-        assert_list_equal(row4, row4_expect)
+        assert row4 == row4_expect
 
         row5 = list(t2.tableone.loc["ICU, n (%)"][group].values[2])
         row5_expect = ['', '380 (100.0)', '318 (83.7)', '62 (16.3)']
-        assert_list_equal(row5, row5_expect)
+        assert row5 == row5_expect
 
         row6 = list(t2.tableone.loc["ICU, n (%)"][group].values[3])
         row6_expect = ['', '256 (100.0)', '215 (84.0)', '41 (16.0)']
-        assert_list_equal(row6, row6_expect)
+        assert row6 == row6_expect
 
-    @with_setup(setup, teardown)
-    def test_row_percent_true_and_overall_false(self):
+    def test_row_percent_true_and_overall_false(self, data_pn):
         """
         Test row_percent=True displays n(%) for the row rather than the column.
         """
@@ -1234,31 +1196,31 @@ class TestTableOne(object):
         group = "Grouped by death"
 
         # row_percent = True
-        t1 = TableOne(self.data_pn, columns=columns, overall=False,
+        t1 = TableOne(data_pn, columns=columns, overall=False,
                       categorical=categorical, groupby=groupby,
                       nonnormal=nonnormal, decimals=decimals,
                       row_percent=True)
 
         row1 = list(t1.tableone.loc["MechVent, n (%)"][group].values[0])
         row1_expect = [0, '468 (86.7)', '72 (13.3)']
-        assert_list_equal(row1, row1_expect)
+        assert row1 == row1_expect
 
         row2 = list(t1.tableone.loc["MechVent, n (%)"][group].values[1])
         row2_expect = ['', '396 (86.1)', '64 (13.9)']
-        assert_list_equal(row2, row2_expect)
+        assert row2 == row2_expect
 
         row3 = list(t1.tableone.loc["ICU, n (%)"][group].values[0])
         row3_expect = [0, '137 (84.6)', '25 (15.4)']
-        assert_list_equal(row3, row3_expect)
+        assert row3 == row3_expect
 
         row4 = list(t1.tableone.loc["ICU, n (%)"][group].values[1])
         row4_expect = ['', '194 (96.0)', '8 (4.0)']
-        assert_list_equal(row4, row4_expect)
+        assert row4 == row4_expect
 
         row5 = list(t1.tableone.loc["ICU, n (%)"][group].values[2])
         row5_expect = ['', '318 (83.7)', '62 (16.3)']
-        assert_list_equal(row5, row5_expect)
+        assert row5 == row5_expect
 
         row6 = list(t1.tableone.loc["ICU, n (%)"][group].values[3])
         row6_expect = ['', '215 (84.0)', '41 (16.0)']
-        assert_list_equal(row6, row6_expect)
+        assert row6 == row6_expect
