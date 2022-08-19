@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Pollard"
+  given-names: "Tom"
+  orcid: "https://orcid.org/0000-0002-5676-7898"
+- family-names: "Johnson"
+  given-names: "Alistair"
+  orcid: "https://orcid.org/0000-0002-8735-3014"
+- family-names: "Raffa"
+  given-names: "Jesse"
+  orcid: "https://orcid.org/0000-0001-8665-2429"
+- family-names: "Mark"
+  given-names: "Roger"
+  orcid: "https://orcid.org/0000-0002-6318-2978"
+title: "tableone: An open source Python package for producing summary statistics for research papers"
+doi: 10.1093/jamiaopen/ooy012
+date-released: 2018-05-23
+url: "https://doi.org/10.1093/jamiaopen/ooy012"
