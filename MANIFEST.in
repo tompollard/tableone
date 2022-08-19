@@ -3,3 +3,6 @@ include LICENSE
 
 # Include readme file
 include README.md
+
+# Include citation file
+include CITATION.cff
