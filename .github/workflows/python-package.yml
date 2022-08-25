@@ -17,13 +17,16 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9", "3.10"]
-
+        include:
+          - python-version: "3.10"
+            coverage: 1
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip'
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -37,4 +40,16 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        pytest -vv --cov-report term-missing --cov tableone | tee coverage-report-${{ matrix.python-version }}.txt
+    - name: Upload pytest test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage-report-${{ matrix.python-version }}.txt
+      # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
+    - name: Generate coverage badge
+      if: ${{ matrix.coverage }}
+      run: |
+        value=$(awk '$1 == "TOTAL" {print $NF+0}' coverage-report-${{ matrix.python-version }}.txt)
+        anybadge --value=$value --file coverage.svg coverage
