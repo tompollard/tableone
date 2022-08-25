@@ -37,4 +37,11 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        pytest -vv --cov-report term-missing --cov tableone | tee coverage-report-${{ matrix.python-version }}.txt
+    - name: Upload pytest test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage-report-${{ matrix.python-version }}.txt
+      # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
