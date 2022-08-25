@@ -17,7 +17,9 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9", "3.10"]
-
+        include:
+          - python-version: "3.10"
+            coverage: 1
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
@@ -46,3 +48,8 @@ jobs:
         path: coverage-report-${{ matrix.python-version }}.txt
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
+    - name: Generate coverage badge
+      if: ${{ matrix.coverage }}
+      run: |
+        value=$(awk '$1 == "TOTAL" {print $NF+0}' coverage-report-${{ matrix.python-version }}.txt)
+        anybadge --value=$value --file coverage.svg coverage
