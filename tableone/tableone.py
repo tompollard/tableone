@@ -389,6 +389,8 @@ class TableOne(object):
         if self._pval:
             self._htest_table = self._create_htest_table(data)
 
+        if test_stat and not pval:
+            self._htest_table = self._create_htest_table(data)
         # correct for multiple testing
         if self._pval and self._pval_adjust:
             alpha = 0.05
@@ -1260,6 +1262,14 @@ class TableOne(object):
                 if np.shape(grouped_val_list) == (2, 2):
                     ptest = "Fisher's exact"
                     odds_ratio, pval = stats.fisher_exact(grouped_val_list)
+                    test_stat = np.nan
+                    fisher_stat_warn = ("Fisher's test did not caompute "
+                                        "statistics of hypothesis testing. "
+                                        "The following variables are affected")
+                    try:
+                        self._warnings[fisher_stat_warn].append(v)
+                    except KeyError:
+                        self._warnings[fisher_stat_warn] = [v]
                 else:
                     ptest = "Chi-squared (warning: expected count < 5)"
                     chi_warn = ("Chi-squared tests for the following "
@@ -1528,7 +1538,7 @@ class TableOne(object):
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
         dupe_columns = ['Missing']
-        optional_columns = ['Test_stat', 'P-Value', 'P-Value (adjusted)', 'Test']
+        optional_columns = ['Test-stat', 'P-Value', 'P-Value (adjusted)', 'Test']
         if self._smd:
             optional_columns = optional_columns + list(self.smd_table.columns)
         for col in optional_columns:
