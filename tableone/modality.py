@@ -769,7 +769,7 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         iH = np.arange(L, U+1)[iHH]
 
         # Interpolate. First and last point are in both and does not need
-        # interpolation. Might cause trouble if included due to possiblity
+        # interpolation. Might cause trouble if included due to possibility
         # of infinity slope at beginning or end of interval.
         if iG[0] != iH[0] or iG[-1] != iH[-1]:
             raise ValueError('Convex minorant and concave majorant should start and end at same points.')
