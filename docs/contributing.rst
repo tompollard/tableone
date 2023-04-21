@@ -46,7 +46,7 @@ reStructuredText <http://sphinx.pocoo.org/rest.html>`__.
 The documentation follows the
 `NumPy Docstring Standard <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`__,
 which are parsed using the
-`napolean extension for sphinx <http://www.sphinx-doc.org/en/1.5.1/ext/napoleon.html>`.
+`napoleon extension for sphinx <http://www.sphinx-doc.org/en/1.5.1/ext/napoleon.html>`.
 
 How to build the documentation
 ------------------------------

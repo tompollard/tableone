@@ -6,7 +6,7 @@ We recommend seeking guidance from a statistician when using :py:mod:`tableone` 
 Data visualization
 ------------------
 
-Plotting the distribution of each variable by group level via histograms, kernel density estimates and boxplots is a crucial component to data analysis pipelines. Vizualisation is often is the only way to detect problematic variables in many real-life scenarios. Some example plots are provided in the `tableone notebook <https://github.com/tompollard/tableone/blob/master/tableone.ipynb>`_.
+Plotting the distribution of each variable by group level via histograms, kernel density estimates and boxplots is a crucial component to data analysis pipelines. Visualisation is often is the only way to detect problematic variables in many real-life scenarios. Some example plots are provided in the `tableone notebook <https://github.com/tompollard/tableone/blob/master/tableone.ipynb>`_.
 
 Normally distributed variables
 ------------------------------
