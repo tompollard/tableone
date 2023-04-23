@@ -1455,8 +1455,8 @@ class TableOne(object):
         # set the limit on the number of categorical variables
         if self._limit:
             levelcounts = data[self._categorical].nunique()
-            for k, _ in levelcounts.iteritems():
 
+            for k, _ in levelcounts.items():
                 # set the limit for the variable
                 if (isinstance(self._limit, int)
                         and levelcounts[k] >= self._limit):
