@@ -56,7 +56,8 @@ setup(
         'scipy>=1.7.0',
         'statsmodels>=0.12.1',
         'tabulate>=0.8.10',
-        'Jinja2==3.1.2'
+        'Jinja2==3.1.2',
+        'openpyxl==3.1.2'
         ],
 
     # List additional groups of dependencies here (e.g. development
