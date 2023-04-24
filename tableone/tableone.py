@@ -60,7 +60,7 @@ class InputError(Exception):
     pass
 
 
-class TableOne(object):
+class TableOne:
     """
 
     If you use the tableone package, please cite:
