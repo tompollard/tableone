@@ -2,7 +2,7 @@
 The tableone package is used for creating "Table 1" summary statistics for
 research papers.
 """
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 import warnings
 
 import numpy as np
@@ -18,7 +18,7 @@ from tableone.modality import hartigan_diptest
 warnings.simplefilter('always', DeprecationWarning)
 
 
-def load_dataset(name: str):
+def load_dataset(name: str) -> pd.DataFrame:
     """
     Load an example dataset from the online repository (requires internet).
 
@@ -60,7 +60,7 @@ class InputError(Exception):
     pass
 
 
-class TableOne(object):
+class TableOne:
     """
 
     If you use the tableone package, please cite:
@@ -200,7 +200,8 @@ class TableOne(object):
 
     ...
     """
-    def __init__(self, data: pd.DataFrame, columns: Optional[list] = None,
+    def __init__(self, data: pd.DataFrame,
+                 columns: Optional[list] = None,
                  categorical: Optional[list] = None,
                  groupby: Optional[str] = None,
                  nonnormal: Optional[list] = None,
@@ -397,20 +398,23 @@ class TableOne(object):
 
         # create overall tables if required
         if self._categorical and self._groupby and overall:
-            self.cat_describe_all = self._create_cat_describe(data, False,
-                                                              ['Overall'])
+            self.cat_describe_all = self._create_cat_describe(data=data,
+                                                              groupby=None,
+                                                              groupbylvls=['Overall'])
 
         if self._continuous and self._groupby and overall:
-            self.cont_describe_all = self._create_cont_describe(data, False)
+            self.cont_describe_all = self._create_cont_describe(data=data,
+                                                                groupby=None)
 
         # create descriptive tables
         if self._categorical:
-            self.cat_describe = self._create_cat_describe(data, self._groupby,
-                                                          self._groupbylvls)
+            self.cat_describe = self._create_cat_describe(data=data,
+                                                          groupby=self._groupby,
+                                                          groupbylvls=self._groupbylvls)
 
         if self._continuous:
-            self.cont_describe = self._create_cont_describe(data,
-                                                            self._groupby)
+            self.cont_describe = self._create_cont_describe(data=data,
+                                                            groupby=self._groupby)
 
         # compute standardized mean differences
         if self._smd:
@@ -439,13 +443,13 @@ class TableOne(object):
         if display_all:
             self._set_display_options()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.tableone.to_string() + self._generate_remarks('\n')
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.tableone.to_string() + self._generate_remarks('\n')
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         return self.tableone._repr_html_() + self._generate_remarks('<br />')
 
     def _set_display_options(self):
@@ -465,7 +469,7 @@ class TableOne(object):
                          option.""".format(k)
                 warnings.warn(msg)
 
-    def tabulate(self, headers=None, tablefmt='grid', **kwargs):
+    def tabulate(self, headers=None, tablefmt='grid', **kwargs) -> str:
         """
         Pretty-print tableone data. Wrapper for the Python 'tabulate' library.
 
@@ -500,7 +504,7 @@ class TableOne(object):
 
         return tabulate(df, headers=headers, tablefmt=tablefmt, **kwargs)
 
-    def _generate_remarks(self, newline='\n'):
+    def _generate_remarks(self, newline='\n') -> str:
         """
         Generate a series of remarks that the user should consider
         when interpreting the summary statistics.
@@ -546,7 +550,7 @@ class TableOne(object):
 
         return msg
 
-    def _detect_categorical_columns(self, data):
+    def _detect_categorical_columns(self, data) -> list:
         """
         Detect categorical columns if they are not specified.
 
@@ -783,7 +787,7 @@ class TableOne(object):
 
     def _tukey(self, x, threshold):
         """
-        Count outliers according to Tukey's rule.
+        Find outliers according to Tukey's rule.
 
         Where Q1 is the lower quartile and Q3 is the upper quartile,
         an outlier is an observation outside of the range:
@@ -806,21 +810,21 @@ class TableOne(object):
 
         return outliers
 
-    def _outliers(self, x):
+    def _outliers(self, x) -> int:
         """
         Compute number of outliers
         """
         outliers = self._tukey(x, threshold=1.5)
         return np.size(outliers)
 
-    def _far_outliers(self, x):
+    def _far_outliers(self, x) -> int:
         """
         Compute number of "far out" outliers
         """
         outliers = self._tukey(x, threshold=3.0)
         return np.size(outliers)
 
-    def _t1_summary(self, x):
+    def _t1_summary(self, x: pd.Series) -> str:
         """
         Compute median [IQR] or mean (Std) for the input series.
 
@@ -867,7 +871,9 @@ class TableOne(object):
                 f = '{{:.{}f}} ({{:.{}f}})'.format(n, n)
                 return f.format(np.nanmean(x.values), self._std(x))
 
-    def _create_cont_describe(self, data, groupby):
+    def _create_cont_describe(self,
+                              data: pd.DataFrame,
+                              groupby: Optional[str] = None) -> pd.DataFrame:
         """
         Describe the continuous data.
 
@@ -937,7 +943,10 @@ class TableOne(object):
 
         return df_cont
 
-    def _format_cat(self, row, col):
+    def _format_cat(self, row, col) -> str:
+        """
+        Format values to n decimal places.
+        """
         var = row.name[0]
         if var in self._decimals:
             n = self._decimals[var]
@@ -946,7 +955,9 @@ class TableOne(object):
         f = '{{:.{}f}}'.format(n)
         return f.format(row[col])
 
-    def _create_cat_describe(self, data, groupby, groupbylvls):
+    def _create_cat_describe(self, data: pd.DataFrame,
+                             groupby: Optional[str] = None,
+                             groupbylvls: Optional[list] = None) -> pd.DataFrame:
         """
         Describe the categorical data.
 
@@ -1054,7 +1065,7 @@ class TableOne(object):
 
         return df_cat
 
-    def _create_htest_table(self, data):
+    def _create_htest_table(self, data: pd.DataFrame) -> pd.DataFrame:
         """
         Create a table containing P-Values for significance tests. Add features
         of the distributions and the P-Values to the dataframe.
@@ -1119,7 +1130,7 @@ class TableOne(object):
 
         return df
 
-    def _create_smd_table(self, data):
+    def _create_smd_table(self, data: pd.DataFrame) -> pd.DataFrame:
         """
         Create a table containing pairwise Standardized Mean Differences
         (SMDs).
@@ -1180,8 +1191,13 @@ class TableOne(object):
 
         return df
 
-    def _p_test(self, v, grouped_data, is_continuous, is_categorical,
-                is_normal, min_observed, catlevels):
+    def _p_test(self, v: str,
+                grouped_data: dict,
+                is_continuous: bool,
+                is_categorical: bool,
+                is_normal: bool,
+                min_observed: int,
+                catlevels: list):
         """
         Compute P-Values.
 
@@ -1267,7 +1283,7 @@ class TableOne(object):
 
         return pval, ptest
 
-    def _create_cont_table(self, data, overall):
+    def _create_cont_table(self, data, overall) -> pd.DataFrame:
         """
         Create tableone for continuous data.
 
@@ -1582,7 +1598,7 @@ class TableOne(object):
 
         return table
 
-    def _create_row_labels(self):
+    def _create_row_labels(self) -> dict:
         """
         Take the original labels for rows. Rename if alternative labels are
         provided. Append label suffix if label_suffix is True.
