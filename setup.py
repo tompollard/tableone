@@ -54,7 +54,7 @@ setup(
         'numpy>=1.19.1',
         'pandas>=1.4.3',
         'scipy>=1.7.0',
-        'statsmodels>=0.12.1',
+        'statsmodels>=0.13.5',
         'tabulate>=0.9.0',
         'Jinja2==3.1.2',
         'openpyxl==3.1.2'
