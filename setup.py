@@ -18,7 +18,7 @@ setup(
     # Versions should comply with PEP440. For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.7.12',
+    version='0.8.0',
 
     description='TableOne',
     long_description=long_description,
@@ -52,10 +52,11 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         'numpy>=1.19.1',
-        'pandas>=1.2.1',
+        'pandas>=1.4.3',
         'scipy>=1.7.0',
         'statsmodels>=0.12.1',
-        'tabulate>=0.8.10'
+        'tabulate>=0.8.10',
+        'Jinja2==3.1.2'
         ],
 
     # List additional groups of dependencies here (e.g. development
