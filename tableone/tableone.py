@@ -1425,19 +1425,26 @@ class TableOne:
         # round pval column and convert to string
         if self._pval and self._pval_adjust:
             if self._pval_threshold:
-                pass
-            else:
-                table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply(
-                                                    '{:.3f}'.format).astype(str)
-                table.loc[table['P-Value (adjusted)'] == '0.000',
-                          'P-Value (adjusted)'] = '<0.001'
+                asterisk_mask = table['P-Value (adjusted)'] < self._pval_threshold
+
+            table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply(
+                                                '{:.3f}'.format).astype(str)
+            table.loc[table['P-Value (adjusted)'] == '0.000',
+                            'P-Value (adjusted)'] = '<0.001'
+
+            if self._pval_threshold:
+                table.loc[asterisk_mask, 'P-Value (adjusted)'] = table['P-Value (adjusted)'][asterisk_mask].astype(str)+"*"
+
         elif self._pval:
             if self._pval_threshold:
-                pass
-            else:  
-                table['P-Value'] = table['P-Value'].apply(
-                                         '{:.3f}'.format).astype(str)
-                table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
+                asterisk_mask = table['P-Value'] < self._pval_threshold
+
+            table['P-Value'] = table['P-Value'].apply(
+                                     '{:.3f}'.format).astype(str)
+            table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
+
+            if self._pval_threshold:
+                table.loc[asterisk_mask, 'P-Value'] = table['P-Value'][asterisk_mask].astype(str)+"*"
 
         # round smd columns and convert to string
         if self._smd:
