@@ -108,7 +108,8 @@ class TableOne:
         `holm-sidak` : step down method using Sidak adjustments
         `simes-hochberg` : step-up method (independent)
         `hommel` : closed method based on Simes tests (non-negative)
-
+    test_stat : bool, optional
+        Display statistics of hypothesis testing (default: False).
     htest_name : bool, optional
         Display a column with the names of hypothesis tests (default: False).
     htest : dict, optional
@@ -207,7 +208,8 @@ class TableOne:
                  nonnormal: Optional[list] = None,
                  min_max: Optional[list] = None, pval: Optional[bool] = False,
                  pval_adjust: Optional[str] = None, htest_name: bool = False,
-                 pval_test_name: bool = False, htest: Optional[dict] = None,
+                 pval_test_name: bool = False, test_stat: bool = False,
+                 htest: Optional[dict] = None,
                  isnull: Optional[bool] = None, missing: bool = True,
                  ddof: int = 1, labels: Optional[dict] = None,
                  rename: Optional[dict] = None, sort: Union[bool, str] = False,
@@ -346,6 +348,7 @@ class TableOne:
         self._min_max = min_max
         self._pval = pval
         self._pval_adjust = pval_adjust
+        self._test_stat = test_stat
         self._htest = htest
         self._sort = sort
         self._groupby = groupby
@@ -387,6 +390,8 @@ class TableOne:
         if self._pval:
             self._htest_table = self._create_htest_table(data)
 
+        if test_stat and not pval:
+            self._htest_table = self._create_htest_table(data)
         # correct for multiple testing
         if self._pval and self._pval_adjust:
             alpha = 0.05
@@ -1083,7 +1088,7 @@ class TableOne:
         # list features of the variable e.g. matched, paired, n_expected
         df = pd.DataFrame(index=self._continuous+self._categorical,
                           columns=['continuous', 'nonnormal',
-                                   'min_observed', 'P-Value', 'Test'])
+                                   'min_observed', 'Test_stat', 'P-Value', 'Test'])
 
         df.index = df.index.rename('variable')
         df['continuous'] = np.where(df.index.isin(self._continuous),
@@ -1122,7 +1127,7 @@ class TableOne:
             df.loc[v, 'min_observed'] = min_observed
 
             # compute pvalues
-            (df.loc[v, 'P-Value'],
+            (df.loc[v,'Test-stat'],df.loc[v, 'P-Value'],
                 df.loc[v, 'Test']) = self._p_test(v, grouped_data,
                                                   is_continuous,
                                                   is_categorical, is_normal,
@@ -1220,6 +1225,8 @@ class TableOne:
 
         Returns
         ----------
+            test_stat : float
+                The statistics of hypothesis testing
             pval : float
                 The computed P-Value.
             ptest : str
@@ -1263,7 +1270,7 @@ class TableOne:
             # default to chi-squared
             ptest = 'Chi-squared'
             grouped_val_list = [x for x in grouped_data.values()]
-            _, pval, _, expected = stats.chi2_contingency(
+            test_stat, pval, _, expected = stats.chi2_contingency(
                 grouped_val_list)
             # if any expected cell counts are < 5, chi2 may not be valid
             # if this is a 2x2, switch to fisher exact
@@ -1271,6 +1278,14 @@ class TableOne:
                 if np.shape(grouped_val_list) == (2, 2):
                     ptest = "Fisher's exact"
                     odds_ratio, pval = stats.fisher_exact(grouped_val_list)
+                    test_stat = np.nan
+                    fisher_stat_warn = ("Fisher's test did not caompute "
+                                        "statistics of hypothesis testing. "
+                                        "The following variables are affected")
+                    try:
+                        self._warnings[fisher_stat_warn].append(v)
+                    except KeyError:
+                        self._warnings[fisher_stat_warn] = [v]
                 else:
                     ptest = "Chi-squared (warning: expected count < 5)"
                     chi_warn = ("Chi-squared tests for the following "
@@ -1281,7 +1296,7 @@ class TableOne:
                     except KeyError:
                         self._warnings[chi_warn] = [v]
 
-        return pval, ptest
+        return test_stat, pval, ptest
 
     def _create_cont_table(self, data, overall) -> pd.DataFrame:
         """
@@ -1309,6 +1324,10 @@ class TableOne:
         # add an empty value column, for joining with cat table
         table['value'] = ''
         table = table.set_index([table.index, 'value'])
+
+        # add test_stat column
+        if self._test_stat:
+            table = table.join(self._htest_table[['Test-stat']])
 
         # add pval column
         if self._pval and self._pval_adjust:
@@ -1349,6 +1368,10 @@ class TableOne:
         except TypeError:
             table.columns = table.columns.astype(str)
             table = table.join(isnull)
+
+        # add test_stat column
+        if self._test_stat:
+            table = table.join(self._htest_table[['Test-stat']])
 
         # add pval column
         if self._pval and self._pval_adjust:
@@ -1394,7 +1417,7 @@ class TableOne:
         table.columns = table.columns.values.astype(str)
 
         # sort the table rows
-        sort_columns = ['Missing', 'P-Value', 'P-Value (adjusted)', 'Test']
+        sort_columns = ['Missing', 'Test_stat','P-Value', 'P-Value (adjusted)', 'Test']
         if self._smd:
             sort_columns = sort_columns + list(self.smd_table.columns)
 
@@ -1430,6 +1453,11 @@ class TableOne:
             table['P-Value'] = table['P-Value'].apply(
                                      '{:.3f}'.format).astype(str)
             table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
+
+        # round test-stat column and convert to string
+        if self._test_stat:
+            table['Test-stat'] = table['Test-stat'].apply(
+                                                '{:.3f}'.format).astype(str)
 
         # round smd columns and convert to string
         if self._smd:
@@ -1526,7 +1554,7 @@ class TableOne:
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
         dupe_columns = ['Missing']
-        optional_columns = ['P-Value', 'P-Value (adjusted)', 'Test']
+        optional_columns = ['Test-stat', 'P-Value', 'P-Value (adjusted)', 'Test']
         if self._smd:
             optional_columns = optional_columns + list(self.smd_table.columns)
         for col in optional_columns:
