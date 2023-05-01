@@ -2,7 +2,7 @@
 The tableone package is used for creating "Table 1" summary statistics for
 research papers.
 """
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 import warnings
 
 import numpy as np
@@ -286,11 +286,11 @@ class TableOne:
 
         # if columns are not specified, use all columns
         if not columns:
-            columns = data.columns.values
+            columns = data.columns.values  # type: ignore
 
         # check that the columns exist in the dataframe
-        if not set(columns).issubset(data.columns):
-            notfound = list(set(columns) - set(data.columns))
+        if not set(columns).issubset(data.columns):  # type: ignore
+            notfound = list(set(columns) - set(data.columns))  # type: ignore
             raise InputError("""Columns not found in
                                 dataset: {}""".format(notfound))
 
@@ -320,7 +320,7 @@ class TableOne:
 
         # if input df has ordered categorical variables, get the order.
         order_cats = [x for x in data.select_dtypes("category")
-                      if data[x].dtype.ordered]
+                      if data[x].dtype.ordered]  # type: ignore
         if any(order_cats):
             d_order_cats = {v: data[v].cat.categories for v in order_cats}
             d_order_cats = {k: ["{}".format(v) for v in d_order_cats[k]]
@@ -328,18 +328,18 @@ class TableOne:
 
         # combine the orders. custom order takes precedence.
         if order_cats and order:
-            new = {**order, **d_order_cats}
+            new = {**order, **d_order_cats}  # type: ignore
             for k in order:
                 new[k] = order[k] + [x for x in new[k] if x not in order[k]]
             order = new
         elif order_cats:
-            order = d_order_cats
+            order = d_order_cats  # type: ignore
 
         if pval and not groupby:
             raise InputError("If pval=True then groupby must be specified.")
 
-        self._columns = list(columns)
-        self._continuous = [c for c in columns
+        self._columns = list(columns)  # type: ignore
+        self._continuous = [c for c in columns  # type: ignore
                             if c not in categorical + [groupby]]
         self._categorical = categorical
         self._nonnormal = nonnormal
@@ -367,7 +367,7 @@ class TableOne:
                                   'P-Value (adjusted)', 'SMD', 'Overall']
 
         if self._groupby:
-            self._groupbylvls = sorted(data.groupby(groupby).groups.keys())
+            self._groupbylvls = sorted(data.groupby(groupby).groups.keys())  # type: ignore
 
             # reorder the groupby levels if order is provided
             if self._order and self._groupby in self._order:
@@ -635,10 +635,10 @@ class TableOne:
         #     raise InputError('n1 and n2 must both be provided.')
 
         # cohens_d
-        smd = (mean2 - mean1) / np.sqrt((sd1 ** 2 + sd2 ** 2) / 2)
+        smd = (mean2 - mean1) / np.sqrt((sd1 ** 2 + sd2 ** 2) / 2)  # type: ignore
 
         # standard error
-        v_d = ((n1+n2) / (n1*n2)) + ((smd ** 2) / (2*(n1+n2)))
+        v_d = ((n1+n2) / (n1*n2)) + ((smd ** 2) / (2*(n1+n2)))  # type: ignore
         se = np.sqrt(v_d)
 
         if unbiased:
@@ -647,7 +647,7 @@ class TableOne:
             # Introduction to Meta-Analysis. Michael Borenstein,
             # L. V. Hedges, J. P. T. Higgins and H. R. Rothstein
             # Wiley (2011). Chapter 4. Effect Sizes Based on Means.
-            j = 1 - (3/(4*(n1+n2-2)-1))
+            j = 1 - (3/(4*(n1+n2-2)-1))  # type: ignore
             smd = j * smd
             v_g = (j ** 2) * v_d
             se = np.sqrt(v_g)
@@ -697,11 +697,11 @@ class TableOne:
         lst_cov = []
         for p in [prop1, prop2]:
             variance = p * (1 - p)
-            covariance = - np.outer(p, p)
+            covariance = - np.outer(p, p)  # type: ignore
             covariance[np.diag_indices_from(covariance)] = variance
             lst_cov.append(covariance)
 
-        mean_diff = np.asarray(prop2 - prop1).reshape((1, -1))
+        mean_diff = np.asarray(prop2 - prop1).reshape((1, -1))  # type: ignore
         mean_cov = (lst_cov[0] + lst_cov[1])/2
 
         # TODO: add steps to deal with nulls
@@ -717,7 +717,7 @@ class TableOne:
             smd = np.nan
 
         # standard error
-        v_d = ((n1+n2) / (n1*n2)) + ((smd ** 2) / (2*(n1+n2)))
+        v_d = ((n1+n2) / (n1*n2)) + ((smd ** 2) / (2*(n1+n2)))  # type: ignore
         se = np.sqrt(v_d)
 
         if unbiased:
@@ -726,7 +726,7 @@ class TableOne:
             # Introduction to Meta-Analysis. Michael Borenstein,
             # L. V. Hedges, J. P. T. Higgins and H. R. Rothstein
             # Wiley (2011). Chapter 4. Effect Sizes Based on Means.
-            j = 1 - (3/(4*(n1+n2-2)-1))
+            j = 1 - (3/(4*(n1+n2-2)-1))  # type: ignore
             smd = j * smd
             v_g = (j ** 2) * v_d
             se = np.sqrt(v_g)
@@ -851,25 +851,25 @@ class TableOne:
             f = "{{:.{}f}} [{{:.{}f}},{{:.{}f}}]".format(n, n, n)
             if self._min_max and x.name in self._min_max:
                 return f.format(
-                    np.nanmedian(x.values), np.nanmin(x.values),
-                    np.nanmax(x.values),
+                    np.nanmedian(x.values), np.nanmin(x.values),  # type: ignore
+                    np.nanmax(x.values),  # type: ignore
                 )
             else:
                 return f.format(
-                    np.nanmedian(x.values),
-                    np.nanpercentile(x.values, 25),
-                    np.nanpercentile(x.values, 75),
+                    np.nanmedian(x.values),  # type: ignore
+                    np.nanpercentile(x.values, 25),  # type: ignore
+                    np.nanpercentile(x.values, 75),  # type: ignore
                 )
         else:
             if self._min_max and x.name in self._min_max:
                 f = "{{:.{}f}} [{{:.{}f}},{{:.{}f}}]".format(n, n, n)
                 return f.format(
-                    np.nanmean(x.values), np.nanmin(x.values),
-                    np.nanmax(x.values),
+                    np.nanmean(x.values), np.nanmin(x.values),  # type: ignore
+                    np.nanmax(x.values),  # type: ignore
                 )
             else:
                 f = '{{:.{}f}} ({{:.{}f}})'.format(n, n)
-                return f.format(np.nanmean(x.values), self._std(x))
+                return f.format(np.nanmean(x.values), self._std(x))  # type: ignore
 
     def _create_cont_describe(self,
                               data: pd.DataFrame,
@@ -929,7 +929,7 @@ class TableOne:
                                      aggfunc=aggfuncs)
         else:
             # if no groupby, just add single group column
-            df_cont = cont_data.apply(aggfuncs).T
+            df_cont = cont_data.apply(aggfuncs).T  # type: ignore
             df_cont.columns.name = 'Overall'
             df_cont.columns = pd.MultiIndex.from_product([df_cont.columns,
                                                          ['Overall']])
@@ -937,9 +937,9 @@ class TableOne:
         df_cont.index = df_cont.index.rename('variable')
 
         # remove prefix underscore from column names (e.g. _std -> std)
-        agg_rename = df_cont.columns.levels[0]
+        agg_rename = df_cont.columns.levels[0]  # type: ignore
         agg_rename = [x[1:] if x[0] == '_' else x for x in agg_rename]
-        df_cont.columns = df_cont.columns.set_levels(agg_rename, level=0)
+        df_cont.columns = df_cont.columns.set_levels(agg_rename, level=0)  # type: ignore
 
         return df_cont
 
@@ -949,7 +949,7 @@ class TableOne:
         """
         var = row.name[0]
         if var in self._decimals:
-            n = self._decimals[var]
+            n = self._decimals[var]  # type: ignore
         else:
             n = 1
         f = '{{:.{}f}}'.format(n)
@@ -979,7 +979,7 @@ class TableOne:
 
         cat_slice = data[self._categorical].copy()
 
-        for g in groupbylvls:
+        for g in groupbylvls:  # type: ignore
             if groupby:
                 df = cat_slice.loc[data[groupby] == g, self._categorical]
             else:
@@ -1119,14 +1119,14 @@ class TableOne:
                 grouped_data = cross_tab.T.to_dict('list')
 
             # minimum number of observations across all levels
-            df.loc[v, 'min_observed'] = min_observed
+            df.loc[v, 'min_observed'] = min_observed  # type: ignore
 
             # compute pvalues
             (df.loc[v, 'P-Value'],
-                df.loc[v, 'Test']) = self._p_test(v, grouped_data,
+                df.loc[v, 'Test']) = self._p_test(v, grouped_data,  # type: ignore
                                                   is_continuous,
                                                   is_categorical, is_normal,
-                                                  min_observed, catlevels)
+                                                  min_observed, catlevels)  # type: ignore
 
         return df
 
@@ -1185,7 +1185,7 @@ class TableOne:
                         n1=self.cat_describe.loc[[v]]['freq'][p[0]].sum(),
                         n2=self.cat_describe.loc[[v]]['freq'][p[1]].sum(),
                         unbiased=False)
-                    df[colname.format(p[0], p[1])].loc[v] = smd
+                    df[colname.format(p[0], p[1])].loc[v] = smd  # type: ignore
             except AttributeError:
                 pass
 
@@ -1308,7 +1308,7 @@ class TableOne:
 
         # add an empty value column, for joining with cat table
         table['value'] = ''
-        table = table.set_index([table.index, 'value'])
+        table = table.set_index([table.index, 'value'])  # type: ignore
 
         # add pval column
         if self._pval and self._pval_adjust:
@@ -1390,7 +1390,7 @@ class TableOne:
             table = self.cat_table
 
         # ensure column headers are strings before reindexing
-        table = table.reset_index().set_index(['variable', 'value'])
+        table = table.reset_index().set_index(['variable', 'value'])  # type: ignore
         table.columns = table.columns.values.astype(str)
 
         # sort the table rows
@@ -1445,7 +1445,7 @@ class TableOne:
                 try:
                     all_var = table.loc[k].index.unique(level='value')
                 except KeyError:
-                    if k not in self._groupby:
+                    if k not in self._groupby:  # type: ignore
                         warnings.warn("Order variable not found: {}".format(k))
                     continue
 
@@ -1524,7 +1524,7 @@ class TableOne:
                 table.loc['n', '{}'.format(g)] = ct
 
         # only display data in first level row
-        dupe_mask = table.groupby(level=[0]).cumcount().ne(0)
+        dupe_mask = table.groupby(level=[0]).cumcount().ne(0)  # type: ignore
         dupe_columns = ['Missing']
         optional_columns = ['P-Value', 'P-Value (adjusted)', 'Test']
         if self._smd:
@@ -1561,13 +1561,13 @@ class TableOne:
 
         # ensure the order of columns is consistent
         if self._groupby and self._order and (self._groupby in self._order):
-            header = ['{}'.format(v) for v in table.columns.levels[1].values]
+            header = ['{}'.format(v) for v in table.columns.levels[1].values]  # type: ignore
             cols = self._order[self._groupby] + ['{}'.format(v)
                                                  for v in header
                                                  if v not in
                                                  self._order[self._groupby]]
         elif self._groupby:
-            cols = ['{}'.format(v) for v in table.columns.levels[1].values]
+            cols = ['{}'.format(v) for v in table.columns.levels[1].values]  # type: ignore
         else:
             cols = ['{}'.format(v) for v in table.columns.values]
 
@@ -1588,7 +1588,7 @@ class TableOne:
             table = table.reindex(cols, axis=1)
 
         try:
-            if 'Missing' in self._alt_labels or 'Overall' in self._alt_labels:
+            if 'Missing' in self._alt_labels or 'Overall' in self._alt_labels:  # type: ignore
                 table = table.rename(columns=self._alt_labels)
         except TypeError:
             pass
