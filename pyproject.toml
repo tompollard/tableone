@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tableone"
+version = "0.8.0"
+authors = [
+  { name="Tom Pollard", email="tpollard@mit.edu" },
+  { name="Alistair Johnson" },
+  { name="Jesse Raffa" }
+]
+license = {file = "LICENSE"}
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords=["Table one", "Table 1", "statistics", "cohort", "clinical research"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "statsmodels",
+    "tabulate",
+    "Jinja2",
+    "openpyxl",
+]
+
+[tool.black]
+line-length = 119
+
+[project.urls]
+homepage = "https://github.com/tompollard/tableone/"
+documentation = "https://tableone.readthedocs.io/"
+repository = "https://github.com/tompollard/tableone/"
