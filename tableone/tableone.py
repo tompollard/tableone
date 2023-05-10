@@ -217,7 +217,8 @@ class TableOne:
                  smd: bool = False, overall: bool = True,
                  row_percent: bool = False, display_all: bool = False,
                  dip_test: bool = False, normal_test: bool = False,
-                 tukey_test: bool = False) -> None:
+                 tukey_test: bool = False,
+                 pval_threshold: float = None) -> None:
 
         # labels is now rename
         if labels is not None and rename is not None:
@@ -356,6 +357,7 @@ class TableOne:
         self._label_suffix = label_suffix
         self._decimals = decimals
         self._smd = smd
+        self._pval_threshold = pval_threshold
         self._overall = overall
         self._row_percent = row_percent
 
@@ -1422,14 +1424,27 @@ class TableOne:
 
         # round pval column and convert to string
         if self._pval and self._pval_adjust:
+            if self._pval_threshold:
+                asterisk_mask = table['P-Value (adjusted)'] < self._pval_threshold
+
             table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply(
                                                 '{:.3f}'.format).astype(str)
             table.loc[table['P-Value (adjusted)'] == '0.000',
-                      'P-Value (adjusted)'] = '<0.001'
+                            'P-Value (adjusted)'] = '<0.001'
+
+            if self._pval_threshold:
+                table.loc[asterisk_mask, 'P-Value (adjusted)'] = table['P-Value (adjusted)'][asterisk_mask].astype(str)+"*"
+
         elif self._pval:
+            if self._pval_threshold:
+                asterisk_mask = table['P-Value'] < self._pval_threshold
+
             table['P-Value'] = table['P-Value'].apply(
                                      '{:.3f}'.format).astype(str)
             table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
+
+            if self._pval_threshold:
+                table.loc[asterisk_mask, 'P-Value'] = table['P-Value'][asterisk_mask].astype(str)+"*"
 
         # round smd columns and convert to string
         if self._smd:
