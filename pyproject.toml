@@ -33,6 +33,9 @@ dependencies = [
 [tool.black]
 line-length = 119
 
+[tool.pyright]
+reportMissingImports = true
+
 [project.urls]
 homepage = "https://github.com/tompollard/tableone/"
 documentation = "https://tableone.readthedocs.io/"
