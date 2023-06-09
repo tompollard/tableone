@@ -11,7 +11,7 @@ authors = [
   { name="Jesse Raffa" }
 ]
 license = {file = "LICENSE"}
-description = "A small example package"
+description = "tableone is a package for creating 'Table 1' summary statistics for a patient population."
 readme = "README.md"
 requires-python = ">=3.9"
 keywords=["Table one", "Table 1", "statistics", "cohort", "clinical research"]
