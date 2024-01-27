@@ -170,6 +170,11 @@ class TableOne:
         Run Tukey's test for far outliers. If variables are found to
         have far outliers, a remark will be added below the Table 1.
         (default: False)
+    missing_value_on_separate_row : bool, optional
+        For categorical variables, output the missing count on the first row
+        and the categorical values on rows below. This flag is applicable
+        only when the missing flag is set to True.
+        (default: False)
 
     Attributes
     ----------
@@ -235,6 +240,7 @@ class TableOne:
         normal_test: bool = False,
         tukey_test: bool = False,
         pval_threshold: Optional[float] = None,
+        missing_value_on_separate_row: bool = True,
     ) -> None:
         # labels is now rename
         if labels is not None and rename is not None:
@@ -379,6 +385,7 @@ class TableOne:
         self._pval_threshold = pval_threshold
         self._overall = overall
         self._row_percent = row_percent
+        self._missing_value_on_separate_row = missing_value_on_separate_row
 
         # display notes and warnings below the table
         self._warnings = {}
@@ -1364,14 +1371,14 @@ class TableOne:
         if self._groupby and overall:
             table = table.join(pd.concat([self.cat_describe_all["t1_summary"].Overall], axis=1, keys=["Overall"]))
 
-        # NOTE(Min): hackery?
-        for variable in isnull.index.values.tolist():
-            line = pd.DataFrame(
-                {"Missing": isnull.loc[variable]["Missing"], "Overall": pd.NA}, index=[(variable, " ")]
-            )
-            table = pd.concat([table, line], ignore_index=False)
-        table = table.sort_index()
-        # table = pd.concat([pd.DataFrame([[" ", isnull.values[0][0]]], columns=table.columns, index=[(0, " ")]), table])
+        if self._isnull and self._missing_value_on_separate_row:
+            for variable in isnull.index.values.tolist():
+                missing_record = {"Missing": isnull.loc[variable]["Missing"]}
+                line = pd.DataFrame(missing_record, index=[(variable, " ")])
+                table = pd.concat([table, line], ignore_index=False, join="outer")
+            table.index = table.index.set_names(["variable", "value"])
+            table = table.sort_index()
+
         return table
 
     def _create_tableone(self, data):
@@ -1451,7 +1458,11 @@ class TableOne:
             for k in self._order:
                 # Skip if the variable isn't present
                 try:
-                    all_var = table.loc[k].index.unique(level="value")
+                    if self._isnull and self._missing_value_on_separate_row:
+                        all_var = table.loc[k].index.unique().values.tolist()
+                        all_var.remove(" ")
+                    else:
+                        all_var = table.loc[k].index.unique(level="value")
                 except KeyError:
                     if k not in self._groupby:  # type: ignore
                         warnings.warn("Order variable not found: {}".format(k))
@@ -1463,7 +1474,8 @@ class TableOne:
                     self._order[k] = [i for i in self._order[k] if i in all_var]
                     warnings.warn(("Order value not found: " "{}: {}").format(k, rm_var))
 
-                new_seq = [(k, "{}".format(v)) for v in self._order[k]]
+                new_seq = [(k, " ")] if self._isnull and self._missing_value_on_separate_row else []
+                new_seq += [(k, "{}".format(v)) for v in self._order[k]]
                 new_seq += [(k, "{}".format(v)) for v in all_var if v not in self._order[k]]
 
                 # restructure to match the original idx
@@ -1489,11 +1501,13 @@ class TableOne:
                 if not self._order or (self._order and k not in self._order):
                     # re-order the variables by frequency
                     count = data[k].value_counts().sort_values(ascending=False)
-                    new_idx = [(k, "{}".format(i)) for i in count.index]
+                    new_idx = [(k, " ")] if self._isnull and self._missing_value_on_separate_row else []
+                    new_idx += [(k, "{}".format(i)) for i in count.index]
                 else:
                     # apply order
                     all_var = table.loc[k].index.unique(level="value")
-                    new_idx = [(k, "{}".format(v)) for v in self._order[k]]
+                    new_idx = [(k, " ")] if self._isnull and self._missing_value_on_separate_row else []
+                    new_idx = +[(k, "{}".format(v)) for v in self._order[k]]
                     new_idx += [(k, "{}".format(v)) for v in all_var if v not in self._order[k]]
 
                 # restructure to match the original idx
@@ -1529,13 +1543,17 @@ class TableOne:
         # only display data in first level row
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)  # type: ignore
         dupe_columns = ["Missing"]
+        table[dupe_columns] = table[dupe_columns].mask(dupe_mask).fillna("")
+
+        if self._isnull and self._missing_value_on_separate_row:
+            dupe_mask = table.groupby(level=[0]).cumcount().gt(1)  # type: ignore
+        dupe_columns = []
         optional_columns = ["P-Value", "P-Value (adjusted)", "Test"]
         if self._smd:
             optional_columns = optional_columns + list(self.smd_table.columns)
         for col in optional_columns:
             if col in table.columns.values:
                 dupe_columns.append(col)
-
         table[dupe_columns] = table[dupe_columns].mask(dupe_mask).fillna("")
 
         # remove Missing column if not needed
