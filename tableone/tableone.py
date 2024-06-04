@@ -259,6 +259,12 @@ class TableOne:
             self._normal_test = normal_test
             self._tukey_test = tukey_test
 
+        # if columns are not specified, use all columns
+        if not columns:
+            columns = data.columns.values  # type: ignore
+
+        self._validate_data(data, columns)
+
         # groupby should be a string
         if not groupby:
             groupby = ''
@@ -275,32 +281,6 @@ class TableOne:
         if min_max and isinstance(min_max, bool):
             warnings.warn("min_max should specify a list of variables.")
             min_max = None
-
-        # if the input dataframe is empty, raise error
-        if data.empty:
-            raise InputError("Input data is empty.")
-
-        # if the input dataframe has a non-unique index, raise error
-        if not data.index.is_unique:
-            raise InputError("Input data contains duplicate values in the "
-                             "index. Reset the index and try again.")
-
-        # if columns are not specified, use all columns
-        if not columns:
-            columns = data.columns.values  # type: ignore
-
-        # check that the columns exist in the dataframe
-        if not set(columns).issubset(data.columns):  # type: ignore
-            notfound = list(set(columns) - set(data.columns))  # type: ignore
-            raise InputError("""Columns not found in
-                                dataset: {}""".format(notfound))
-
-        # check for duplicate columns
-        dups = data[columns].columns[
-            data[columns].columns.duplicated()].unique()
-        if not dups.empty:
-            raise InputError("""Input data contains duplicate
-                                columns: {}""".format(dups))
 
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
@@ -444,6 +424,41 @@ class TableOne:
         # set display options
         if display_all:
             self._set_display_options()
+
+    def _handle_deprecations(self):
+        """
+        Raise deprecation warnings.
+        """
+        pass
+
+    def _validate_arguments(self):
+        """
+        Run validation checks on the arguments.
+        """
+        pass
+
+    def _validate_data(self, data, columns):
+        """
+        Run validation checks on the input dataframe.
+        """
+        if data.empty:
+            raise ValueError("Input data is empty.")
+
+        if not data.index.is_unique:
+            raise InputError("Input data contains duplicate values in the "
+                             "index. Reset the index and try again.")
+
+        if columns and not set(columns).issubset(data.columns):  # type: ignore
+            missing_cols = list(set(columns) - set(data.columns))  # type: ignore
+            raise InputError("""Columns not found in
+                                dataset: {}""".format(missing_cols))
+
+        # check for duplicate columns
+        dups = data[columns].columns[
+            data[columns].columns.duplicated()].unique()
+        if not dups.empty:
+            raise InputError("""Input data contains duplicate
+                                columns: {}""".format(dups))
 
     def __str__(self) -> str:
         return self.tableone.to_string() + self._generate_remarks('\n')
