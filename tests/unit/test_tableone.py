@@ -119,7 +119,11 @@ def data_mixed(n=20):
 
     mu, sigma = 50, 5
     data_mixed['mixed numeric data'] = np.random.normal(mu, sigma, n)
+
+    # FutureWarning: Setting an item of incompatible dtype is deprecated
+    # and will raise an error in a future version of pandas.
     data_mixed.loc[1, 'mixed numeric data'] = 'could not measure'
+
     return data_mixed
 
 
@@ -483,7 +487,7 @@ class TestTableOne(object):
 
         # a call to .index.levels[0] automatically sorts the levels
         # instead, call values and use pd.unique as it preserves order
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+        tableone_rows = pd.Series([x[0] for x in table.tableone.index.values]).unique()
 
         # default should not sort
         for i, c in enumerate(columns):
@@ -491,7 +495,7 @@ class TestTableOne(object):
             assert tableone_rows[i+1] == c
 
         table = TableOne(df, columns=columns, sort=True, label_suffix=False)
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+        tableone_rows = pd.Series([x[0] for x in table.tableone.index.values]).unique()
         for i, c in enumerate(sorted(columns, key=lambda s: s.lower())):
             # i+1 because we skip the first row, 'n'
             assert tableone_rows[i+1] == c
@@ -967,7 +971,7 @@ class TestTableOne(object):
                    'LOS': '0.121'}
 
         for k in exp_smd:
-            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'][0]
+            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'].iloc[0]
             assert smd == exp_smd[k]
 
     def test_compute_standardized_mean_difference_categorical(self, data_pn):
@@ -995,7 +999,7 @@ class TestTableOne(object):
                    'death': '0.017'}
 
         for k in exp_smd:
-            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'][0]
+            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'].iloc[0]
             assert smd == exp_smd[k]
 
     def test_order_of_order_categorical_columns(self):

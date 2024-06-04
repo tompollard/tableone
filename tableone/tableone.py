@@ -889,8 +889,8 @@ class TableOne:
             df_cont : pandas DataFrame
                 Summarise the continuous variables.
         """
-        aggfuncs = [pd.Series.count, np.mean, np.median, self._std,
-                    self._q25, self._q75, min, max, self._t1_summary]
+        aggfuncs = ['count', 'mean', 'median', self._std,
+                    self._q25, self._q75, 'min', 'max', self._t1_summary]
 
         if self._dip_test:
             aggfuncs.append(self._hartigan_dip)
@@ -1173,7 +1173,7 @@ class TableOne:
                                 n1=self.cont_describe['count'][p[0]].loc[v],
                                 n2=self.cont_describe['count'][p[1]].loc[v],
                                 unbiased=False)
-                    df[colname.format(p[0], p[1])].loc[v] = smd
+                    df.loc[v, colname.format(p[0], p[1])] = smd
             except AttributeError:
                 pass
 
@@ -1187,7 +1187,7 @@ class TableOne:
                         n1=self.cat_describe.loc[[v]]['freq'][p[0]].sum(),
                         n2=self.cat_describe.loc[[v]]['freq'][p[1]].sum(),
                         unbiased=False)
-                    df[colname.format(p[0], p[1])].loc[v] = smd  # type: ignore
+                    df.loc[v, colname.format(p[0], p[1])] = smd  # type: ignore
             except AttributeError:
                 pass
 
