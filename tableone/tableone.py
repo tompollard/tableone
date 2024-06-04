@@ -267,18 +267,8 @@ class TableOne:
 
         self._validate_data(data, columns)
 
-        groupby = self._validate_arguments(groupby)
-
-        # nonnormal should be a string
-        if not nonnormal:
-            nonnormal = []
-        elif nonnormal and type(nonnormal) == str:
-            nonnormal = [nonnormal]
-
-        # min_max should be a list
-        if min_max and isinstance(min_max, bool):
-            warnings.warn("min_max should specify a list of variables.")
-            min_max = None
+        (groupby, nonnormal, min_max, pval_adjust, order) = self._validate_arguments(
+            groupby, nonnormal, min_max, pval_adjust, order, pval)
 
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
@@ -286,16 +276,6 @@ class TableOne:
             # omit categorical row if it is specified in groupby
             if groupby:
                 categorical = [x for x in categorical if x != groupby]
-
-        if isinstance(pval_adjust, bool) and pval_adjust:
-            msg = ("pval_adjust expects a string, but a boolean was specified."
-                   " Defaulting to the 'bonferroni' correction.")
-            warnings.warn(msg)
-            pval_adjust = "bonferroni"
-
-        # if custom order is provided, ensure that values are strings
-        if order:
-            order = {k: ["{}".format(v) for v in order[k]] for k in order}
 
         # if input df has ordered categorical variables, get the order.
         order_cats = [x for x in data.select_dtypes("category")
@@ -313,9 +293,6 @@ class TableOne:
             order = new
         elif order_cats:
             order = d_order_cats  # type: ignore
-
-        if pval and not groupby:
-            raise InputError("If pval=True then groupby must be specified.")
 
         self._columns = list(columns)  # type: ignore
         self._continuous = [c for c in columns  # type: ignore
@@ -429,10 +406,11 @@ class TableOne:
         """
         pass
 
-    def _validate_arguments(self, groupby):
+    def _validate_arguments(self, groupby, nonnormal, min_max, pval_adjust, order, pval):
         """
         Run validation checks on the arguments.
         """
+        # validate 'groupby' argument
         if groupby:
             if isinstance(groupby, list):
                 raise ValueError(f"Invalid 'groupby' type: expected a string, received a list. Use '{groupby[0]}' if it's the intended group.")
@@ -442,7 +420,56 @@ class TableOne:
             # If 'groupby' is not provided or is explicitly None, treat it as an empty string.
             groupby = ''
 
-        return groupby
+        # Validate 'nonnormal' argument
+        if nonnormal is None:
+            nonnormal = []
+        elif isinstance(nonnormal, str):
+            nonnormal = [nonnormal]
+        elif not isinstance(nonnormal, list):
+            raise TypeError(f"Invalid 'nonnormal' type: expected a list or a string, received {type(nonnormal).__name__}.")
+        else:
+            # Ensure all elements in the list are strings
+            if not all(isinstance(item, str) for item in nonnormal):
+                raise ValueError("All items in 'nonnormal' list must be strings.")
+
+        # Validate 'min_max' argument
+        if min_max is None:
+            min_max = []
+        elif isinstance(min_max, list):
+            # Optionally, further validate that the list contains only strings (if needed)
+            if not all(isinstance(item, str) for item in min_max):
+                raise ValueError("All items in 'min_max' list must be strings representing column names.")
+        else:
+            raise TypeError(f"Invalid 'min_max' type: expected a list, received {type(min_max).__name__}.")
+
+        # Validate 'pval_adjust' argument
+        if pval_adjust is not None:
+            valid_methods = {"bonferroni", "sidak", "holm-sidak", "simes-hochberg", "hommel", None}
+            if isinstance(pval_adjust, str):
+                if pval_adjust.lower() not in valid_methods:
+                    raise ValueError(f"Invalid 'pval_adjust' value: '{pval_adjust}'. "
+                                     f"Expected one of {', '.join(valid_methods)} or None.")
+            else:
+                raise TypeError(f"Invalid type for 'pval_adjust': expected a string or None, "
+                                f"received {type(pval_adjust).__name__}.")
+
+        # Validate 'order' argument
+        if order is not None:
+            if not isinstance(order, dict):
+                raise TypeError("The 'order' parameter must be a dictionary where keys are column names and values are lists of ordered categories.")
+
+            for key, values in order.items():
+                if not isinstance(values, list):
+                    raise TypeError(f"The value for '{key}' in 'order' must be a list of categories.")
+
+                # Convert all items in the list to strings safely and efficiently
+                order[key] = [str(v) for v in values]
+
+        if pval and not groupby:
+            raise ValueError("The 'pval' parameter is set to True, but no 'groupby' parameter was specified. "
+                             "Please provide a 'groupby' column name to perform p-value calculations.")
+
+        return groupby, nonnormal, min_max, pval_adjust, order
 
     def _validate_data(self, data, columns):
         """

@@ -434,7 +434,7 @@ class TestTableOne(object):
         tableone_columns = list(table.tableone.columns.levels[1])
 
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
-                         pval_adjust='b')
+                         pval_adjust='bonferroni')
         tableone_columns = (tableone_columns +
                             list(table.tableone.columns.levels[1]))
         tableone_columns = np.unique(tableone_columns)
@@ -445,7 +445,7 @@ class TestTableOne(object):
             # for each output column name in tableone, try them as a group
             df.loc[0:20, 'ICU'] = c
             if 'adjust' in c:
-                pval_adjust = 'b'
+                pval_adjust = 'bonferroni'
             else:
                 pval_adjust = None
 
@@ -836,7 +836,7 @@ class TestTableOne(object):
         # catch the pval_adjust=True
         with warnings.catch_warnings(record=False):
             warnings.simplefilter('ignore', category=UserWarning)
-            TableOne(df, groupby="even", pval=True, pval_adjust=True)
+            TableOne(df, groupby="even", pval=True, pval_adjust='bonferroni')
 
         for k in pvals_expected:
             assert (t1.tableone.loc[k][group][col].values[0] ==
