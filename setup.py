@@ -51,7 +51,7 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         'numpy>=1.19.1',
-        'pandas>=1.4.3',
+        'pandas>=2.0.3',
         'scipy>=1.10.1',
         'statsmodels>=0.13.5',
         'tabulate>=0.9.0',
