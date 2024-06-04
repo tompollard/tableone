@@ -146,7 +146,7 @@ class TestTableOne(object):
 
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         categorical = ['ICU', 'death']
-        groupby = ['death']
+        groupby = 'death'
         nonnormal = ['Age']
         TableOne(data_pn, columns=columns,
                  categorical=categorical, groupby=groupby,
@@ -353,7 +353,7 @@ class TestTableOne(object):
         df_groupby = data_groups.copy()
         TableOne(df_groupby,
                  columns=['group', 'age', 'weight'],
-                 categorical=['group'], groupby=['group'])
+                 categorical=['group'], groupby='group')
         assert (df_groupby['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
         assert (df_groupby['weight'] == df_orig['weight']).all()
@@ -361,7 +361,7 @@ class TestTableOne(object):
         # sorted
         df_sorted = data_groups.copy()
         TableOne(df_sorted, columns=['group', 'age', 'weight'],
-                 categorical=['group'], groupby=['group'],
+                 categorical=['group'], groupby='group',
                  sort=True)
         assert (df_sorted['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
@@ -370,7 +370,7 @@ class TestTableOne(object):
         # pval
         df_pval = data_groups.copy()
         TableOne(df_pval, columns=['group', 'age', 'weight'],
-                 categorical=['group'], groupby=['group'],
+                 categorical=['group'], groupby='group',
                  sort=True, pval=True)
         assert (df_pval['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
@@ -381,7 +381,7 @@ class TestTableOne(object):
         TableOne(df_pval_adjust,
                  columns=['group', 'age', 'weight'],
                  categorical=['group'],
-                 groupby=['group'], sort=True, pval=True,
+                 groupby='group', sort=True, pval=True,
                  pval_adjust='bonferroni')
         assert (df_pval_adjust['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
@@ -391,7 +391,7 @@ class TestTableOne(object):
         df_labels = data_groups.copy()
         TableOne(df_labels,
                  columns=['group', 'age', 'weight'],
-                 categorical=['group'], groupby=['group'],
+                 categorical=['group'], groupby='group',
                  rename={'age': 'age, years'})
         assert (df_labels['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
@@ -401,7 +401,7 @@ class TestTableOne(object):
         df_limit = data_groups.copy()
         TableOne(df_limit,
                  columns=['group', 'age', 'weight'],
-                 categorical=['group'], groupby=['group'],
+                 categorical=['group'], groupby='group',
                  limit=2)
         assert (df_limit['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
@@ -411,7 +411,7 @@ class TestTableOne(object):
         df_nonnormal = data_groups.copy()
         TableOne(df_nonnormal,
                  columns=['group', 'age', 'weight'],
-                 categorical=['group'], groupby=['group'],
+                 categorical=['group'], groupby='group',
                  nonnormal=['age'])
         assert (df_nonnormal['group'] == df_orig['group']).all()
         assert (df_groupby['age'] == df_orig['age']).all()
@@ -434,7 +434,7 @@ class TestTableOne(object):
         tableone_columns = list(table.tableone.columns.levels[1])
 
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
-                         pval_adjust='b')
+                         pval_adjust='bonferroni')
         tableone_columns = (tableone_columns +
                             list(table.tableone.columns.levels[1]))
         tableone_columns = np.unique(tableone_columns)
@@ -445,7 +445,7 @@ class TestTableOne(object):
             # for each output column name in tableone, try them as a group
             df.loc[0:20, 'ICU'] = c
             if 'adjust' in c:
-                pval_adjust = 'b'
+                pval_adjust = 'bonferroni'
             else:
                 pval_adjust = None
 
@@ -517,7 +517,7 @@ class TestTableOne(object):
         """
         df = data_pn.copy()
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
-        groupby = ['death']
+        groupby = 'death'
 
         table = TableOne(df, columns=columns, groupby=groupby, pval=True,
                          htest_name=True, overall=False)
@@ -553,7 +553,7 @@ class TestTableOne(object):
         """
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         categorical = ['ICU', 'death']
-        groupby = ['death']
+        groupby = 'death'
 
         # test when not grouping
         table = TableOne(data_pn, columns=columns,
@@ -612,7 +612,7 @@ class TestTableOne(object):
         """
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         categorical = ['ICU', 'death']
-        groupby = ['death']
+        groupby = 'death'
         nonnormal = ['Age']
 
         # no decimals argument
@@ -692,7 +692,7 @@ class TestTableOne(object):
         """
         columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
         categorical = ['ICU', 'death']
-        groupby = ['death']
+        groupby = 'death'
         nonnormal = ['Age']
 
         # decimals = 1
@@ -836,7 +836,7 @@ class TestTableOne(object):
         # catch the pval_adjust=True
         with warnings.catch_warnings(record=False):
             warnings.simplefilter('ignore', category=UserWarning)
-            TableOne(df, groupby="even", pval=True, pval_adjust=True)
+            TableOne(df, groupby="even", pval=True, pval_adjust='bonferroni')
 
         for k in pvals_expected:
             assert (t1.tableone.loc[k][group][col].values[0] ==
@@ -1065,7 +1065,7 @@ class TestTableOne(object):
         nonnormal = ['Age']
 
         # optionally, a categorical variable for stratification
-        groupby = ['death']
+        groupby = 'death'
 
         t1 = TableOne(data_pn, columns=columns, categorical=categorical,
                       groupby=groupby, nonnormal=nonnormal, decimals=decimals,
@@ -1096,7 +1096,7 @@ class TestTableOne(object):
         nonnormal = ['Age']
 
         # optionally, a categorical variable for stratification
-        groupby = ['death']
+        groupby = 'death'
         group = "Grouped by death"
 
         # row_percent = False
@@ -1146,7 +1146,7 @@ class TestTableOne(object):
         nonnormal = ['Age']
 
         # optionally, a categorical variable for stratification
-        groupby = ['death']
+        groupby = 'death'
         group = "Grouped by death"
 
         # row_percent = True
@@ -1196,7 +1196,7 @@ class TestTableOne(object):
         nonnormal = ['Age']
 
         # optionally, a categorical variable for stratification
-        groupby = ['death']
+        groupby = 'death'
         group = "Grouped by death"
 
         # row_percent = True
