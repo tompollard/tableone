@@ -483,7 +483,7 @@ class TestTableOne(object):
 
         # a call to .index.levels[0] automatically sorts the levels
         # instead, call values and use pd.unique as it preserves order
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+        tableone_rows = pd.Series([x[0] for x in table.tableone.index.values]).unique()
 
         # default should not sort
         for i, c in enumerate(columns):
@@ -491,7 +491,7 @@ class TestTableOne(object):
             assert tableone_rows[i+1] == c
 
         table = TableOne(df, columns=columns, sort=True, label_suffix=False)
-        tableone_rows = pd.unique([x[0] for x in table.tableone.index.values])
+        tableone_rows = pd.Series([x[0] for x in table.tableone.index.values]).unique()
         for i, c in enumerate(sorted(columns, key=lambda s: s.lower())):
             # i+1 because we skip the first row, 'n'
             assert tableone_rows[i+1] == c
