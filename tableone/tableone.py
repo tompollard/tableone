@@ -203,6 +203,7 @@ class TableOne:
     def __init__(self, data: pd.DataFrame,
                  columns: Optional[list] = None,
                  categorical: Optional[list] = None,
+                 continuous: Optional[list] = None,
                  groupby: Optional[str] = None,
                  nonnormal: Optional[list] = None,
                  min_max: Optional[list] = None, pval: Optional[bool] = False,
@@ -257,8 +258,11 @@ class TableOne:
 
         self._alt_labels = rename
         self._columns = list(columns)  # type: ignore
-        self._continuous = [c for c in columns  # type: ignore
-                            if c not in categorical + [groupby]]
+        if continuous:
+            self._continuous = continuous
+        else:
+            self._continuous = [c for c in columns  # type: ignore
+                                if c not in categorical + [groupby]]
         self._categorical = categorical
         self._ddof = ddof
         self._decimals = decimals
