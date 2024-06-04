@@ -448,9 +448,9 @@ class TableOne:
             raise InputError("Input data contains duplicate values in the "
                              "index. Reset the index and try again.")
 
-        if columns and not set(columns).issubset(data.columns):  # type: ignore
+        if not set(columns).issubset(data.columns):  # type: ignore
             missing_cols = list(set(columns) - set(data.columns))  # type: ignore
-            raise InputError("""Columns not found in
+            raise InputError("""The following columns were not found in the
                                 dataset: {}""".format(missing_cols))
 
         # check for duplicate columns
