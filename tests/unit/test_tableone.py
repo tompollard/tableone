@@ -119,7 +119,11 @@ def data_mixed(n=20):
 
     mu, sigma = 50, 5
     data_mixed['mixed numeric data'] = np.random.normal(mu, sigma, n)
+
+    # FutureWarning: Setting an item of incompatible dtype is deprecated
+    # and will raise an error in a future version of pandas.
     data_mixed.loc[1, 'mixed numeric data'] = 'could not measure'
+
     return data_mixed
 
 
