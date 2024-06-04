@@ -93,7 +93,7 @@ categorical = ['ICU', 'death']
 5. Optionally, a categorical variable for stratification, a list of non-normal variables, and a dictionary of alternative labels:
 
 ```python
-groupby = ['death']
+groupby = 'death'
 nonnormal = ['Age']
 labels={'death': 'mortality'}
 ```
