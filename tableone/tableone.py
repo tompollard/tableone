@@ -220,46 +220,14 @@ class TableOne:
                  tukey_test: bool = False,
                  pval_threshold: Optional[float] = None) -> None:
 
-        # labels is now rename
-        if labels is not None and rename is not None:
-            raise TypeError("TableOne received both labels and rename.")
-        elif labels is not None:
-            warnings.warn("The labels argument is deprecated; use "
-                          "rename instead.", DeprecationWarning)
-            self._alt_labels = labels
-        else:
-            self._alt_labels = rename
+        self._handle_deprecations(labels, rename, isnull, pval_test_name, remarks)
 
-        # isnull is now missing
-        if isnull is not None:
-            warnings.warn("The isnull argument is deprecated; use "
-                          "missing instead.", DeprecationWarning)
-            self._isnull = isnull
-        else:
-            self._isnull = missing
-
-        # pval_test_name is now htest_name
-        if pval_test_name:
-            warnings.warn("The pval_test_name argument is deprecated; use "
-                          "htest_name instead.", DeprecationWarning)
-            self._pval_test_name = pval_test_name
-        else:
-            self._pval_test_name = htest_name
-
-        # remarks are now specified by individual test names
-        if remarks:
-            warnings.warn("The remarks argument is deprecated; specify tests "
-                          "by name instead (e.g. diptest = True)",
-                          DeprecationWarning)
-            self._dip_test = remarks
-            self._normal_test = remarks
-            self._tukey_test = remarks
-        else:
-            self._dip_test = dip_test
-            self._normal_test = normal_test
-            self._tukey_test = tukey_test
-
-        self._handle_deprecations()
+        self._alt_labels = rename
+        self._isnull = missing
+        self._pval_test_name = htest_name
+        self._dip_test = dip_test
+        self._normal_test = normal_test
+        self._tukey_test = tukey_test
 
         # Default assignment for columns if not provided
         if not columns:
@@ -400,11 +368,30 @@ class TableOne:
         if display_all:
             self._set_display_options()
 
-    def _handle_deprecations(self):
+    def _handle_deprecations(self, labels, rename, isnull, pval_test_name, remarks):
         """
         Raise deprecation warnings.
         """
-        pass
+        if labels is not None:
+            warnings.warn("The 'labels' argument of TableOne() is deprecated and will be removed in a future version. "
+                          "Use 'rename' instead.", DeprecationWarning, stacklevel=3)
+
+        if labels is not None and rename is not None:
+            raise TypeError("TableOne received both 'labels' and 'rename'. Please use only 'rename'.")
+
+        if isnull is not None:
+            warnings.warn("The 'isnull' argument is deprecated; use 'missing' instead.",
+                          DeprecationWarning, stacklevel=3)
+
+        # pval_test_name is now htest_name
+        if pval_test_name:
+            warnings.warn("The pval_test_name argument is deprecated; use htest_name instead.", 
+                          DeprecationWarning, stacklevel=3)
+
+        if remarks:
+            warnings.warn("The 'remarks' argument is deprecated; specify tests "
+                          "by name instead (e.g. diptest = True)",
+                          DeprecationWarning, stacklevel=2)
 
     def _validate_arguments(self, groupby, nonnormal, min_max, pval_adjust, order, pval):
         """
