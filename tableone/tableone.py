@@ -222,13 +222,6 @@ class TableOne:
 
         self._handle_deprecations(labels, rename, isnull, pval_test_name, remarks)
 
-        self._alt_labels = rename
-        self._isnull = missing
-        self._pval_test_name = htest_name
-        self._dip_test = dip_test
-        self._normal_test = normal_test
-        self._tukey_test = tukey_test
-
         # Default assignment for columns if not provided
         if not columns:
             columns = data.columns.values  # type: ignore
@@ -262,34 +255,40 @@ class TableOne:
         elif order_cats:
             order = d_order_cats  # type: ignore
 
+        self._alt_labels = rename
         self._columns = list(columns)  # type: ignore
         self._continuous = [c for c in columns  # type: ignore
                             if c not in categorical + [groupby]]
         self._categorical = categorical
-        self._nonnormal = nonnormal
+        self._ddof = ddof
+        self._decimals = decimals
+        self._dip_test = dip_test
+        self._groupby = groupby
+        self._htest = htest
+        self._isnull = missing
+        self._label_suffix = label_suffix
+        self._limit = limit
         self._min_max = min_max
+        self._nonnormal = nonnormal
+        self._normal_test = normal_test
+        self._order = order
+        self._overall = overall
         self._pval = pval
         self._pval_adjust = pval_adjust
-        self._htest = htest
-        self._sort = sort
-        self._groupby = groupby
-        # degrees of freedom for standard deviation
-        self._ddof = ddof
-        self._limit = limit
-        self._order = order
-        self._label_suffix = label_suffix
-        self._decimals = decimals
-        self._smd = smd
+        self._pval_test_name = htest_name
         self._pval_threshold = pval_threshold
-        self._overall = overall
+
+        # column names that cannot be contained in a groupby
+        self._reserved_columns = ['Missing', 'P-Value', 'Test',
+                                  'P-Value (adjusted)', 'SMD', 'Overall']
+
         self._row_percent = row_percent
+        self._smd = smd
+        self._sort = sort
+        self._tukey_test = tukey_test
 
         # display notes and warnings below the table
         self._warnings = {}
-
-        # output column names that cannot be contained in a groupby
-        self._reserved_columns = ['Missing', 'P-Value', 'Test',
-                                  'P-Value (adjusted)', 'SMD', 'Overall']
 
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())  # type: ignore
