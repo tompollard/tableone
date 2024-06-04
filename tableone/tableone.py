@@ -889,8 +889,8 @@ class TableOne:
             df_cont : pandas DataFrame
                 Summarise the continuous variables.
         """
-        aggfuncs = [pd.Series.count, np.mean, np.median, self._std,
-                    self._q25, self._q75, min, max, self._t1_summary]
+        aggfuncs = ['count', 'mean', 'median', self._std,
+                    self._q25, self._q75, 'min', 'max', self._t1_summary]
 
         if self._dip_test:
             aggfuncs.append(self._hartigan_dip)
