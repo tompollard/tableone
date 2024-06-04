@@ -967,7 +967,7 @@ class TestTableOne(object):
                    'LOS': '0.121'}
 
         for k in exp_smd:
-            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'][0]
+            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'].iloc[0]
             assert smd == exp_smd[k]
 
     def test_compute_standardized_mean_difference_categorical(self, data_pn):
@@ -995,7 +995,7 @@ class TestTableOne(object):
                    'death': '0.017'}
 
         for k in exp_smd:
-            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'][0]
+            smd = t.tableone.loc[k, 'Grouped by MechVent']['SMD (0,1)'].iloc[0]
             assert smd == exp_smd[k]
 
     def test_order_of_order_categorical_columns(self):
