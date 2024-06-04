@@ -259,17 +259,15 @@ class TableOne:
             self._normal_test = normal_test
             self._tukey_test = tukey_test
 
-        # if columns are not specified, use all columns
+        self._handle_deprecations()
+
+        # Default assignment for columns if not provided
         if not columns:
             columns = data.columns.values  # type: ignore
 
         self._validate_data(data, columns)
 
-        # groupby should be a string
-        if not groupby:
-            groupby = ''
-        elif groupby and type(groupby) == list:
-            groupby = groupby[0]
+        groupby = self._validate_arguments(groupby)
 
         # nonnormal should be a string
         if not nonnormal:
@@ -431,11 +429,20 @@ class TableOne:
         """
         pass
 
-    def _validate_arguments(self):
+    def _validate_arguments(self, groupby):
         """
         Run validation checks on the arguments.
         """
-        pass
+        if groupby:
+            if isinstance(groupby, list):
+                raise ValueError(f"Invalid 'groupby' type: expected a string, received a list. Use '{groupby[0]}' if it's the intended group.")
+            elif not isinstance(groupby, str):
+                raise TypeError(f"Invalid 'groupby' type: expected a string, received {type(groupby).__name__}.")
+        else:
+            # If 'groupby' is not provided or is explicitly None, treat it as an empty string.
+            groupby = ''
+
+        return groupby
 
     def _validate_data(self, data, columns):
         """
