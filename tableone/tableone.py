@@ -226,7 +226,7 @@ class TableOne:
         self.data_validator.validate(data, columns)  # type: ignore
 
         self.input_validator = InputValidator()
-        self.input_validator.validate(groupby, nonnormal, min_max, pval_adjust, order,
+        self.input_validator.validate(groupby, nonnormal, min_max, pval_adjust, order, # type: ignore
                                       pval, columns, categorical, continuous)  # type: ignore
 
         # if categorical not specified, try to identify categorical
