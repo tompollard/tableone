@@ -230,7 +230,7 @@ class TableOne:
         self._validate_data(data, columns)
 
         (groupby, nonnormal, min_max, pval_adjust, order) = self._validate_arguments(
-            groupby, nonnormal, min_max, pval_adjust, order, pval)
+            groupby, nonnormal, min_max, pval_adjust, order, pval, columns, categorical, continuous)
 
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
@@ -396,10 +396,17 @@ class TableOne:
                           "by name instead (e.g. diptest = True)",
                           DeprecationWarning, stacklevel=2)
 
-    def _validate_arguments(self, groupby, nonnormal, min_max, pval_adjust, order, pval):
+    def _validate_arguments(self, groupby, nonnormal, min_max, pval_adjust, order, pval, columns,
+                            categorical, continuous):
         """
         Run validation checks on the arguments.
         """
+        # Set defaults if None
+        if categorical is None:
+            categorical = []
+        if continuous is None:
+            continuous = []
+
         # validate 'groupby' argument
         if groupby:
             if isinstance(groupby, list):
@@ -455,9 +462,25 @@ class TableOne:
                 # Convert all items in the list to strings safely and efficiently
                 order[key] = [str(v) for v in values]
 
+        # Validate 'pval' argument
         if pval and not groupby:
             raise ValueError("The 'pval' parameter is set to True, but no 'groupby' parameter was specified. "
                              "Please provide a 'groupby' column name to perform p-value calculations.")
+
+        # Validate 'continuous' and 'categorical' arguments
+        # Check for mutual exclusivity
+        cat_set = set(categorical)
+        cont_set = set(continuous)
+        if cat_set & cont_set:
+            raise ValueError("Columns cannot be both categorical and continuous: "
+                             f"{cat_set & cont_set}")
+
+        # Check that all specified columns exist in the DataFrame
+        all_specified = cat_set.union(cont_set)
+        if not all_specified.issubset(set(columns)):
+            missing = list(all_specified - set(columns))
+            raise ValueError("Specified categorical/continuous columns not found in the DataFrame: "
+                             f"{missing}")
 
         return groupby, nonnormal, min_max, pval_adjust, order
 
