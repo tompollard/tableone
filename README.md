@@ -90,7 +90,13 @@ columns = ['Age', 'SysABP', 'Height', 'Weight', 'ICU', 'death']
 categorical = ['ICU', 'death']
 ```
 
-5. Optionally, a categorical variable for stratification, a list of non-normal variables, and a dictionary of alternative labels:
+5. Optionally, a list of columns containing continuous variables:
+
+```python
+continuous = ['Age', 'SysABP', 'Height', 'Weight']
+```
+
+6. Optionally, a categorical variable for stratification, a list of non-normal variables, and a dictionary of alternative labels:
 
 ```python
 groupby = 'death'
@@ -98,19 +104,19 @@ nonnormal = ['Age']
 labels={'death': 'mortality'}
 ```
 
-6. Create an instance of TableOne with the input arguments:
+7. Create an instance of TableOne with the input arguments:
 
 ```python
-mytable = TableOne(data, columns=columns, categorical=categorical, groupby=groupby, nonnormal=nonnormal, rename=labels, pval=False)
+mytable = TableOne(data, columns=columns, categorical=categorical, continuous=continuous, groupby=groupby, nonnormal=nonnormal, rename=labels, pval=False)
 ```
 
-7. Display the table using the `tabulate` method. The `tablefmt` argument allows the table to be displayed in multiple formats, including "github", "grid", "fancy_grid", "rst", "html", and "latex".
+8. Display the table using the `tabulate` method. The `tablefmt` argument allows the table to be displayed in multiple formats, including "github", "grid", "fancy_grid", "rst", "html", and "latex".
 
 ```python
 print(mytable.tabulate(tablefmt = "fancy_grid"))
 ```
 
-8. ...which prints the following table to screen:
+9. ...which prints the following table to screen:
 
 Grouped by mortality:
 
@@ -128,7 +134,7 @@ Grouped by mortality:
 | mortality |  0     | 0        | 864 (100.0)    |                | 
 |           |  1     |          |                | 136 (100.0)    | 
 
-9. Tables can be exported to file in various formats, including LaTeX, CSV, and HTML. Files are exported by calling the ``to_format`` method on the tableone object. For example, mytable can be exported to an Excel spreadsheet named 'mytable.xlsx' with the following command:
+10. Tables can be exported to file in various formats, including LaTeX, CSV, and HTML. Files are exported by calling the ``to_format`` method on the tableone object. For example, mytable can be exported to an Excel spreadsheet named 'mytable.xlsx' with the following command:
 
 ```python
 mytable.to_excel('mytable.xlsx')

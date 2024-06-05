@@ -82,6 +82,10 @@ Example
 
     categorical = ['ascites','hepato','edema','sex','spiders','trt']
 
+#. Optionally, a list of columns containing continuous variables::
+
+    continuous = ['age','bili','albumin','ast','platelet','protime']
+
 #. Optionally, a categorical variable for stratification and a list of non-normal variables::
 
     groupby = 'trt'
@@ -89,7 +93,7 @@ Example
 
 #. Create an instance of TableOne with the input arguments::
 
-    mytable = TableOne(data, columns, categorical, groupby, nonnormal)
+    mytable = TableOne(data, columns, categorical, continuous, groupby, nonnormal)
 
 #. Display the table using the ``tabulate`` method. The ``tablefmt`` argument allows the table to be displayed in multiple formats, including "github", "grid", "fancy_grid", "rst", "html", and "latex".::
 
