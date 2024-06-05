@@ -81,6 +81,8 @@ class TableOne:
         List of columns in the dataset to be included in the final table.
     categorical : list, optional
         List of columns that contain categorical variables.
+    continuous : list, optional
+        List of columns that contain continuous variables.
     groupby : str, optional
         Optional column for stratifying the final table (default: None).
     nonnormal : list, optional
