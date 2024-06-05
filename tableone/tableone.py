@@ -222,8 +222,12 @@ class TableOne:
         if not columns:
             columns = data.columns.values  # type: ignore
 
-        self.validator = DataValidator()
-        self.validator.validate(data, columns)  # type: ignore
+        self.data_validator = DataValidator()
+        self.data_validator.validate(data, columns)  # type: ignore
+
+        self.input_validator = InputValidator()
+        self.input_validator.validate(groupby, nonnormal, min_max, pval_adjust, order,
+                                      pval, columns, categorical, continuous)  # type: ignore
 
         (groupby, nonnormal, min_max, pval_adjust, order) = self._validate_arguments(
             groupby, nonnormal, min_max, pval_adjust, order, pval, columns, categorical, continuous)
@@ -410,10 +414,12 @@ class TableOne:
             elif not isinstance(groupby, str):
                 raise TypeError(f"Invalid 'groupby' type: expected a string, received {type(groupby).__name__}.")
         else:
+            # TODO MOVE THIS SOMEWHERE
             # If 'groupby' is not provided or is explicitly None, treat it as an empty string.
             groupby = ''
 
         # Validate 'nonnormal' argument
+        # TODO: NEED TO MOVE THESE SOMEWHERE
         if nonnormal is None:
             nonnormal = []
         elif isinstance(nonnormal, str):
@@ -456,6 +462,7 @@ class TableOne:
                     raise TypeError(f"The value for '{key}' in 'order' must be a list of categories.")
 
                 # Convert all items in the list to strings safely and efficiently
+                # TODO THIS GOES SOMEWHERE
                 order[key] = [str(v) for v in values]
 
         # Validate 'pval' argument
