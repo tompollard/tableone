@@ -7,7 +7,7 @@ import pandas as pd
 from scipy import stats
 
 from tableone import TableOne, load_dataset
-from tableone.tableone import InputError
+from tableone.validators import InputError
 from tableone.modality import hartigan_diptest, generate_data
 
 seed = 12345
@@ -152,7 +152,7 @@ class TestTableOne(object):
                  categorical=categorical, groupby=groupby,
                  nonnormal=nonnormal, pval=False)
 
-    def test_robust_to_duplicates_in_input_df_index(self):
+    def test_duplicate_index_values_raise_error(self):
 
         d_control = pd.DataFrame(data={'group': [0, 0, 0, 0, 0, 0, 0],
                                  'value': [3, 4, 4, 4, 4, 4, 5]})
@@ -163,6 +163,7 @@ class TestTableOne(object):
         with pytest.raises(InputError):
             TableOne(d, ['value'], groupby='group', pval=True)
 
+        # Test with reset indices to ensure normal behavior
         d_idx_reset = pd.concat([d_case, d_control], ignore_index=True)
         t2 = TableOne(d_idx_reset, ['value'], groupby='group', pval=True)
 

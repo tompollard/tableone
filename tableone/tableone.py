@@ -12,6 +12,7 @@ from scipy import stats
 from statsmodels.stats import multitest
 from tabulate import tabulate
 
+from tableone.validators import DataValidator, InputValidator, InputError
 from tableone.modality import hartigan_diptest
 
 # display deprecation warnings
@@ -51,13 +52,6 @@ def docstring_copier(*sub):
         obj.__doc__ = obj.__doc__.format(*sub)
         return obj
     return dec
-
-
-class InputError(Exception):
-    """
-    Exception raised for errors in the input.
-    """
-    pass
 
 
 class TableOne:
@@ -225,14 +219,15 @@ class TableOne:
 
         self._handle_deprecations(labels, rename, isnull, pval_test_name, remarks)
 
-        # Default assignment for columns if not provided
         if not columns:
             columns = data.columns.values  # type: ignore
 
-        self._validate_data(data, columns)
+        self.data_validator = DataValidator()
+        self.data_validator.validate(data, columns)  # type: ignore
 
-        (groupby, nonnormal, min_max, pval_adjust, order) = self._validate_arguments(
-            groupby, nonnormal, min_max, pval_adjust, order, pval, columns, categorical, continuous)
+        self.input_validator = InputValidator()
+        self.input_validator.validate(groupby, nonnormal, min_max, pval_adjust, order, # type: ignore
+                                      pval, columns, categorical, continuous)  # type: ignore
 
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
@@ -397,117 +392,6 @@ class TableOne:
             warnings.warn("The 'remarks' argument is deprecated; specify tests "
                           "by name instead (e.g. diptest = True)",
                           DeprecationWarning, stacklevel=2)
-
-    def _validate_arguments(self, groupby, nonnormal, min_max, pval_adjust, order, pval, columns,
-                            categorical, continuous):
-        """
-        Run validation checks on the arguments.
-        """
-        # Set defaults if None
-        if categorical is None:
-            categorical = []
-        if continuous is None:
-            continuous = []
-
-        # validate 'groupby' argument
-        if groupby:
-            if isinstance(groupby, list):
-                raise ValueError(f"Invalid 'groupby' type: expected a string, received a list. Use '{groupby[0]}' if it's the intended group.")
-            elif not isinstance(groupby, str):
-                raise TypeError(f"Invalid 'groupby' type: expected a string, received {type(groupby).__name__}.")
-        else:
-            # If 'groupby' is not provided or is explicitly None, treat it as an empty string.
-            groupby = ''
-
-        # Validate 'nonnormal' argument
-        if nonnormal is None:
-            nonnormal = []
-        elif isinstance(nonnormal, str):
-            nonnormal = [nonnormal]
-        elif not isinstance(nonnormal, list):
-            raise TypeError(f"Invalid 'nonnormal' type: expected a list or a string, received {type(nonnormal).__name__}.")
-        else:
-            # Ensure all elements in the list are strings
-            if not all(isinstance(item, str) for item in nonnormal):
-                raise ValueError("All items in 'nonnormal' list must be strings.")
-
-        # Validate 'min_max' argument
-        if min_max is None:
-            min_max = []
-        elif isinstance(min_max, list):
-            # Optionally, further validate that the list contains only strings (if needed)
-            if not all(isinstance(item, str) for item in min_max):
-                raise ValueError("All items in 'min_max' list must be strings representing column names.")
-        else:
-            raise TypeError(f"Invalid 'min_max' type: expected a list, received {type(min_max).__name__}.")
-
-        # Validate 'pval_adjust' argument
-        if pval_adjust is not None:
-            valid_methods = {"bonferroni", "sidak", "holm-sidak", "simes-hochberg", "hommel", None}
-            if isinstance(pval_adjust, str):
-                if pval_adjust.lower() not in valid_methods:
-                    raise ValueError(f"Invalid 'pval_adjust' value: '{pval_adjust}'. "
-                                     f"Expected one of {', '.join(valid_methods)} or None.")
-            else:
-                raise TypeError(f"Invalid type for 'pval_adjust': expected a string or None, "
-                                f"received {type(pval_adjust).__name__}.")
-
-        # Validate 'order' argument
-        if order is not None:
-            if not isinstance(order, dict):
-                raise TypeError("The 'order' parameter must be a dictionary where keys are column names and values are lists of ordered categories.")
-
-            for key, values in order.items():
-                if not isinstance(values, list):
-                    raise TypeError(f"The value for '{key}' in 'order' must be a list of categories.")
-
-                # Convert all items in the list to strings safely and efficiently
-                order[key] = [str(v) for v in values]
-
-        # Validate 'pval' argument
-        if pval and not groupby:
-            raise ValueError("The 'pval' parameter is set to True, but no 'groupby' parameter was specified. "
-                             "Please provide a 'groupby' column name to perform p-value calculations.")
-
-        # Validate 'continuous' and 'categorical' arguments
-        # Check for mutual exclusivity
-        cat_set = set(categorical)
-        cont_set = set(continuous)
-        if cat_set & cont_set:
-            raise ValueError("Columns cannot be both categorical and continuous: "
-                             f"{cat_set & cont_set}")
-
-        # Check that all specified columns exist in the DataFrame
-        all_specified = cat_set.union(cont_set)
-        if not all_specified.issubset(set(columns)):
-            missing = list(all_specified - set(columns))
-            raise ValueError("Specified categorical/continuous columns not found in the DataFrame: "
-                             f"{missing}")
-
-        return groupby, nonnormal, min_max, pval_adjust, order
-
-    def _validate_data(self, data, columns):
-        """
-        Run validation checks on the input dataframe.
-        """
-        if data.empty:
-            raise ValueError("Input data is empty.")
-
-        if not data.index.is_unique:
-            raise InputError("Input data contains duplicate values in the "
-                             "index. Reset the index and try again.")
-
-        if not set(columns).issubset(data.columns):  # type: ignore
-            missing_cols = list(set(columns) - set(data.columns))  # type: ignore
-            raise InputError("""The following columns were not found in the
-                                dataset: {}""".format(missing_cols))
-
-        # check for duplicate columns
-        dups = data[columns].columns[
-            data[columns].columns.duplicated()].unique()
-        if not dups.empty:
-            raise InputError("""Input data contains duplicate
-                                columns: {}""".format(dups))
 
     def __str__(self) -> str:
         return self.tableone.to_string() + self._generate_remarks('\n')
