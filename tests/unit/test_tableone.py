@@ -1228,3 +1228,15 @@ class TestTableOne(object):
         row6 = list(t1.tableone.loc["ICU, n (%)"][group].values[3])
         row6_expect = ['', '215 (84.0)', '41 (16.0)']
         assert row6 == row6_expect
+
+    def test_mutual_exclusivity_of_continuous_and_categorical(self, data_sample):
+        columns = ['normal', 'nonnormal', 'height']
+        continuous = ['normal', 'height']
+        categorical = ['normal', 'nonnormal']
+
+        # Trigger a ValueError by trying to define the same variable as both continuous and categorical
+        with pytest.raises(ValueError) as excinfo:
+            TableOne(data_sample, columns=columns, continuous=continuous, categorical=categorical)
+
+        # Ensure that the error message matches the one produced by the code
+        assert "Columns cannot be both categorical and continuous" in str(excinfo.value)
