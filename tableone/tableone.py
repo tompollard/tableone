@@ -12,6 +12,7 @@ from scipy import stats
 from statsmodels.stats import multitest
 from tabulate import tabulate
 
+from tableone.validators import DataValidator, InputValidator, InputError
 from tableone.modality import hartigan_diptest
 
 # display deprecation warnings
@@ -51,13 +52,6 @@ def docstring_copier(*sub):
         obj.__doc__ = obj.__doc__.format(*sub)
         return obj
     return dec
-
-
-class InputError(Exception):
-    """
-    Exception raised for errors in the input.
-    """
-    pass
 
 
 class TableOne:
@@ -225,11 +219,11 @@ class TableOne:
 
         self._handle_deprecations(labels, rename, isnull, pval_test_name, remarks)
 
-        # Default assignment for columns if not provided
         if not columns:
             columns = data.columns.values  # type: ignore
 
-        self._validate_data(data, columns)
+        self.validator = DataValidator()
+        self.validator.validate(data, columns)  # type: ignore
 
         (groupby, nonnormal, min_max, pval_adjust, order) = self._validate_arguments(
             groupby, nonnormal, min_max, pval_adjust, order, pval, columns, categorical, continuous)
@@ -485,29 +479,6 @@ class TableOne:
                              f"{missing}")
 
         return groupby, nonnormal, min_max, pval_adjust, order
-
-    def _validate_data(self, data, columns):
-        """
-        Run validation checks on the input dataframe.
-        """
-        if data.empty:
-            raise ValueError("Input data is empty.")
-
-        if not data.index.is_unique:
-            raise InputError("Input data contains duplicate values in the "
-                             "index. Reset the index and try again.")
-
-        if not set(columns).issubset(data.columns):  # type: ignore
-            missing_cols = list(set(columns) - set(data.columns))  # type: ignore
-            raise InputError("""The following columns were not found in the
-                                dataset: {}""".format(missing_cols))
-
-        # check for duplicate columns
-        dups = data[columns].columns[
-            data[columns].columns.duplicated()].unique()
-        if not dups.empty:
-            raise InputError("""Input data contains duplicate
-                                columns: {}""".format(dups))
 
     def __str__(self) -> str:
         return self.tableone.to_string() + self._generate_remarks('\n')
