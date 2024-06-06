@@ -101,13 +101,13 @@ continuous = ['Age', 'SysABP', 'Height', 'Weight']
 ```python
 groupby = 'death'
 nonnormal = ['Age']
-labels={'death': 'mortality'}
+rename={'death': 'mortality'}
 ```
 
 7. Create an instance of TableOne with the input arguments:
 
 ```python
-mytable = TableOne(data, columns=columns, categorical=categorical, continuous=continuous, groupby=groupby, nonnormal=nonnormal, rename=labels, pval=False)
+mytable = TableOne(data, columns=columns, categorical=categorical, continuous=continuous, groupby=groupby, nonnormal=nonnormal, rename=rename, pval=False)
 ```
 
 8. Display the table using the `tabulate` method. The `tablefmt` argument allows the table to be displayed in multiple formats, including "github", "grid", "fancy_grid", "rst", "html", and "latex".
