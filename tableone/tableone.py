@@ -229,6 +229,12 @@ class TableOne:
         self.input_validator.validate(groupby, nonnormal, min_max, pval_adjust, order, # type: ignore
                                       pval, columns, categorical, continuous)  # type: ignore
 
+        # nonnormal should be a list
+        if not nonnormal:
+            nonnormal = []
+        elif nonnormal and type(nonnormal) == str:
+            nonnormal = [nonnormal]
+
         # if categorical not specified, try to identify categorical
         if not categorical and type(categorical) != list:
             categorical = self._detect_categorical_columns(data[columns])
