@@ -10,11 +10,9 @@ from numpy.linalg import LinAlgError
 import pandas as pd
 from tabulate import tabulate
 
+from tableone.deprecations import deprecated_parameter
 from tableone.statistics import Statistics
 from tableone.validators import DataValidator, InputValidator, InputError
-
-# display deprecation warnings
-warnings.simplefilter('always', DeprecationWarning)
 
 
 def load_dataset(name: str) -> pd.DataFrame:
@@ -215,7 +213,10 @@ class TableOne:
                  tukey_test: bool = False,
                  pval_threshold: Optional[float] = None) -> None:
 
-        self._handle_deprecations(labels, rename, isnull, pval_test_name, remarks)
+        deprecated_parameter(labels, "labels", "Use 'rename' instead")
+        deprecated_parameter(isnull, "isnull", "Use 'missing' instead")
+        deprecated_parameter(pval_test_name, "pval_test_name", "Use 'htest_name' instead")
+        deprecated_parameter(remarks, "remarks", "Use test names instead (e.g. diptest = True)")
 
         if not columns:
             columns = data.columns.values  # type: ignore
@@ -225,7 +226,7 @@ class TableOne:
         self.data_validator.validate(data, columns)  # type: ignore
 
         self.input_validator = InputValidator()
-        self.input_validator.validate(groupby, nonnormal, min_max, pval_adjust, order, # type: ignore
+        self.input_validator.validate(groupby, nonnormal, min_max, pval_adjust, order,  # type: ignore
                                       pval, columns, categorical, continuous)  # type: ignore
 
         # nonnormal should be a list
@@ -372,31 +373,6 @@ class TableOne:
         # set display options
         if display_all:
             self._set_display_options()
-
-    def _handle_deprecations(self, labels, rename, isnull, pval_test_name, remarks):
-        """
-        Raise deprecation warnings.
-        """
-        if labels is not None:
-            warnings.warn("The 'labels' argument of TableOne() is deprecated and will be removed in a future version. "
-                          "Use 'rename' instead.", DeprecationWarning, stacklevel=3)
-
-        if labels is not None and rename is not None:
-            raise TypeError("TableOne received both 'labels' and 'rename'. Please use only 'rename'.")
-
-        if isnull is not None:
-            warnings.warn("The 'isnull' argument is deprecated; use 'missing' instead.",
-                          DeprecationWarning, stacklevel=3)
-
-        # pval_test_name is now htest_name
-        if pval_test_name:
-            warnings.warn("The pval_test_name argument is deprecated; use htest_name instead.", 
-                          DeprecationWarning, stacklevel=3)
-
-        if remarks:
-            warnings.warn("The 'remarks' argument is deprecated; specify tests "
-                          "by name instead (e.g. diptest = True)",
-                          DeprecationWarning, stacklevel=2)
 
     def __str__(self) -> str:
         return self.tableone.to_string() + self._generate_remarks('\n')
