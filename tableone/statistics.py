@@ -1,27 +1,31 @@
 import warnings
 
 import numpy as np
+from numpy.linalg import LinAlgError
 import pandas as pd
 from scipy import stats
 from statsmodels.stats import multitest
 
 from tableone.modality import hartigan_diptest
+from tableone.validators import InputError
 
 
 class Statistics:
     def __init__(self):
-        """Initialize the Statistics class."""
+        """
+        Initialize the Statistics class, which provides statistical methods used by TableOne.
+        """
         pass
 
     def _q25(self, x):
         """
-        Compute percentile (25th)
+        Compute 25th percentile
         """
         return np.nanpercentile(x.values, 25)
 
     def _q75(self, x):
         """
-        Compute percentile (75th)
+        Compute 75th percentile
         """
         return np.nanpercentile(x.values, 75)
 
@@ -61,7 +65,7 @@ class Statistics:
 
     def _hartigan_dip(self, x):
         """
-        Compute Hartigan Dip Test for modality.
+        Compute Hartigan Dip Test for modality (test the hypothesis that the data is unimodal).
 
         p < 0.05 suggests possible multimodality.
         """
@@ -75,21 +79,21 @@ class Statistics:
 
     def _outliers(self, x) -> int:
         """
-        Compute number of outliers
+        Compute the number of outliers based on Tukey's test with a threshold of 1.5.
         """
         outliers = self._tukey(x, threshold=1.5)
         return np.size(outliers)
 
     def _far_outliers(self, x) -> int:
         """
-        Compute number of "far out" outliers
+        Compute the number of "far out" outliers based on Tukey's test with a threshold of 3.0.
         """
         outliers = self._tukey(x, threshold=3.0)
         return np.size(outliers)
 
     def _normality(self, x):
         """
-        Compute test for normal distribution.
+        Perform a test for normality.
 
         Null hypothesis: x comes from a normal distribution
         p < alpha suggests the null hypothesis can be rejected.
@@ -200,3 +204,160 @@ class Statistics:
         Apply correction to p values for multiple testing.
         """
         return multitest.multipletests(pvals, alpha=alpha, method=method)
+
+    def _cont_smd(self, data1=None, data2=None, mean1=None, mean2=None,
+                  sd1=None, sd2=None, n1=None, n2=None, unbiased=False):
+        """
+        Compute the standardized mean difference (regular or unbiased) using
+        either raw data or summary measures.
+
+        Parameters
+        ----------
+        data1 : list
+            List of values in dataset 1 (control).
+        data2 : list
+            List of values in dataset 2 (treatment).
+        mean1 : float
+            Mean of dataset 1 (control).
+        mean2 : float
+            Mean of dataset 2 (treatment).
+        sd1 : float
+            Standard deviation of dataset 1 (control).
+        sd2 : float
+            Standard deviation of dataset 2 (treatment).
+        n1 : int
+            Sample size of dataset 1 (control).
+        n2 : int
+            Sample size of dataset 2 (treatment).
+        unbiased : bool
+            Return an unbiased estimate using Hedges' correction. Correction
+            factor approximated using the formula proposed in Hedges 2011.
+            (default = False)
+
+        Returns
+        -------
+        smd : float
+            Estimated standardized mean difference.
+        se : float
+            Standard error of the estimated standardized mean difference.
+        """
+        if (data1 and not data2) or (data2 and not data1):
+            raise InputError('Two sets of data must be provided.')
+        elif data1 and data2:
+            if any([mean1, mean2, sd1, sd2, n1, n2]):
+                warnings.warn("""Mean, n, and sd were computed from the data.
+                                 These input args were ignored.""")
+            mean1 = np.mean(data1)
+            mean2 = np.mean(data2)
+            sd1 = np.std(data1)
+            sd2 = np.std(data2)
+            n1 = len(data1)
+            n2 = len(data2)
+
+        # if (mean1 and not mean2) or (mean2 and not mean1):
+        #     raise InputError('mean1 and mean2 must both be provided.')
+
+        # if (sd1 and not sd2) or (sd2 and not sd1):
+        #     raise InputError('sd1 and sd2 must both be provided.')
+
+        # if (n1 and not n2) or (n2 and not n1):
+        #     raise InputError('n1 and n2 must both be provided.')
+
+        # cohens_d
+        smd = (mean2 - mean1) / np.sqrt((sd1 ** 2 + sd2 ** 2) / 2)  # type: ignore
+
+        # standard error
+        v_d = ((n1+n2) / (n1*n2)) + ((smd ** 2) / (2*(n1+n2)))  # type: ignore
+        se = np.sqrt(v_d)
+
+        if unbiased:
+            # Hedges correction (J. Hedges, 1981)
+            # Approximation for the the correction factor from:
+            # Introduction to Meta-Analysis. Michael Borenstein,
+            # L. V. Hedges, J. P. T. Higgins and H. R. Rothstein
+            # Wiley (2011). Chapter 4. Effect Sizes Based on Means.
+            j = 1 - (3/(4*(n1+n2-2)-1))  # type: ignore
+            smd = j * smd
+            v_g = (j ** 2) * v_d
+            se = np.sqrt(v_g)
+
+        return smd, se
+
+    def _cat_smd(self, prop1=None, prop2=None, n1=None, n2=None,
+                 unbiased=False):
+        """
+        Compute the standardized mean difference (regular or unbiased) using
+        either raw data or summary measures.
+
+        Parameters
+        ----------
+        prop1 : list
+            Proportions (range 0-1) for each categorical value in dataset 1
+            (control).
+        prop2 : list
+            Proportions (range 0-1) for each categorical value in dataset 2
+            (treatment).
+        n1 : int
+            Sample size of dataset 1 (control).
+        n2 : int
+            Sample size of dataset 2 (treatment).
+        unbiased : bool
+            Return an unbiased estimate using Hedges' correction. Correction
+            factor approximated using the formula proposed in Hedges 2011.
+            (default = False)
+
+        Returns
+        -------
+        smd : float
+            Estimated standardized mean difference.
+        se : float
+            Standard error of the estimated standardized mean difference.
+        """
+        # Categorical SMD Yang & Dalton 2012
+        # https://support.sas.com/resources/papers/proceedings12/335-2012.pdf
+        prop1 = np.asarray(prop1)
+        prop2 = np.asarray(prop2)
+
+        # Drop first level for consistency with R tableone
+        # "to eliminate dependence if more than two levels"
+        prop1 = prop1[1:]
+        prop2 = prop2[1:]
+
+        lst_cov = []
+        for p in [prop1, prop2]:
+            variance = p * (1 - p)
+            covariance = - np.outer(p, p)  # type: ignore
+            covariance[np.diag_indices_from(covariance)] = variance
+            lst_cov.append(covariance)
+
+        mean_diff = np.asarray(prop2 - prop1).reshape((1, -1))  # type: ignore
+        mean_cov = (lst_cov[0] + lst_cov[1])/2
+
+        # TODO: add steps to deal with nulls
+
+        try:
+            sq_md = mean_diff @ np.linalg.inv(mean_cov) @ mean_diff.T
+        except LinAlgError:
+            sq_md = np.nan
+
+        try:
+            smd = np.asarray(np.sqrt(sq_md))[0][0]
+        except IndexError:
+            smd = np.nan
+
+        # standard error
+        v_d = ((n1+n2) / (n1*n2)) + ((smd ** 2) / (2*(n1+n2)))  # type: ignore
+        se = np.sqrt(v_d)
+
+        if unbiased:
+            # Hedges correction (J. Hedges, 1981)
+            # Approximation for the the correction factor from:
+            # Introduction to Meta-Analysis. Michael Borenstein,
+            # L. V. Hedges, J. P. T. Higgins and H. R. Rothstein
+            # Wiley (2011). Chapter 4. Effect Sizes Based on Means.
+            j = 1 - (3/(4*(n1+n2-2)-1))  # type: ignore
+            smd = j * smd
+            v_g = (j ** 2) * v_d
+            se = np.sqrt(v_g)
+
+        return smd, se

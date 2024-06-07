@@ -927,15 +927,15 @@ class TestTableOne(object):
         sd1 = 5.5
         sd2 = 4.5
 
-        smd, se = t._cont_smd(mean1=mean1, mean2=mean2, sd1=sd1, sd2=sd2,
-                              n1=n1, n2=n2)
+        smd, se = t.statistics._cont_smd(mean1=mean1, mean2=mean2, sd1=sd1, sd2=sd2,
+                                         n1=n1, n2=n2)
 
         assert round(smd, 4) == -0.5970
         assert round(se, 4) == 0.2044
 
         # Test unbiased estimate using Hedges correction (Hedges, 2011)
-        smd, se = t._cont_smd(mean1=mean1, mean2=mean2, sd1=sd1, sd2=sd2,
-                              n1=n1, n2=n2, unbiased=True)
+        smd, se = t.statistics._cont_smd(mean1=mean1, mean2=mean2, sd1=sd1, sd2=sd2,
+                                         n1=n1, n2=n2, unbiased=True)
 
         assert round(smd, 4) == -0.5924
         assert round(se, 4) == 0.2028
@@ -943,7 +943,7 @@ class TestTableOne(object):
         # Test on input data
         data1 = [1, 2, 3, 4, 5, 6, 7, 8]
         data2 = [2, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        smd_data, se_data = t._cont_smd(data1=data1, data2=data2)
+        smd_data, se_data = t.statistics._cont_smd(data1=data1, data2=data2)
 
         mean1 = np.mean(data1)
         mean2 = np.mean(data2)
@@ -951,8 +951,8 @@ class TestTableOne(object):
         n2 = len(data2)
         sd1 = np.std(data1)
         sd2 = np.std(data2)
-        smd_summary, se_summary = t._cont_smd(mean1=mean1, mean2=mean2,
-                                              sd1=sd1, sd2=sd2, n1=n1, n2=n2)
+        smd_summary, se_summary = t.statistics._cont_smd(mean1=mean1, mean2=mean2,
+                                                         sd1=sd1, sd2=sd2, n1=n1, n2=n2)
 
         assert round(smd_data, 4) == round(smd_summary, 4)
         assert round(se_data, 4) == round(se_summary, 4)
