@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 
@@ -183,3 +185,117 @@ class Tables:
         f = '{{:.{}f}}'.format(n)
 
         return f.format(row[col])
+
+    def create_cat_describe(self,
+                            data: pd.DataFrame,
+                            categorical,
+                            decimals,
+                            row_percent,
+                            groupby: Optional[str] = None,
+                            groupbylvls: Optional[list] = None
+                            ) -> pd.DataFrame:
+        """
+        Describe the categorical data.
+
+        Parameters
+        ----------
+            data : pandas DataFrame
+                The input dataset.
+            groupby : Str
+                Variable to group by.
+            groupbylvls : List
+                List of levels in the groupby variable.
+
+        Returns
+        ----------
+            df_cat : pandas DataFrame
+                Summarise the categorical variables.
+        """
+        group_dict = {}
+
+        cat_slice = data[categorical].copy()
+
+        for g in groupbylvls:  # type: ignore
+            if groupby:
+                df = cat_slice.loc[data[groupby] == g, categorical]
+            else:
+                df = cat_slice.copy()
+
+            # create n column and null count column
+            # must be done before converting values to strings
+            ct = df.count().to_frame(name='n')
+            ct.index.name = 'variable'
+            nulls = df.isnull().sum().to_frame(name='Missing')
+            nulls.index.name = 'variable'
+
+            # Convert to str to handle int converted to boolean in the index.
+            # Also avoid nans.
+            for column in df.columns:
+                df[column] = [str(row) if not pd.isnull(row)
+                              else None for row in df[column].values]
+                cat_slice[column] = [str(row) if not pd.isnull(row)
+                                     else None for row
+                                     in cat_slice[column].values]
+
+            # create a dataframe with freq, proportion
+            df = df.melt().groupby(['variable',
+                                    'value']).size().to_frame(name='freq')
+
+            df['percent'] = df['freq'].div(df.groupby(level=0).freq.sum(),
+                                           level=0).astype(float) * 100
+
+            # add row percent
+            df['percent_row'] = df['freq'].div(cat_slice[categorical]
+                                               .melt()
+                                               .groupby(['variable', 'value'])
+                                               .size()) * 100
+
+            # set number of decimal places for percent
+            if isinstance(decimals, int):
+                n = decimals
+                f = '{{:.{}f}}'.format(n)
+                df['percent_str'] = df['percent'].astype(float).map(f.format)
+                df['percent_row_str'] = df['percent_row'].astype(float).map(
+                    f.format)
+            elif isinstance(decimals, dict):
+                df.loc[:, 'percent_str'] = df.apply(self.format_cat, axis=1,
+                                                    args=['percent', decimals])
+                df.loc[:, 'percent_row_str'] = df.apply(self.format_cat, axis=1,
+                                                        args=['percent_row', decimals])
+            else:
+                n = 1
+                f = '{{:.{}f}}'.format(n)
+                df['percent_str'] = df['percent'].astype(float).map(f.format)
+                df['percent_row_str'] = df['percent_row'].astype(float).map(
+                    f.format)
+
+            # join count column
+            df = df.join(ct)
+
+            # only save null count to the first category for each variable
+            # do this by extracting the first category from the df row index
+            levels = df.reset_index()[['variable',
+                                       'value']].groupby('variable').first()
+            # add this category to the nulls table
+            nulls = nulls.join(levels)
+            nulls = nulls.set_index('value', append=True)
+            # join nulls to categorical
+            df = df.join(nulls)
+
+            # add summary column
+            if row_percent:
+                df['t1_summary'] = (df.freq.map(str) + ' ('
+                                    + df.percent_row_str.map(str)+')')
+            else:
+                df['t1_summary'] = (df.freq.map(str) + ' ('
+                                    + df.percent_str.map(str)+')')
+
+            # add to dictionary
+            group_dict[g] = df
+
+        df_cat = pd.concat(group_dict, axis=1)
+        # ensure the groups are the 2nd level of the column index
+        if df_cat.columns.nlevels > 1:
+            df_cat = df_cat.swaplevel(0, 1, axis=1).sort_index(axis=1, level=0)
+
+        return df_cat
