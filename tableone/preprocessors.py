@@ -46,3 +46,28 @@ def detect_categorical(data, groupby) -> list:
         likely_cat = [x for x in likely_cat if x != groupby]
 
     return likely_cat
+
+
+def order_categorical(data, order):
+    """
+    Define an order for categorical variables.
+    """
+    # if input df has ordered categorical variables, get the order.
+    order_cats = [x for x in data.select_dtypes("category")
+                  if data[x].dtype.ordered]  # type: ignore
+
+    if any(order_cats):
+        d_order_cats = {v: data[v].cat.categories for v in order_cats}
+        d_order_cats = {k: ["{}".format(v) for v in d_order_cats[k]]
+                        for k in d_order_cats}
+
+    # combine the orders. custom order takes precedence.
+    if order_cats and order:
+        new = {**order, **d_order_cats}  # type: ignore
+        for k in order:
+            new[k] = order[k] + [x for x in new[k] if x not in order[k]]
+        order = new
+    elif order_cats:
+        order = d_order_cats  # type: ignore
+
+    return order
