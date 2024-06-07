@@ -26,6 +26,10 @@ class DataValidator:
         self.check_columns_exist(data, columns)
         self.check_duplicate_columns(data, columns)
 
+    def validate_input(self, data: pd.DataFrame):
+        if not isinstance(data, pd.DataFrame):
+            raise InputError("Data must be a pandas DataFrame")
+
     def check_empty_data(self, data: pd.DataFrame):
         """Ensure the dataframe is not empty."""
         if data.empty:
