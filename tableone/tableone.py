@@ -238,11 +238,7 @@ class TableOne:
 
         # if categorical is set to None, try to automatically detect
         # if empty list is provided, assume there are no categorical variables.
-        if categorical is None:
-            self._categorical = detect_categorical(data[self._columns], groupby)
-        else:
-            self._categorical = categorical
-
+        self._categorical = detect_categorical(data[self._columns], groupby) if categorical is None else categorical
         self._order = order_categorical(data, order)
 
         self._alt_labels = rename
