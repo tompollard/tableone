@@ -562,18 +562,6 @@ class TableOne:
 
         return df_cont
 
-    def _format_cat(self, row, col) -> str:
-        """
-        Format values to n decimal places.
-        """
-        var = row.name[0]
-        if var in self._decimals:
-            n = self._decimals[var]  # type: ignore
-        else:
-            n = 1
-        f = '{{:.{}f}}'.format(n)
-        return f.format(row[col])
-
     def _create_cat_describe(self, data: pd.DataFrame,
                              groupby: Optional[str] = None,
                              groupbylvls: Optional[list] = None) -> pd.DataFrame:
@@ -641,11 +629,10 @@ class TableOne:
                 df['percent_row_str'] = df['percent_row'].astype(float).map(
                     f.format)
             elif isinstance(self._decimals, dict):
-                df.loc[:, 'percent_str'] = df.apply(self._format_cat, axis=1,
-                                                    args=['percent'])
-                df.loc[:, 'percent_row_str'] = df.apply(self._format_cat,
-                                                        axis=1,
-                                                        args=['percent_row'])
+                df.loc[:, 'percent_str'] = df.apply(self.tables.format_cat, axis=1,
+                                                    args=['percent', self._decimals])
+                df.loc[:, 'percent_row_str'] = df.apply(self.tables.format_cat, axis=1,
+                                                        args=['percent_row', self._decimals])
             else:
                 n = 1
                 f = '{{:.{}f}}'.format(n)

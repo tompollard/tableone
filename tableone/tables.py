@@ -170,3 +170,16 @@ class Tables:
                 pass
 
         return df
+
+    def format_cat(self, row, col, decimals) -> str:
+        """
+        Format values to n decimal places.
+        """
+        var = row.name[0]
+        if var in decimals:
+            n = decimals[var]  # type: ignore
+        else:
+            n = 1
+        f = '{{:.{}f}}'.format(n)
+
+        return f.format(row[col])
