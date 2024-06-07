@@ -439,3 +439,53 @@ class Tables:
                                           Overall], axis=1, keys=["Overall"]))
 
         return table
+
+    def create_cat_table(self,
+                         data,
+                         overall,
+                         cat_describe,
+                         categorical,
+                         pval,
+                         pval_adjust,
+                         htest_table,
+                         smd,
+                         smd_table,
+                         groupby,
+                         cat_describe_all):
+        """
+        Create table one for categorical data.
+
+        Returns
+        ----------
+        table : pandas DataFrame
+            A table summarising the categorical variables.
+        """
+        table = cat_describe['t1_summary'].copy()
+
+        # add the total count of null values across all levels
+        isnull = data[categorical].isnull().sum().to_frame(name='Missing')
+        isnull.index = isnull.index.rename('variable')
+
+        try:
+            table = table.join(isnull)
+        # if columns form a CategoricalIndex, need to convert to string first
+        except TypeError:
+            table.columns = table.columns.astype(str)
+            table = table.join(isnull)
+
+        # add pval column
+        if pval and pval_adjust:
+            table = table.join(htest_table[['P-Value (adjusted)', 'Test']])
+        elif pval:
+            table = table.join(htest_table[['P-Value', 'Test']])
+
+        # add standardized mean difference (SMD) column/s
+        if smd:
+            table = table.join(smd_table)
+
+        # join the overall column if needed
+        if groupby and overall:
+            table = table.join(pd.concat([cat_describe_all['t1_summary'].Overall],
+                                         axis=1, keys=["Overall"]))
+
+        return table

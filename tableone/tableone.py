@@ -337,7 +337,19 @@ class TableOne:
 
         # create continuous and categorical tables
         if self._categorical:
-            self.cat_table = self._create_cat_table(data, self._overall)
+            self.cat_table = self.tables.create_cat_table(data,
+                                                          self._overall,
+                                                          self.cat_describe,
+                                                          self._categorical,
+                                                          self._pval,
+                                                          self._pval_adjust,
+                                                          self._htest_table,
+                                                          self._smd,
+                                                          self.smd_table,
+                                                          self._groupby,
+                                                          self.cat_describe_all)
+
+
 
         if self._continuous:
             self.cont_table = self.tables.create_cont_table(data,
@@ -521,46 +533,6 @@ class TableOne:
             else:
                 f = '{{:.{}f}} ({{:.{}f}})'.format(n, n)
                 return f.format(np.nanmean(x.values), self.statistics._std(x, self._ddof))  # type: ignore
-
-    def _create_cat_table(self, data, overall):
-        """
-        Create table one for categorical data.
-
-        Returns
-        ----------
-        table : pandas DataFrame
-            A table summarising the categorical variables.
-        """
-        table = self.cat_describe['t1_summary'].copy()
-
-        # add the total count of null values across all levels
-        isnull = data[self._categorical].isnull().sum().to_frame(
-            name='Missing')
-        isnull.index = isnull.index.rename('variable')
-        try:
-            table = table.join(isnull)
-        # if columns form a CategoricalIndex, need to convert to string first
-        except TypeError:
-            table.columns = table.columns.astype(str)
-            table = table.join(isnull)
-
-        # add pval column
-        if self._pval and self._pval_adjust:
-            table = table.join(self._htest_table[['P-Value (adjusted)',
-                                                  'Test']])
-        elif self._pval:
-            table = table.join(self._htest_table[['P-Value', 'Test']])
-
-        # add standardized mean difference (SMD) column/s
-        if self._smd:
-            table = table.join(self.smd_table)
-
-        # join the overall column if needed
-        if self._groupby and overall:
-            table = table.join(pd.concat([self.cat_describe_all['t1_summary'].
-                                          Overall], axis=1, keys=["Overall"]))
-
-        return table
 
     def _create_tableone(self, data):
         """
