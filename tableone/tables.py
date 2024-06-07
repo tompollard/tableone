@@ -106,3 +106,67 @@ class Tables:
             df['adjust method'] = pval_adjust
 
         return df
+
+    def create_smd_table(self,
+                         data: pd.DataFrame,
+                         groupbylvls,
+                         continuous,
+                         categorical,
+                         cont_describe,
+                         cat_describe) -> pd.DataFrame:
+        """
+        Create a table containing pairwise Standardized Mean Differences
+        (SMDs).
+
+        Parameters
+        ----------
+            data : pandas DataFrame
+                The input dataset.
+
+        Returns
+        ----------
+            df : pandas DataFrame
+                A table containing pairwise standardized mean differences
+                (SMDs).
+        """
+        # create the SMD table
+        permutations = [sorted((x, y),
+                        key=lambda f: groupbylvls.index(f))
+                        for x in groupbylvls
+                        for y in groupbylvls if x is not y]
+
+        p_set = set(tuple(x) for x in permutations)
+
+        colname = 'SMD ({0},{1})'
+        columns = [colname.format(x[0], x[1]) for x in p_set]
+        df = pd.DataFrame(index=continuous+categorical, columns=columns)
+        df.index = df.index.rename('variable')
+
+        for p in p_set:
+            try:
+                for v in cont_describe.index:
+                    smd, _ = self.statistics._cont_smd(
+                                mean1=cont_describe['mean'][p[0]].loc[v],
+                                mean2=cont_describe['mean'][p[1]].loc[v],
+                                sd1=cont_describe['std'][p[0]].loc[v],
+                                sd2=cont_describe['std'][p[1]].loc[v],
+                                n1=cont_describe['count'][p[0]].loc[v],
+                                n2=cont_describe['count'][p[1]].loc[v],
+                                unbiased=False)
+                    df.loc[v, colname.format(p[0], p[1])] = smd
+            except AttributeError:
+                pass
+
+            try:
+                for v, _ in cat_describe.groupby(level=0):
+                    smd, _ = self.statistics._cat_smd(
+                        prop1=cat_describe.loc[[v]]['percent'][p[0]].values/100,
+                        prop2=cat_describe.loc[[v]]['percent'][p[1]].values/100,
+                        n1=cat_describe.loc[[v]]['freq'][p[0]].sum(),
+                        n2=cat_describe.loc[[v]]['freq'][p[1]].sum(),
+                        unbiased=False)
+                    df.loc[v, colname.format(p[0], p[1])] = smd  # type: ignore
+            except AttributeError:
+                pass
+
+        return df

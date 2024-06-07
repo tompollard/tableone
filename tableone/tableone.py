@@ -280,12 +280,12 @@ class TableOne:
                                                                self._pval, self._pval_adjust)
 
         # create overall tables if required
-        if self._categorical and self._groupby and overall:
+        if self._categorical and self._groupby and self._overall:
             self.cat_describe_all = self._create_cat_describe(data=data,
                                                               groupby=None,
                                                               groupbylvls=['Overall'])
 
-        if self._continuous and self._groupby and overall:
+        if self._continuous and self._groupby and self._overall:
             self.cont_describe_all = self._create_cont_describe(data=data,
                                                                 groupby=None)
 
@@ -301,14 +301,19 @@ class TableOne:
 
         # compute standardized mean differences
         if self._smd:
-            self.smd_table = self._create_smd_table(data)
+            self.smd_table = self.tables.create_smd_table(data,
+                                                          self._groupbylvls,
+                                                          self._continuous,
+                                                          self._categorical,
+                                                          self.cont_describe,
+                                                          self.cat_describe)
 
         # create continuous and categorical tables
         if self._categorical:
-            self.cat_table = self._create_cat_table(data, overall)
+            self.cat_table = self._create_cat_table(data, self._overall)
 
         if self._continuous:
-            self.cont_table = self._create_cont_table(data, overall)
+            self.cont_table = self._create_cont_table(data, self._overall)
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
@@ -678,67 +683,6 @@ class TableOne:
             df_cat = df_cat.swaplevel(0, 1, axis=1).sort_index(axis=1, level=0)
 
         return df_cat
-
-    def _create_smd_table(self, data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Create a table containing pairwise Standardized Mean Differences
-        (SMDs).
-
-        Parameters
-        ----------
-            data : pandas DataFrame
-                The input dataset.
-
-        Returns
-        ----------
-            df : pandas DataFrame
-                A table containing pairwise standardized mean differences
-                (SMDs).
-        """
-        # create the SMD table
-        permutations = [sorted((x, y),
-                        key=lambda f: self._groupbylvls.index(f))
-                        for x in self._groupbylvls
-                        for y in self._groupbylvls if x is not y]
-
-        p_set = set(tuple(x) for x in permutations)
-
-        colname = 'SMD ({0},{1})'
-        columns = [colname.format(x[0], x[1]) for x in p_set]
-        df = pd.DataFrame(index=self._continuous+self._categorical,
-                          columns=columns)
-        df.index = df.index.rename('variable')
-
-        for p in p_set:
-            try:
-                for v in self.cont_describe.index:
-                    smd, _ = self.statistics._cont_smd(
-                                mean1=self.cont_describe['mean'][p[0]].loc[v],
-                                mean2=self.cont_describe['mean'][p[1]].loc[v],
-                                sd1=self.cont_describe['std'][p[0]].loc[v],
-                                sd2=self.cont_describe['std'][p[1]].loc[v],
-                                n1=self.cont_describe['count'][p[0]].loc[v],
-                                n2=self.cont_describe['count'][p[1]].loc[v],
-                                unbiased=False)
-                    df.loc[v, colname.format(p[0], p[1])] = smd
-            except AttributeError:
-                pass
-
-            try:
-                for v, _ in self.cat_describe.groupby(level=0):
-                    smd, _ = self.statistics._cat_smd(
-                        prop1=self.cat_describe.loc[[v]]['percent'][p[0]]
-                        .values/100,
-                        prop2=self.cat_describe.loc[[v]]['percent'][p[1]]
-                        .values/100,
-                        n1=self.cat_describe.loc[[v]]['freq'][p[0]].sum(),
-                        n2=self.cat_describe.loc[[v]]['freq'][p[1]].sum(),
-                        unbiased=False)
-                    df.loc[v, colname.format(p[0], p[1])] = smd  # type: ignore
-            except AttributeError:
-                pass
-
-        return df
 
     def _create_cont_table(self, data, overall) -> pd.DataFrame:
         """
