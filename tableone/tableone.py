@@ -13,7 +13,7 @@ from tableone.deprecations import deprecated_parameter
 from tableone.preprocessors import ensure_list, detect_categorical, order_categorical, get_groups
 from tableone.statistics import Statistics
 from tableone.tables import Tables
-from tableone.validators import DataValidator, InputValidator, InputError
+from tableone.validators import DataValidator, InputValidator
 
 
 def load_dataset(name: str) -> pd.DataFrame:
@@ -289,8 +289,14 @@ class TableOne:
                                                                     groupbylvls=['Overall'])
 
         if self._continuous and self._groupby and self._overall:
-            self.cont_describe_all = self._create_cont_describe(data=data,
-                                                                groupby=None)
+            self.cont_describe_all = self.tables.create_cont_describe(data,
+                                                                      self._ddof,
+                                                                      self._t1_summary,
+                                                                      self._dip_test,
+                                                                      self._tukey_test,
+                                                                      self._normal_test,
+                                                                      self._continuous,
+                                                                      groupby=None)
 
         # create descriptive tables
         if self._categorical:
@@ -302,8 +308,14 @@ class TableOne:
                                                                 groupbylvls=self._groupbylvls)
 
         if self._continuous:
-            self.cont_describe = self._create_cont_describe(data=data,
-                                                            groupby=self._groupby)
+            self.cont_describe = self.tables.create_cont_describe(data,
+                                                                  self._ddof,
+                                                                  self._t1_summary,
+                                                                  self._dip_test,
+                                                                  self._tukey_test,
+                                                                  self._normal_test,
+                                                                  self._continuous,
+                                                                  groupby=self._groupby)
 
         # compute standardized mean differences
         if self._smd:
@@ -490,83 +502,6 @@ class TableOne:
             else:
                 f = '{{:.{}f}} ({{:.{}f}})'.format(n, n)
                 return f.format(np.nanmean(x.values), self.statistics._std(x, self._ddof))  # type: ignore
-
-    def _create_cont_describe(self,
-                              data: pd.DataFrame,
-                              groupby: Optional[str] = None) -> pd.DataFrame:
-        """
-        Describe the continuous data.
-
-        Parameters
-        ----------
-            data : pandas DataFrame
-                The input dataset.
-
-        Returns
-        ----------
-            df_cont : pandas DataFrame
-                Summarise the continuous variables.
-        """
-        # wrapper for std with ddof
-        def std(x):
-            return self.statistics._std(x, self._ddof)
-
-        aggfuncs = ['count', 'mean', 'median', std,
-                    self.statistics._q25, self.statistics._q75,
-                    'min', 'max', self._t1_summary]
-
-        if self._dip_test:
-            aggfuncs.append(self.statistics._hartigan_dip)
-
-        if self._tukey_test:
-            aggfuncs.append(self.statistics._outliers)
-            aggfuncs.append(self.statistics._far_outliers)
-
-        if self._normal_test:
-            aggfuncs.append(self.statistics._normality)
-
-        # coerce continuous data to numeric
-        cont_data = data[self._continuous].apply(pd.to_numeric,
-                                                 errors='coerce')
-        # check all data in each continuous column is numeric
-        bad_cols = cont_data.count() != data[self._continuous].count()
-        bad_cols = cont_data.columns[bad_cols]
-        if len(bad_cols) > 0:
-            msg = ("The following continuous column(s) have "
-                   "non-numeric values: {variables}. Either specify the "
-                   "column(s) as categorical or remove the "
-                   "non-numeric values.").format(variables=bad_cols.values)
-            raise InputError(msg)
-
-        # check for coerced column containing all NaN to warn user
-        for column in cont_data.columns[cont_data.count() == 0]:
-            self._non_continuous_warning(column)
-
-        if groupby:
-            # add the groupby column back
-            cont_data = cont_data.merge(data[[groupby]],
-                                        left_index=True,
-                                        right_index=True)
-
-            # group and aggregate data
-            df_cont = pd.pivot_table(cont_data,
-                                     columns=[groupby],
-                                     aggfunc=aggfuncs)
-        else:
-            # if no groupby, just add single group column
-            df_cont = cont_data.apply(aggfuncs).T  # type: ignore
-            df_cont.columns.name = 'Overall'
-            df_cont.columns = pd.MultiIndex.from_product([df_cont.columns,
-                                                         ['Overall']])
-
-        df_cont.index = df_cont.index.rename('variable')
-
-        # remove prefix underscore from column names (e.g. _std -> std)
-        agg_rename = df_cont.columns.levels[0]  # type: ignore
-        agg_rename = [x[1:] if x[0] == '_' else x for x in agg_rename]
-        df_cont.columns = df_cont.columns.set_levels(agg_rename, level=0)  # type: ignore
-
-        return df_cont
 
     def _create_cont_table(self, data, overall) -> pd.DataFrame:
         """
@@ -938,12 +873,6 @@ class TableOne:
                                                     "mean (SD)")
 
         return labels
-
-    # warnings
-    def _non_continuous_warning(self, c):
-        msg = ("'{}' has all non-numeric values. Consider including "
-               "it in the list of categorical variables.").format(c)
-        warnings.warn(msg, RuntimeWarning, stacklevel=2)
 
 
 # Allow TableOne to be called as a function.
