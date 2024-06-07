@@ -1,5 +1,8 @@
 import numpy as np
 
+from tableone.validators import InputError
+
+
 def ensure_list(arg, arg_name):
     """
     Ensure input argument is a list.
@@ -71,3 +74,28 @@ def order_categorical(data, order):
         order = d_order_cats  # type: ignore
 
     return order
+
+
+def get_groups(data, groupby, order, reserved_columns):
+    """
+    Get groups for table.
+
+    If groupby is not specified, there will be a single "overall" group.
+    """
+    if groupby:
+        groupbylvls = sorted(data.groupby(groupby).groups.keys())  # type: ignore
+
+        # reorder the groupby levels if order is provided
+        if order and groupby in order:
+            unordered = [x for x in groupbylvls if x not in order[groupby]]
+            groupbylvls = order[groupby] + unordered
+
+        # check that the group levels do not include reserved words
+        for level in groupbylvls:
+            if level in reserved_columns:
+                raise InputError("""Group level contains '{}', a reserved
+                                    keyword.""".format(level))
+    else:
+        groupbylvls = ['Overall']
+
+    return groupbylvls

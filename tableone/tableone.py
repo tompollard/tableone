@@ -10,7 +10,7 @@ import pandas as pd
 from tabulate import tabulate
 
 from tableone.deprecations import deprecated_parameter
-from tableone.preprocessors import ensure_list, detect_categorical, order_categorical
+from tableone.preprocessors import ensure_list, detect_categorical, order_categorical, get_groups
 from tableone.statistics import Statistics
 from tableone.validators import DataValidator, InputValidator, InputError
 
@@ -267,22 +267,7 @@ class TableOne:
         self._tukey_test = tukey_test
         self._warnings = {}  # display notes and warnings below the table
 
-        if self._groupby:
-            self._groupbylvls = sorted(data.groupby(groupby).groups.keys())  # type: ignore
-
-            # reorder the groupby levels if order is provided
-            if self._order and self._groupby in self._order:
-                unordered = [x for x in self._groupbylvls
-                             if x not in self._order[self._groupby]]
-                self._groupbylvls = self._order[self._groupby] + unordered
-
-            # check that the group levels do not include reserved words
-            for level in self._groupbylvls:
-                if level in self._reserved_columns:
-                    raise InputError("""Group level contains '{}', a reserved
-                                        keyword.""".format(level))
-        else:
-            self._groupbylvls = ['Overall']
+        self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)
 
         # forgive me jraffa
         if self._pval:
