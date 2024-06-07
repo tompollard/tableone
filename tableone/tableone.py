@@ -226,27 +226,22 @@ class TableOne:
         deprecated_parameter(remarks, "remarks", "Use test names instead (e.g. diptest = True)")
 
         self._columns = columns if columns else data.columns.to_list()  # type: ignore
-        self._nonnormal = ensure_list(nonnormal, arg_name="nonnormal")  # type: ignore
 
-        self.statistics = Statistics()
         self.data_validator = DataValidator()
         self.data_validator.validate(data, self._columns)  # type: ignore
 
         self.input_validator = InputValidator()
-        self.input_validator.validate(groupby, self._nonnormal, min_max, pval_adjust, order,  # type: ignore
+        self.input_validator.validate(groupby, nonnormal, min_max, pval_adjust, order,  # type: ignore
                                       pval, self._columns, categorical, continuous)  # type: ignore
 
+        self._alt_labels = rename
         # if categorical is set to None, try to automatically detect
         # if empty list is provided, assume there are no categorical variables.
         self._categorical = detect_categorical(data[self._columns], groupby) if categorical is None else categorical
-        self._order = order_categorical(data, order)
-
-        self._alt_labels = rename
         if continuous:
             self._continuous = continuous
         else:
-            self._continuous = [c for c in self._columns  # type: ignore
-                                if c not in self._categorical + [groupby]]
+            self._continuous = [c for c in self._columns if c not in self._categorical + [groupby]]  # type: ignore
         self._ddof = ddof
         self._decimals = decimals
         self._dip_test = dip_test
@@ -256,24 +251,21 @@ class TableOne:
         self._label_suffix = label_suffix
         self._limit = limit
         self._min_max = min_max
+        self._nonnormal = ensure_list(nonnormal, arg_name="nonnormal")  # type: ignore
         self._normal_test = normal_test
+        self._order = order_categorical(data, order)
         self._overall = overall
         self._pval = pval
         self._pval_adjust = pval_adjust
         self._pval_test_name = htest_name
         self._pval_threshold = pval_threshold
-
-        # column names that cannot be contained in a groupby
-        self._reserved_columns = ['Missing', 'P-Value', 'Test',
-                                  'P-Value (adjusted)', 'SMD', 'Overall']
-
+        self._reserved_columns = ['Missing', 'P-Value', 'Test', 'P-Value (adjusted)', 'SMD', 'Overall']
         self._row_percent = row_percent
         self._smd = smd
         self._sort = sort
+        self.statistics = Statistics()
         self._tukey_test = tukey_test
-
-        # display notes and warnings below the table
-        self._warnings = {}
+        self._warnings = {}  # display notes and warnings below the table
 
         if self._groupby:
             self._groupbylvls = sorted(data.groupby(groupby).groups.keys())  # type: ignore
