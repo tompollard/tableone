@@ -384,3 +384,58 @@ class Tables:
         msg = ("'{}' has all non-numeric values. Consider including "
                "it in the list of categorical variables.").format(c)
         warnings.warn(msg, RuntimeWarning, stacklevel=2)
+
+    def create_cont_table(self,
+                          data,
+                          overall,
+                          cont_describe,
+                          cont_describe_all,
+                          continuous,
+                          pval,
+                          pval_adjust,
+                          htest_table,
+                          smd,
+                          smd_table,
+                          groupby
+                          ) -> pd.DataFrame:
+        """
+        Create tableone for continuous data.
+
+        Returns
+        ----------
+        table : pandas DataFrame
+            A table summarising the continuous variables.
+        """
+        # remove the t1_summary level
+        table = cont_describe[['t1_summary']].copy()
+        table.columns = table.columns.droplevel(level=0)
+
+        # add a column of null counts as 1-count() from previous function
+        nulltable = data[continuous].isnull().sum().to_frame(name='Missing')
+        try:
+            table = table.join(nulltable)
+        # if columns form a CategoricalIndex, need to convert to string first
+        except TypeError:
+            table.columns = table.columns.astype(str)
+            table = table.join(nulltable)
+
+        # add an empty value column, for joining with cat table
+        table['value'] = ''
+        table = table.set_index([table.index, 'value'])  # type: ignore
+
+        # add pval column
+        if pval and pval_adjust:
+            table = table.join(htest_table[['P-Value (adjusted)', 'Test']])
+        elif pval:
+            table = table.join(htest_table[['P-Value', 'Test']])
+
+        # add standardized mean difference (SMD) column/s
+        if smd:
+            table = table.join(smd_table)
+
+        # join the overall column if needed
+        if groupby and overall:
+            table = table.join(pd.concat([cont_describe_all['t1_summary'].
+                                          Overall], axis=1, keys=["Overall"]))
+
+        return table

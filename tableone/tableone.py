@@ -270,7 +270,16 @@ class TableOne:
 
         self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)
 
+        # Intermediate tables
         self.tables = Tables()
+        self._htest_table = None
+        self.cat_describe_all = None
+        self.cont_describe_all = None
+        self.cat_describe = None
+        self.cont_describe = None
+        self.smd_table = None
+        self.cat_table = None
+        self.cont_table = None
 
         # forgive me jraffa
         if self._pval:
@@ -331,7 +340,17 @@ class TableOne:
             self.cat_table = self._create_cat_table(data, self._overall)
 
         if self._continuous:
-            self.cont_table = self._create_cont_table(data, self._overall)
+            self.cont_table = self.tables.create_cont_table(data,
+                                                            self._overall,
+                                                            self.cont_describe,
+                                                            self.cont_describe_all,
+                                                            self._continuous,
+                                                            self._pval,
+                                                            self._pval_adjust,
+                                                            self._htest_table,
+                                                            self._smd,
+                                                            self.smd_table,
+                                                            self._groupby)
 
         # combine continuous variables and categorical variables into table 1
         self.tableone = self._create_tableone(data)
@@ -502,51 +521,6 @@ class TableOne:
             else:
                 f = '{{:.{}f}} ({{:.{}f}})'.format(n, n)
                 return f.format(np.nanmean(x.values), self.statistics._std(x, self._ddof))  # type: ignore
-
-    def _create_cont_table(self, data, overall) -> pd.DataFrame:
-        """
-        Create tableone for continuous data.
-
-        Returns
-        ----------
-        table : pandas DataFrame
-            A table summarising the continuous variables.
-        """
-        # remove the t1_summary level
-        table = self.cont_describe[['t1_summary']].copy()
-        table.columns = table.columns.droplevel(level=0)
-
-        # add a column of null counts as 1-count() from previous function
-        nulltable = data[self._continuous].isnull().sum().to_frame(
-            name='Missing')
-        try:
-            table = table.join(nulltable)
-        # if columns form a CategoricalIndex, need to convert to string first
-        except TypeError:
-            table.columns = table.columns.astype(str)
-            table = table.join(nulltable)
-
-        # add an empty value column, for joining with cat table
-        table['value'] = ''
-        table = table.set_index([table.index, 'value'])  # type: ignore
-
-        # add pval column
-        if self._pval and self._pval_adjust:
-            table = table.join(self._htest_table[['P-Value (adjusted)',
-                                                  'Test']])
-        elif self._pval:
-            table = table.join(self._htest_table[['P-Value', 'Test']])
-
-        # add standardized mean difference (SMD) column/s
-        if self._smd:
-            table = table.join(self.smd_table)
-
-        # join the overall column if needed
-        if self._groupby and overall:
-            table = table.join(pd.concat([self.cont_describe_all['t1_summary'].
-                                          Overall], axis=1, keys=["Overall"]))
-
-        return table
 
     def _create_cat_table(self, data, overall):
         """
