@@ -12,6 +12,7 @@ from tabulate import tabulate
 from tableone.deprecations import deprecated_parameter
 from tableone.preprocessors import ensure_list, detect_categorical, order_categorical, get_groups
 from tableone.statistics import Statistics
+from tableone.tables import Tables
 from tableone.validators import DataValidator, InputValidator, InputError
 
 
@@ -263,24 +264,20 @@ class TableOne:
         self._row_percent = row_percent
         self._smd = smd
         self._sort = sort
-        self.statistics = Statistics()
+        self.statistics = Statistics()  # TODO: remove this after migrating to tables.py
         self._tukey_test = tukey_test
         self._warnings = {}  # display notes and warnings below the table
 
         self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)
 
+        self.tables = Tables()
+
         # forgive me jraffa
         if self._pval:
-            self._htest_table = self._create_htest_table(data)
-
-        # correct for multiple testing
-        if self._pval and self._pval_adjust:
-            alpha = 0.05
-            adjusted = self.statistics.multipletests(self._htest_table['P-Value'],
-                                                     alpha=alpha,
-                                                     method=self._pval_adjust)
-            self._htest_table['P-Value (adjusted)'] = adjusted[1]
-            self._htest_table['adjust method'] = self._pval_adjust
+            self._htest_table = self.tables.create_htest_table(data, self._continuous, self._categorical,
+                                                               self._nonnormal, self._groupby,
+                                                               self._groupbylvls, self._htest,
+                                                               self._pval, self._pval_adjust)
 
         # create overall tables if required
         if self._categorical and self._groupby and overall:
@@ -681,77 +678,6 @@ class TableOne:
             df_cat = df_cat.swaplevel(0, 1, axis=1).sort_index(axis=1, level=0)
 
         return df_cat
-
-    def _create_htest_table(self, data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Create a table containing P-Values for significance tests. Add features
-        of the distributions and the P-Values to the dataframe.
-
-        Parameters
-        ----------
-            data : pandas DataFrame
-                The input dataset.
-
-        Returns
-        ----------
-            df : pandas DataFrame
-                A table containing the P-Values, test name, etc.
-        """
-        # list features of the variable e.g. matched, paired, n_expected
-        df = pd.DataFrame(index=self._continuous+self._categorical,
-                          columns=['continuous', 'nonnormal',
-                                   'min_observed', 'P-Value', 'Test'])
-
-        df.index = df.index.rename('variable')
-        df['continuous'] = np.where(df.index.isin(self._continuous),
-                                    True, False)
-
-        df['nonnormal'] = np.where(df.index.isin(self._nonnormal),
-                                   True, False)
-
-        # list values for each variable, grouped by groupby levels
-        for v in df.index:
-            is_continuous = df.loc[v]['continuous']
-            is_categorical = ~df.loc[v]['continuous']
-            is_normal = ~df.loc[v]['nonnormal']
-
-            # if continuous, group data into list of lists
-            if is_continuous:
-                catlevels = None
-                grouped_data = {}
-                for s in self._groupbylvls:
-                    lvl_data = data.loc[data[self._groupby] == s, v]
-                    # coerce to numeric and drop non-numeric data
-                    lvl_data = lvl_data.apply(pd.to_numeric,
-                                              errors='coerce').dropna()
-                    # append to overall group data
-                    grouped_data[s] = lvl_data.values
-                min_observed = min([len(x) for x in grouped_data.values()])
-            # if categorical, create contingency table
-            elif is_categorical:
-                catlevels = sorted(data[v].astype('category').cat.categories)
-                cross_tab = pd.crosstab(data[self._groupby].
-                                        rename('_groupby_var_'), data[v])
-                min_observed = cross_tab.sum(axis=1).min()
-                grouped_data = cross_tab.T.to_dict('list')
-
-            # minimum number of observations across all levels
-            df.loc[v, 'min_observed'] = min_observed  # type: ignore
-
-            # compute pvalues
-            warning_msg = None
-            (df.loc[v, 'P-Value'],
-             df.loc[v, 'Test'],
-             warning_msg) = self.statistics._p_test(v, grouped_data,  # type: ignore
-                                                    is_continuous, is_categorical, is_normal,  # type: ignore
-                                                    min_observed, catlevels, self._htest)  # type: ignore
-            if warning_msg:
-                try:
-                    self._warnings[warning_msg].append(v)
-                except KeyError:
-                    self._warnings[warning_msg] = [v]
-
-        return df
 
     def _create_smd_table(self, data: pd.DataFrame) -> pd.DataFrame:
         """
