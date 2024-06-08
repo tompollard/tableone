@@ -446,44 +446,45 @@ class TableOne:
         Generate a series of remarks that the user should consider
         when interpreting the summary statistics.
         """
-        # generate warnings for continuous variables
-        if self._continuous and self._tukey_test:
-            # highlight far outliers
-            outlier_mask = self.cont_describe.far_outliers > 1
-            outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].
+        if self.cont_describe is not None:
+            # generate warnings for continuous variables
+            if self._continuous and self._tukey_test:
+                # highlight far outliers
+                outlier_mask = self.cont_describe.far_outliers > 1
+                outlier_vars = list(self.cont_describe.far_outliers[outlier_mask].
+                                    dropna(how='all').index)
+                if outlier_vars:
+                    self._warnings["""Tukey test indicates far outliers
+                                    in"""] = outlier_vars
+
+            if self._continuous and self._dip_test:
+                # highlight possible multimodal distributions using hartigan's dip
+                # test -1 values indicate NaN
+                modal_mask = ((self.cont_describe.hartigan_dip >= 0) &
+                            (self.cont_describe.hartigan_dip <= 0.05))
+                modal_vars = list(self.cont_describe.hartigan_dip[modal_mask].
                                 dropna(how='all').index)
-            if outlier_vars:
-                self._warnings["""Tukey test indicates far outliers
-                                  in"""] = outlier_vars
+                if modal_vars:
+                    self._warnings["""Hartigan's Dip Test reports possible
+                                    multimodal distributions for"""] = modal_vars
 
-        if self._continuous and self._dip_test:
-            # highlight possible multimodal distributions using hartigan's dip
-            # test -1 values indicate NaN
-            modal_mask = ((self.cont_describe.hartigan_dip >= 0) &
-                          (self.cont_describe.hartigan_dip <= 0.05))
-            modal_vars = list(self.cont_describe.hartigan_dip[modal_mask].
-                              dropna(how='all').index)
-            if modal_vars:
-                self._warnings["""Hartigan's Dip Test reports possible
-                                  multimodal distributions for"""] = modal_vars
+            if self._continuous and self._normal_test:
+                # highlight non normal distributions
+                # -1 values indicate NaN
+                modal_mask = ((self.cont_describe.normality >= 0) &
+                            (self.cont_describe.normality <= 0.001))
+                modal_vars = list(self.cont_describe.normality[modal_mask].
+                                dropna(how='all').index)
+                if modal_vars:
+                    self._warnings["""Normality test reports non-normal
+                                    distributions for"""] = modal_vars
 
-        if self._continuous and self._normal_test:
-            # highlight non normal distributions
-            # -1 values indicate NaN
-            modal_mask = ((self.cont_describe.normality >= 0) &
-                          (self.cont_describe.normality <= 0.001))
-            modal_vars = list(self.cont_describe.normality[modal_mask].
-                              dropna(how='all').index)
-            if modal_vars:
-                self._warnings["""Normality test reports non-normal
-                                  distributions for"""] = modal_vars
-
-        # create the warning string
-        msg = '{}'.format(newline)
-        for n, k in enumerate(sorted(self._warnings)):
-            msg += '[{}] {}: {}.{}'.format(n+1, k,
-                                           ', '.join(self._warnings[k]),
-                                           newline)
+            # create the warning string
+            msg = '{}'.format(newline)
+            for n, k in enumerate(sorted(self._warnings)):
+                msg += '[{}] {}: {}.{}'.format(n+1, k, ', '.join(self._warnings[k]), newline)
+        else:
+            msg = ""
 
         return msg
 
@@ -561,7 +562,7 @@ class TableOne:
 
         # sort the table rows
         sort_columns = ['Missing', 'P-Value', 'P-Value (adjusted)', 'Test']
-        if self._smd:
+        if self._smd and self.smd_table is not None:
             sort_columns = sort_columns + list(self.smd_table.columns)
 
         if self._sort and isinstance(self._sort, bool):
@@ -611,7 +612,7 @@ class TableOne:
                 table.loc[asterisk_mask, 'P-Value'] = table['P-Value'][asterisk_mask].astype(str)+"*"  # type: ignore
 
         # round smd columns and convert to string
-        if self._smd:
+        if self._smd and self.smd_table is not None:
             for c in list(self.smd_table.columns):
                 table[c] = table[c].apply('{:.3f}'.format).astype(str)
                 table.loc[table[c] == '0.000', c] = '<0.001'
@@ -680,7 +681,7 @@ class TableOne:
                 table = table.reindex(orig_idx)
 
                 # drop the rows > the limit
-                table = table.drop(new_idx_array[limit:])
+                table = table.drop(new_idx_array[limit:])  # type: ignore
 
         # insert n row
         n_row = pd.DataFrame(columns=['variable', 'value', 'Missing'])
@@ -706,7 +707,7 @@ class TableOne:
         dupe_mask = table.groupby(level=[0]).cumcount().ne(0)  # type: ignore
         dupe_columns = ['Missing']
         optional_columns = ['P-Value', 'P-Value (adjusted)', 'Test']
-        if self._smd:
+        if self._smd and self.smd_table is not None:
             optional_columns = optional_columns + list(self.smd_table.columns)
         for col in optional_columns:
             if col in table.columns.values:
