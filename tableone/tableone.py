@@ -242,88 +242,10 @@ class TableOne:
         self.setup_validators()
         self.validate_data(data)
 
-        # forgive me jraffa
-        if self._pval:
-            self._htest_table = self.tables.create_htest_table(data, self._continuous, self._categorical,
-                                                               self._nonnormal, self._groupby,
-                                                               self._groupbylvls, self._htest,
-                                                               self._pval, self._pval_adjust)
+        # Create all intermediate tables
+        self.create_intermediate_tables(data)
 
-        # create overall tables if required
-        if self._categorical and self._groupby and self._overall:
-            self.cat_describe_all = self.tables.create_cat_describe(data,
-                                                                    self._categorical,
-                                                                    self._decimals,
-                                                                    self._row_percent,
-                                                                    groupby=None,
-                                                                    groupbylvls=['Overall'])
-
-        if self._continuous and self._groupby and self._overall:
-            self.cont_describe_all = self.tables.create_cont_describe(data,
-                                                                      self._ddof,
-                                                                      self._t1_summary,
-                                                                      self._dip_test,
-                                                                      self._tukey_test,
-                                                                      self._normal_test,
-                                                                      self._continuous,
-                                                                      groupby=None)
-
-        # create descriptive tables
-        if self._categorical:
-            self.cat_describe = self.tables.create_cat_describe(data,
-                                                                self._categorical,
-                                                                self._decimals,
-                                                                self._row_percent,
-                                                                groupby=self._groupby,
-                                                                groupbylvls=self._groupbylvls)
-
-        if self._continuous:
-            self.cont_describe = self.tables.create_cont_describe(data,
-                                                                  self._ddof,
-                                                                  self._t1_summary,
-                                                                  self._dip_test,
-                                                                  self._tukey_test,
-                                                                  self._normal_test,
-                                                                  self._continuous,
-                                                                  groupby=self._groupby)
-
-        # compute standardized mean differences
-        if self._smd:
-            self.smd_table = self.tables.create_smd_table(data,
-                                                          self._groupbylvls,
-                                                          self._continuous,
-                                                          self._categorical,
-                                                          self.cont_describe,
-                                                          self.cat_describe)
-
-        # create continuous and categorical tables
-        if self._categorical:
-            self.cat_table = self.tables.create_cat_table(data,
-                                                          self._overall,
-                                                          self.cat_describe,
-                                                          self._categorical,
-                                                          self._pval,
-                                                          self._pval_adjust,
-                                                          self._htest_table,
-                                                          self._smd,
-                                                          self.smd_table,
-                                                          self._groupby,
-                                                          self.cat_describe_all)
-
-        if self._continuous:
-            self.cont_table = self.tables.create_cont_table(data,
-                                                            self._overall,
-                                                            self.cont_describe,
-                                                            self.cont_describe_all,
-                                                            self._continuous,
-                                                            self._pval,
-                                                            self._pval_adjust,
-                                                            self._htest_table,
-                                                            self._smd,
-                                                            self.smd_table,
-                                                            self._groupby)
-
-        # combine continuous variables and categorical variables into table 1
+        # Assemble Table 1
         self.tableone = self._create_tableone(data)
 
         # wrap dataframe methods
@@ -411,6 +333,91 @@ class TableOne:
         self.input_validator.validate(self._groupby, self._nonnormal, self._min_max,  # type: ignore
                                       self._pval_adjust, self._order, self._pval,  # type: ignore
                                       self._columns, self._categorical, self._continuous)  # type: ignore
+
+    def create_intermediate_tables(self, data):
+        """
+        Creates all intermediate tables.
+        """
+        # forgive me jraffa
+        if self._pval:
+            self._htest_table = self.tables.create_htest_table(data, self._continuous, self._categorical,
+                                                               self._nonnormal, self._groupby,
+                                                               self._groupbylvls, self._htest,
+                                                               self._pval, self._pval_adjust)
+
+        # create overall tables if required
+        if self._categorical and self._groupby and self._overall:
+            self.cat_describe_all = self.tables.create_cat_describe(data,
+                                                                    self._categorical,
+                                                                    self._decimals,
+                                                                    self._row_percent,
+                                                                    groupby=None,
+                                                                    groupbylvls=['Overall'])
+
+        if self._continuous and self._groupby and self._overall:
+            self.cont_describe_all = self.tables.create_cont_describe(data,
+                                                                      self._ddof,
+                                                                      self._t1_summary,
+                                                                      self._dip_test,
+                                                                      self._tukey_test,
+                                                                      self._normal_test,
+                                                                      self._continuous,
+                                                                      groupby=None)
+
+        # create descriptive tables
+        if self._categorical:
+            self.cat_describe = self.tables.create_cat_describe(data,
+                                                                self._categorical,
+                                                                self._decimals,
+                                                                self._row_percent,
+                                                                groupby=self._groupby,
+                                                                groupbylvls=self._groupbylvls)
+
+        if self._continuous:
+            self.cont_describe = self.tables.create_cont_describe(data,
+                                                                  self._ddof,
+                                                                  self._t1_summary,
+                                                                  self._dip_test,
+                                                                  self._tukey_test,
+                                                                  self._normal_test,
+                                                                  self._continuous,
+                                                                  groupby=self._groupby)
+
+        # compute standardized mean differences
+        if self._smd:
+            self.smd_table = self.tables.create_smd_table(data,
+                                                          self._groupbylvls,
+                                                          self._continuous,
+                                                          self._categorical,
+                                                          self.cont_describe,
+                                                          self.cat_describe)
+
+        # create continuous and categorical tables
+        if self._categorical:
+            self.cat_table = self.tables.create_cat_table(data,
+                                                          self._overall,
+                                                          self.cat_describe,
+                                                          self._categorical,
+                                                          self._pval,
+                                                          self._pval_adjust,
+                                                          self._htest_table,
+                                                          self._smd,
+                                                          self.smd_table,
+                                                          self._groupby,
+                                                          self.cat_describe_all)
+
+        if self._continuous:
+            self.cont_table = self.tables.create_cont_table(data,
+                                                            self._overall,
+                                                            self.cont_describe,
+                                                            self.cont_describe_all,
+                                                            self._continuous,
+                                                            self._pval,
+                                                            self._pval_adjust,
+                                                            self._htest_table,
+                                                            self._smd,
+                                                            self.smd_table,
+                                                            self._groupby)
 
     def _set_display_options(self):
         """
