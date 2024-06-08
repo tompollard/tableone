@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
-from tableone.deprecations import deprecated_parameter
+from tableone.deprecations import handle_deprecated_parameters
 from tableone.preprocessors import ensure_list, detect_categorical, order_categorical, get_groups
 from tableone.statistics import Statistics
 from tableone.tables import Tables
@@ -221,10 +221,7 @@ class TableOne:
                  tukey_test: bool = False,
                  pval_threshold: Optional[float] = None) -> None:
 
-        deprecated_parameter(labels, "labels", "Use 'rename' instead")
-        deprecated_parameter(isnull, "isnull", "Use 'missing' instead")
-        deprecated_parameter(pval_test_name, "pval_test_name", "Use 'htest_name' instead")
-        deprecated_parameter(remarks, "remarks", "Use test names instead (e.g. diptest = True)")
+        handle_deprecated_parameters(labels, isnull, pval_test_name, remarks)
 
         self._columns = columns if columns else data.columns.to_list()  # type: ignore
 

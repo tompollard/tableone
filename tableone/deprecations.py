@@ -4,6 +4,16 @@ import warnings
 warnings.simplefilter('always', DeprecationWarning)
 
 
+def handle_deprecated_parameters(labels, isnull, pval_test_name, remarks):
+    """
+    Raise warnings for deprecated parameters.
+    """
+    deprecated_parameter(labels, "labels", "Use 'rename' instead")
+    deprecated_parameter(isnull, "isnull", "Use 'missing' instead")
+    deprecated_parameter(pval_test_name, "pval_test_name", "Use 'htest_name' instead")
+    deprecated_parameter(remarks, "remarks", "Use test names instead (e.g. diptest = True)")
+
+
 def deprecated_parameter(parameter, parameter_name, message, version=None):
     """
     Raise warning for a deprecated parameter.
