@@ -221,51 +221,22 @@ class TableOne:
                  tukey_test: bool = False,
                  pval_threshold: Optional[float] = None) -> None:
 
+        # Warn about deprecated parameters
         handle_deprecated_parameters(labels, isnull, pval_test_name, remarks)
 
-        self._alt_labels = rename
-        self._columns = columns if columns else data.columns.to_list()  # type: ignore
-        self._categorical = detect_categorical(data[self._columns], groupby) if categorical is None else categorical
-        if continuous:
-            self._continuous = continuous
-        else:
-            self._continuous = [c for c in self._columns if c not in self._categorical + [groupby]]  # type: ignore
-        self._ddof = ddof
-        self._decimals = decimals
-        self._dip_test = dip_test
-        self._groupby = groupby
-        self._htest = htest
-        self._isnull = missing
-        self._label_suffix = label_suffix
-        self._limit = limit
-        self._min_max = min_max
-        self._nonnormal = ensure_list(nonnormal, arg_name="nonnormal")  # type: ignore
-        self._normal_test = normal_test
-        self._order = order_categorical(data, order)
-        self._overall = overall
-        self._pval = pval
-        self._pval_adjust = pval_adjust
-        self._pval_test_name = htest_name
-        self._pval_threshold = pval_threshold
-        self._reserved_columns = ['Missing', 'P-Value', 'Test', 'P-Value (adjusted)', 'SMD', 'Overall']
-        self._row_percent = row_percent
-        self._smd = smd
-        self._sort = sort
-        self._tukey_test = tukey_test
-        self._warnings = {}
-        self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)
-
-        # Intermediate tables
+        # Attach submodules
         self.statistics = Statistics()
         self.tables = Tables()
-        self._htest_table = None
-        self.cat_describe_all = None
-        self.cont_describe_all = None
-        self.cat_describe = None
-        self.cont_describe = None
-        self.smd_table = None
-        self.cat_table = None
-        self.cont_table = None
+
+        # Initialize attributes
+        self.initialize_core_attributes(data, columns, categorical, continuous, groupby,
+                                        nonnormal, min_max, pval, pval_adjust, htest_name,
+                                        htest, missing, ddof, rename, sort, limit, order,
+                                        label_suffix, decimals, smd, overall, row_percent,
+                                        dip_test, normal_test, tukey_test, pval_threshold)
+
+        # Initialize intermediate tables
+        self.initialize_intermediate_tables()
 
         # Set up validators and validate data
         self.setup_validators()
@@ -376,6 +347,60 @@ class TableOne:
 
     def _repr_html_(self) -> str:
         return self.tableone._repr_html_() + self._generate_remarks('<br />')
+
+    def initialize_core_attributes(self, data, columns, categorical, continuous, groupby,
+                                    nonnormal, min_max, pval, pval_adjust, htest_name,
+                                    htest, missing, ddof, rename, sort, limit, order,
+                                    label_suffix, decimals, smd, overall, row_percent, 
+                                    dip_test, normal_test, tukey_test, pval_threshold):
+        """
+        Initialize attributes.
+        """
+        self._alt_labels = rename
+        self._columns = columns if columns else data.columns.to_list()  # type: ignore
+        self._categorical = detect_categorical(data[self._columns], groupby) if categorical is None else categorical
+        if continuous:
+            self._continuous = continuous
+        else:
+            self._continuous = [c for c in self._columns if c not in self._categorical + [groupby]]  # type: ignore
+        self._ddof = ddof
+        self._decimals = decimals
+        self._dip_test = dip_test
+        self._groupby = groupby
+        self._htest = htest
+        self._isnull = missing
+        self._label_suffix = label_suffix
+        self._limit = limit
+        self._min_max = min_max
+        self._nonnormal = ensure_list(nonnormal, arg_name="nonnormal")  # type: ignore
+        self._normal_test = normal_test
+        self._order = order_categorical(data, order)
+        self._overall = overall
+        self._pval = pval
+        self._pval_adjust = pval_adjust
+        self._pval_test_name = htest_name
+        self._pval_threshold = pval_threshold
+        self._reserved_columns = ['Missing', 'P-Value', 'Test', 'P-Value (adjusted)', 'SMD', 'Overall']
+        self._row_percent = row_percent
+        self._smd = smd
+        self._sort = sort
+        self._tukey_test = tukey_test
+        self._warnings = {}
+        self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)
+
+    def initialize_intermediate_tables(self):
+        """
+        Initialize the intermediate tables.
+        """
+        # Intermediate tables
+        self._htest_table = None
+        self.cat_describe_all = None
+        self.cont_describe_all = None
+        self.cat_describe = None
+        self.cont_describe = None
+        self.smd_table = None
+        self.cat_table = None
+        self.cont_table = None
 
     def setup_validators(self):
         self.data_validator = DataValidator()
