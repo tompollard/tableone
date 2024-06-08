@@ -271,10 +271,10 @@ class TableOne:
         return self.tableone._repr_html_() + self._generate_remarks('<br />')
 
     def initialize_core_attributes(self, data, columns, categorical, continuous, groupby,
-                                    nonnormal, min_max, pval, pval_adjust, htest_name,
-                                    htest, missing, ddof, rename, sort, limit, order,
-                                    label_suffix, decimals, smd, overall, row_percent, 
-                                    dip_test, normal_test, tukey_test, pval_threshold):
+                                   nonnormal, min_max, pval, pval_adjust, htest_name,
+                                   htest, missing, ddof, rename, sort, limit, order,
+                                   label_suffix, decimals, smd, overall, row_percent, 
+                                   dip_test, normal_test, tukey_test, pval_threshold):
         """
         Initialize attributes.
         """
@@ -315,7 +315,7 @@ class TableOne:
         Initialize the intermediate tables.
         """
         # Intermediate tables
-        self._htest_table = None
+        self.htest_table = None
         self.cat_describe_all = None
         self.cont_describe_all = None
         self.cat_describe = None
@@ -340,10 +340,10 @@ class TableOne:
         """
         # forgive me jraffa
         if self._pval:
-            self._htest_table = self.tables.create_htest_table(data, self._continuous, self._categorical,
-                                                               self._nonnormal, self._groupby,
-                                                               self._groupbylvls, self._htest,
-                                                               self._pval, self._pval_adjust)
+            self.htest_table = self.tables.create_htest_table(data, self._continuous, self._categorical,
+                                                              self._nonnormal, self._groupby,
+                                                              self._groupbylvls, self._htest,
+                                                              self._pval, self._pval_adjust)
 
         # create overall tables if required
         if self._categorical and self._groupby and self._overall:
@@ -400,7 +400,7 @@ class TableOne:
                                                           self._categorical,
                                                           self._pval,
                                                           self._pval_adjust,
-                                                          self._htest_table,
+                                                          self.htest_table,
                                                           self._smd,
                                                           self.smd_table,
                                                           self._groupby,
@@ -414,7 +414,7 @@ class TableOne:
                                                             self._continuous,
                                                             self._pval,
                                                             self._pval_adjust,
-                                                            self._htest_table,
+                                                            self.htest_table,
                                                             self._smd,
                                                             self.smd_table,
                                                             self._groupby)

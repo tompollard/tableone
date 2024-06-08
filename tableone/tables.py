@@ -16,7 +16,7 @@ class Tables:
 
     self.tables = Tables()
     self.tables._create_htest_table()
-    self.tables._htest_table
+    self.tables.htest_table
     """
     def __init__(self):
         """

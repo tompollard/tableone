@@ -259,8 +259,8 @@ class TestTableOne(object):
 
         # group2 should be tested because it's a 2x2
         # group3 is a 2x3 so should not be tested
-        assert (table._htest_table.loc['group1', 'Test'] == "Fisher's exact")
-        assert (table._htest_table.loc['group3', 'Test'] ==
+        assert (table.htest_table.loc['group1', 'Test'] == "Fisher's exact")
+        assert (table.htest_table.loc['group3', 'Test'] ==
                 'Chi-squared (warning: expected count < 5)')
 
     def test_sequence_of_cont_table(self, data_groups):
@@ -884,7 +884,7 @@ class TestTableOne(object):
         t1_diff = TableOne(data=different, columns=["val"], pval=True,
                            groupby="rvs", htest={"val": func})
 
-        isclose(t1_diff._htest_table['P-Value'].val,
+        isclose(t1_diff.htest_table['P-Value'].val,
                 stats.ks_2samp(rvs1, rvs2)[1])
 
         # Table 1 for similar distributions
@@ -892,7 +892,7 @@ class TestTableOne(object):
         t1_similar = TableOne(data=similar, columns=["val"], pval=True,
                               groupby="rvs", htest={"val": func})
 
-        isclose(t1_similar._htest_table['P-Value'].val,
+        isclose(t1_similar.htest_table['P-Value'].val,
                 stats.ks_2samp(rvs1, rvs3)[1])
 
         # Table 1 for identical distributions
@@ -900,7 +900,7 @@ class TestTableOne(object):
         t1_identical = TableOne(data=identical, columns=["val"], pval=True,
                                 groupby="rvs", htest={"val": func})
 
-        isclose(t1_identical._htest_table['P-Value'].val,
+        isclose(t1_identical.htest_table['P-Value'].val,
                 stats.ks_2samp(rvs1, rvs4)[1])
 
     def test_compute_standardized_mean_difference_continuous(self, data_pn):
