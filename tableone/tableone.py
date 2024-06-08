@@ -223,18 +223,8 @@ class TableOne:
 
         handle_deprecated_parameters(labels, isnull, pval_test_name, remarks)
 
-        self._columns = columns if columns else data.columns.to_list()  # type: ignore
-
-        self.data_validator = DataValidator()
-        self.data_validator.validate(data, self._columns)  # type: ignore
-
-        self.input_validator = InputValidator()
-        self.input_validator.validate(groupby, nonnormal, min_max, pval_adjust, order,  # type: ignore
-                                      pval, self._columns, categorical, continuous)  # type: ignore
-
         self._alt_labels = rename
-        # if categorical is set to None, try to automatically detect
-        # if empty list is provided, assume there are no categorical variables.
+        self._columns = columns if columns else data.columns.to_list()  # type: ignore
         self._categorical = detect_categorical(data[self._columns], groupby) if categorical is None else categorical
         if continuous:
             self._continuous = continuous
@@ -261,13 +251,12 @@ class TableOne:
         self._row_percent = row_percent
         self._smd = smd
         self._sort = sort
-        self.statistics = Statistics()  # TODO: remove this after migrating to tables.py
         self._tukey_test = tukey_test
-        self._warnings = {}  # display notes and warnings below the table
-
+        self._warnings = {}
         self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)
 
         # Intermediate tables
+        self.statistics = Statistics()
         self.tables = Tables()
         self._htest_table = None
         self.cat_describe_all = None
@@ -277,6 +266,10 @@ class TableOne:
         self.smd_table = None
         self.cat_table = None
         self.cont_table = None
+
+        # Set up validators and validate data
+        self.setup_validators()
+        self.validate_data(data)
 
         # forgive me jraffa
         if self._pval:
@@ -346,8 +339,6 @@ class TableOne:
                                                           self._groupby,
                                                           self.cat_describe_all)
 
-
-
         if self._continuous:
             self.cont_table = self.tables.create_cont_table(data,
                                                             self._overall,
@@ -385,6 +376,16 @@ class TableOne:
 
     def _repr_html_(self) -> str:
         return self.tableone._repr_html_() + self._generate_remarks('<br />')
+
+    def setup_validators(self):
+        self.data_validator = DataValidator()
+        self.input_validator = InputValidator()
+
+    def validate_data(self, data):
+        self.data_validator.validate(data, self._columns)  # type: ignore
+        self.input_validator.validate(self._groupby, self._nonnormal, self._min_max,  # type: ignore
+                                      self._pval_adjust, self._order, self._pval,  # type: ignore
+                                      self._columns, self._categorical, self._continuous)  # type: ignore
 
     def _set_display_options(self):
         """
