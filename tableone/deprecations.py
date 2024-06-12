@@ -1,8 +1,5 @@
 import warnings
 
-# display deprecation warnings
-warnings.simplefilter('always', DeprecationWarning)
-
 
 def handle_deprecated_parameters(labels, isnull, pval_test_name, remarks):
     """
