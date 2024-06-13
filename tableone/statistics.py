@@ -7,7 +7,7 @@ from scipy import stats
 from statsmodels.stats import multitest
 
 from tableone.modality import hartigan_diptest
-from tableone.validators import InputError
+from tableone.exceptions import InputError
 
 
 class Statistics:

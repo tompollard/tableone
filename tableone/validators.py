@@ -2,10 +2,7 @@ from typing import Any, List, Optional, Union, Dict
 
 import pandas as pd
 
-
-class InputError(Exception):
-    """Custom exception for input validation errors."""
-    pass
+from tableone.exceptions import InputError
 
 
 class DataValidator:
@@ -169,5 +166,5 @@ class InputValidator:
         all_specified = cat_set.union(cont_set)
         if not all_specified.issubset(set(columns)):
             missing = list(all_specified - set(columns))
-            msg = "Specified categorical/continuous columns not found in the DataFrame: f"{missing}"
+            msg = f"Specified categorical/continuous columns not found in the DataFrame: {missing}"
             raise ValueError(msg)

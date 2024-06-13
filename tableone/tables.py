@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from tableone.statistics import Statistics
-from tableone.validators import InputError
+from tableone.exceptions import InputError
 
 
 class Tables:

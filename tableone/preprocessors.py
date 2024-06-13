@@ -1,6 +1,6 @@
 import numpy as np
 
-from tableone.validators import InputError
+from tableone.exceptions import InputError
 
 
 def ensure_list(arg, arg_name):
