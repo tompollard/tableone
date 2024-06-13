@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from tableone.exceptions import InputError
 
@@ -99,3 +100,18 @@ def get_groups(data, groupby, order, reserved_columns):
         groupbylvls = ['Overall']
 
     return groupbylvls
+
+
+def handle_categorical_nulls(df: pd.DataFrame, null_value: str = 'None') -> pd.DataFrame:
+    """
+    Convert None/Null values in specified categorical columns to a given string,
+    so they are treated as an additional category.
+
+    Parameters:
+    - data (pd.DataFrame): The DataFrame containing the categorical data.
+    - null_value (str): The string to replace null values with. Default is 'None'.
+
+    Returns:
+    - pd.DataFrame: The modified DataFrame if not inplace, otherwise None.
+    """
+    return df.fillna(null_value)

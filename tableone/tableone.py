@@ -10,7 +10,8 @@ import pandas as pd
 from tabulate import tabulate
 
 from tableone.deprecations import handle_deprecated_parameters
-from tableone.preprocessors import ensure_list, detect_categorical, order_categorical, get_groups
+from tableone.preprocessors import (ensure_list, detect_categorical, order_categorical,
+                                    get_groups, handle_categorical_nulls)
 from tableone.statistics import Statistics
 from tableone.tables import Tables
 from tableone.validators import DataValidator, InputValidator
@@ -168,6 +169,10 @@ class TableOne:
         Run Tukey's test for far outliers. If variables are found to
         have far outliers, a remark will be added below the Table 1.
         (default: False)
+    auto_fill_nulls : bool, optional
+        Attempt to automatically handle None/Null values in categorical columns
+        by treating them as a category named 'None'. (default: True)
+
 
     Attributes
     ----------
@@ -219,7 +224,8 @@ class TableOne:
                  row_percent: bool = False, display_all: bool = False,
                  dip_test: bool = False, normal_test: bool = False,
                  tukey_test: bool = False,
-                 pval_threshold: Optional[float] = None) -> None:
+                 pval_threshold: Optional[float] = None,
+                 auto_fill_nulls: Optional[bool] = True) -> None:
 
         # Warn about deprecated parameters
         handle_deprecated_parameters(labels, isnull, pval_test_name, remarks)
@@ -229,11 +235,12 @@ class TableOne:
         self.tables = Tables()
 
         # Initialize attributes
-        self.initialize_core_attributes(data, columns, categorical, continuous, groupby,
-                                        nonnormal, min_max, pval, pval_adjust, htest_name,
-                                        htest, missing, ddof, rename, sort, limit, order,
-                                        label_suffix, decimals, smd, overall, row_percent,
-                                        dip_test, normal_test, tukey_test, pval_threshold)
+        data = self.initialize_core_attributes(data, columns, categorical, continuous, groupby,
+                                               nonnormal, min_max, pval, pval_adjust, htest_name,
+                                               htest, missing, ddof, rename, sort, limit, order,
+                                               label_suffix, decimals, smd, overall, row_percent,
+                                               dip_test, normal_test, tukey_test, pval_threshold,
+                                               auto_fill_nulls)
 
         # Initialize intermediate tables
         self.initialize_intermediate_tables()
@@ -274,11 +281,13 @@ class TableOne:
                                    nonnormal, min_max, pval, pval_adjust, htest_name,
                                    htest, missing, ddof, rename, sort, limit, order,
                                    label_suffix, decimals, smd, overall, row_percent, 
-                                   dip_test, normal_test, tukey_test, pval_threshold):
+                                   dip_test, normal_test, tukey_test, pval_threshold,
+                                   auto_fill_nulls):
         """
         Initialize attributes.
         """
         self._alt_labels = rename
+        self._auto_fill_nulls = auto_fill_nulls
         self._columns = columns if columns else data.columns.to_list()  # type: ignore
         self._categorical = detect_categorical(data[self._columns], groupby) if categorical is None else categorical
         if continuous:
@@ -308,7 +317,13 @@ class TableOne:
         self._sort = sort
         self._tukey_test = tukey_test
         self._warnings = {}
+
+        if self._categorical and self._auto_fill_nulls:
+            data[self._categorical] = handle_categorical_nulls(data[self._categorical])
+
         self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)
+
+        return data
 
     def initialize_intermediate_tables(self):
         """
@@ -332,7 +347,7 @@ class TableOne:
         self.input_validator.validate(self._groupby, self._nonnormal, self._min_max,  # type: ignore
                                       self._pval_adjust, self._order, self._pval,  # type: ignore
                                       self._columns, self._categorical, self._continuous)  # type: ignore
-        self.data_validator.validate(data, self._columns, self._categorical)  # type: ignore
+        self.data_validator.validate(data, self._columns, self._categorical, self._auto_fill_nulls)  # type: ignore
 
     def create_intermediate_tables(self, data):
         """
