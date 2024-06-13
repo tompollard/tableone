@@ -10,7 +10,8 @@ class DataValidator:
         """Initialize the DataValidator class."""
         pass
 
-    def validate(self, data: pd.DataFrame, columns: list) -> None:
+    def validate(self, data: pd.DataFrame, columns: list,
+                 categorical: Optional[List[str]] = None) -> None:
         """
         Check the input dataset for obvious issues.
 
@@ -22,6 +23,22 @@ class DataValidator:
         self.check_unique_index(data)
         self.check_columns_exist(data, columns)
         self.check_duplicate_columns(data, columns)
+        if categorical:
+            self.check_categorical_none(data, categorical)
+
+    def check_categorical_none(self, data: pd.DataFrame, categorical: List[str]):
+        """
+        Ensure that categorical columns do not contain None values.
+
+        Parameters:
+        data (pd.DataFrame): The DataFrame to check.
+        categorical (List[str]): The list of categorical columns to validate.
+        """
+        none_containing_cols = [col for col in categorical if data[col].isnull().any()]
+        if none_containing_cols:
+            raise InputError(f"The following categorical columns contains one or more 'None' values. These values "
+                             f"must be converted to a string before processing: {none_containing_cols}. e.g. use "
+                             f"data[categorical_columns] = data[categorical_columns].fillna('None')")
 
     def validate_input(self, data: pd.DataFrame):
         if not isinstance(data, pd.DataFrame):

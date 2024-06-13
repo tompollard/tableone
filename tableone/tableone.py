@@ -329,10 +329,10 @@ class TableOne:
         self.input_validator = InputValidator()
 
     def validate_data(self, data):
-        self.data_validator.validate(data, self._columns)  # type: ignore
         self.input_validator.validate(self._groupby, self._nonnormal, self._min_max,  # type: ignore
                                       self._pval_adjust, self._order, self._pval,  # type: ignore
                                       self._columns, self._categorical, self._continuous)  # type: ignore
+        self.data_validator.validate(data, self._columns, self._categorical)  # type: ignore
 
     def create_intermediate_tables(self, data):
         """
