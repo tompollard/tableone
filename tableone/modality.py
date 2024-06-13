@@ -11,15 +11,24 @@
 
 import numpy as np
 from scipy.special import beta as betafun
-# import matplotlib.pyplot as plt
 from scipy.optimize import brentq
 import pandas as pd
 np.random.seed(1337)
-# import pickle
 
 
 def generate_data(peaks=2, n=None, mu=None, std=None):
-    # Generate parameters if not provided
+    """
+    Generates synthetic data consisting of several Gaussian distributions.
+
+    Parameters:
+        peaks (int): Number of distinct Gaussian distributions to generate.
+        n (list of int, optional): List of sizes for each Gaussian distribution.
+        mu (list of float, optional): List of means for each Gaussian distribution.
+        std (list of float, optional): List of standard deviations for each distribution.
+
+    Returns:
+        numpy.ndarray: Array of concatenated data from the generated Gaussian distributions.
+    """
     if not n:
         n = [5000] * peaks
     if not mu:
@@ -37,20 +46,17 @@ def generate_data(peaks=2, n=None, mu=None, std=None):
 
 def hartigan_diptest(data):
     """
-        P-value according to Hartigan's dip test for unimodality.
-        The dip is computed using the function
-        dip_and_closest_unimodal_from_cdf. From this the p-value is
-        interpolated using a table imported from the R package diptest.
+    Performs Hartigan's dip test to assess the unimodality of a dataset.
 
-        References:
-            Hartigan and Hartigan (1985): The dip test of unimodality.
-            The Annals of Statistics. 13(1).
+    References:
+        Hartigan and Hartigan (1985): The dip test of unimodality.
+        The Annals of Statistics. 13(1).
 
-        Input:
-            data    -   one-dimensional data set.
+    Parameters:
+        data (numpy.ndarray): Array containing the dataset to be tested.
 
-        Value:
-            p-value for the test.
+    Returns:
+        float: P-value indicating the probability of the dataset being unimodal.
     """
 
     try:
@@ -63,7 +69,13 @@ def hartigan_diptest(data):
 
 def pval_hartigan(data):
     """
-    Add Docstring
+    Computes the p-value for Hartigan's dip test using a precomputed table.
+
+    Parameters:
+        data (numpy.ndarray): Array containing the dataset for which the dip test is performed.
+
+    Returns:
+        float: The interpolated p-value from precomputed Hartigan's dip test tables.
     """
     xF, yF = cum_distr(data)
     dip = dip_from_cdf(xF, yF)
@@ -72,7 +84,14 @@ def pval_hartigan(data):
 
 def cum_distr(data, w=None):
     """
-    Add Docstring
+    Computes the cumulative distribution function of the given data.
+
+    Parameters:
+        data (numpy.ndarray): Array of data points.
+        w (numpy.ndarray, optional): Weights for the data points.
+
+    Returns:
+        tuple: Arrays representing the x and y values of the cumulative distribution.
     """
     if w is None:
         w = np.ones(len(data))*1./len(data)
@@ -103,7 +122,16 @@ def cum_distr(data, w=None):
 
 def unique(data, return_index, eps, is_sorted=True):
     """
-    Add Docstring
+    Identifies and returns unique elements from the sorted data array.
+
+    Parameters:
+        data (numpy.ndarray): Array of data points.
+        return_index (bool): Whether to return the indices of unique elements.
+        eps (float): Small threshold to consider differences in data points.
+        is_sorted (bool): Whether the input data array is sorted.
+
+    Returns:
+        tuple: Array of unique data and, optionally, their indices.
     """
     if not is_sorted:
         ord = np.argsort(data)
@@ -136,7 +164,17 @@ def unique(data, return_index, eps, is_sorted=True):
 
 def dip_from_cdf(xF, yF, plotting=False, verbose=False, eps=1e-12):
     """
-    Add Docstring
+    Computes the dip statistic from the cumulative distribution functions.
+
+    Parameters:
+        xF (numpy.ndarray): X-coordinates of the empirical distribution function.
+        yF (numpy.ndarray): Y-coordinates of the empirical distribution function.
+        plotting (bool, optional): If True, plots the analysis (not implemented).
+        verbose (bool, optional): If True, prints debug information.
+        eps (float): Tolerance for floating-point comparison.
+
+    Returns:
+        float: The computed dip statistic.
     """
     dip, _ = dip_and_closest_unimodal_from_cdf(xF, yF, plotting, verbose, eps)
     return dip
@@ -144,8 +182,14 @@ def dip_from_cdf(xF, yF, plotting=False, verbose=False, eps=1e-12):
 
 def dip_pval_tabinterpol(dip, N):
     """
-        dip     -   dip value computed from dip_from_cdf
-        N       -   number of observations
+    Interpolates a p-value from a table based on the dip statistic and sample size.
+
+    Parameters:
+        dip (float): Computed dip statistic.
+        N (int): Sample size of the data.
+
+    Returns:
+        float: Interpolated p-value based on the dip statistic and sample size.
     """
 
     # if qDiptab_df is None:
@@ -733,7 +777,15 @@ def dip_pval_tabinterpol(dip, N):
 
 def transform_dip_to_other_nbr_pts(dip_n, n, m):
     """
-    Add Docstring
+    Transforms a dip statistic calculated for a given sample size to another.
+
+    Parameters:
+        dip_n (float): The dip statistic for the original sample size.
+        n (int): Original sample size.
+        m (int): New sample size to which the dip statistic will be transformed.
+
+    Returns:
+        float: Transformed dip statistic appropriate for the new sample size.
     """
     dip_m = np.sqrt(n/m)*dip_n
     return dip_m
@@ -741,13 +793,21 @@ def transform_dip_to_other_nbr_pts(dip_n, n, m):
 
 def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps=1e-12):
     """
-        Dip computed as distance between empirical distribution function (EDF) and
-        cumulative distribution function for the unimodal distribution with
-        smallest such distance. The optimal unimodal distribution is found by
-        the algorithm presented in
+    Finds the dip of the empirical distribution function and the closest unimodal distribution.
 
-            Hartigan (1985): Computation of the dip statistic to test for
-            unimodaliy. Applied Statistics, vol. 34, no. 3
+    Reference: 
+        Hartigan (1985): Computation of the dip statistic to test for
+        unimodaliy. Applied Statistics, vol. 34, no. 3
+
+    Parameters:
+        xF (numpy.ndarray): X-coordinates of the empirical distribution function.
+        yF (numpy.ndarray): Y-coordinates of the empirical distribution function.
+        plotting (bool, optional): If True, enables plotting of the distributions (not implemented).
+        verbose (bool, optional): If True, prints detailed debugging information.
+        eps (float): Tolerance for floating-point comparison.
+
+    Returns:
+        tuple: Dip statistic and the closest unimodal distribution function.
 
         If the plotting option is enabled the optimal unimodal distribution
         function is plotted along with (xF, yF-dip) and (xF, yF+dip)
@@ -967,7 +1027,14 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
 
 def greatest_convex_minorant_sorted(x, y):
     """
-    Add Docstring
+    Determines the greatest convex minorant for sorted data.
+
+    Parameters:
+        x (numpy.ndarray): Sorted x-coordinates of the data points.
+        y (numpy.ndarray): Corresponding y-coordinates of the data points.
+
+    Returns:
+        numpy.ndarray: Indices of the points forming the greatest convex minorant.
     """
     i = least_concave_majorant_sorted(x, -y)
     return i
@@ -975,7 +1042,15 @@ def greatest_convex_minorant_sorted(x, y):
 
 def least_concave_majorant_sorted(x, y, eps=1e-12):
     """
-    Add Docstring
+    Finds the least concave majorant for sorted data.
+
+    Parameters:
+        x (numpy.ndarray): Sorted x-coordinates of the data points.
+        y (numpy.ndarray): Corresponding y-coordinates of the data points.
+        eps (float): Small threshold to avoid division errors.
+
+    Returns:
+        numpy.ndarray: Indices of the points forming the least concave majorant.
     """
     i = [0]
     icurr = 0
@@ -1001,7 +1076,17 @@ def least_concave_majorant_sorted(x, y, eps=1e-12):
 
 class KernelDensityDerivative(object):
     """
-    Add Docstring
+    Kernel density derivative estimator.
+
+    Parameters:
+        data (numpy.ndarray): Data points for density estimation.
+        deriv_order (int): Order of the derivative (0 for density, 2 for second derivative).
+
+    Attributes:
+        kernel (function): Kernel function used for density estimation.
+        deriv_order (int): Order of the derivative being estimated.
+        h (float): Bandwidth used for the kernel density estimation.
+        datah (numpy.ndarray): Scaled data by the bandwidth.
     """
     def __init__(self, data, deriv_order):
         if deriv_order == 0:
@@ -1038,7 +1123,14 @@ class KernelDensityDerivative(object):
 
 def silverman_bandwidth(data, deriv_order=0):
     """
-    Add Docstring
+    Calculates the Silverman bandwidth for kernel density estimation.
+
+    Parameters:
+        data (numpy.ndarray): The data for which the bandwidth is to be calculated.
+        deriv_order (int): Order of the derivative for which the bandwidth is calculated.
+
+    Returns:
+        float: The estimated bandwidth.
     """
     sigmahat = np.std(data, ddof=1)
     return sigmahat*bandwidth_factor(data.shape[0], deriv_order)
@@ -1046,7 +1138,17 @@ def silverman_bandwidth(data, deriv_order=0):
 
 def bandwidth_factor(nbr_data_pts, deriv_order=0):
     """
-    Scale factor for one-dimensional plug-in bandwidth selection.
+    Calculates the bandwidth scaling factor based on the number of data points and derivative order.
+
+    Parameters:
+        nbr_data_pts (int): Number of data points.
+        deriv_order (int): Order of the derivative (0 for density estimation, 2 for second derivative).
+
+    Returns:
+        float: Scaling factor for bandwidth calculation.
+
+    Raises:
+        ValueError: If the derivative order is not supported.
     """
     if deriv_order == 0:
         return (3.0*nbr_data_pts/4)**(-1.0/5)
@@ -1059,7 +1161,14 @@ def bandwidth_factor(nbr_data_pts, deriv_order=0):
 
 def calibrated_dip_test(data, N_bootstrap=1000):
     """
-    Add Docstring
+    Performs a calibrated dip test by bootstrapping and comparing to reference distributions.
+
+    Parameters:
+        data (numpy.ndarray): The data to test for unimodality.
+        N_bootstrap (int): Number of bootstrap samples to generate for calibration.
+
+    Returns:
+        float: Proportion of bootstrap samples where the computed dip is greater than the observed dip.
     """
     xF, yF = cum_distr(data)
     dip = dip_from_cdf(xF, yF)
@@ -1081,7 +1190,13 @@ def calibrated_dip_test(data, N_bootstrap=1000):
 
 def select_calibration_distribution(d_hat):
     """
-    Add Docstring
+    Selects an appropriate reference distribution for dip test calibration based on a d_hat value.
+
+    Parameters:
+        d_hat (float): Calculated measure from the original data used to select the reference distribution.
+
+    Returns:
+        object: An instance of a reference distribution class for generating samples.
     """
     # data_dir = os.path.join('.', 'data')
     # print(data_dir)
@@ -1189,30 +1304,72 @@ def select_calibration_distribution(d_hat):
 
 class RefGaussian(object):
     """
-    Add Docstring
+    Reference Gaussian distribution for generating random samples.
+
+    Methods:
+        sample(int): Generates a sample from a Gaussian distribution.
     """
     def sample(self, n):
+        """
+        Generates random samples from a Gaussian distribution.
+
+        Parameters:
+            n (int): Number of samples to generate.
+
+        Returns:
+            numpy.ndarray: Array of Gaussian random samples.
+        """
         return np.random.randn(n)
 
 
 class RefBeta(object):
     """
-    Add Docstring
+    Reference Beta distribution for generating random samples, parameterized by a shape parameter.
+
+    Parameters:
+        beta (float): Shape parameter for both alpha and beta of the Beta distribution.
+
+    Methods:
+        sample(int): Generates a sample from a Beta distribution.
     """
     def __init__(self, beta):
         self.beta = beta
 
     def sample(self, n):
+        """
+        Generates random samples from a Beta distribution.
+
+        Parameters:
+            n (int): Number of samples to generate.
+
+        Returns:
+            numpy.ndarray: Array of Beta random samples.
+        """
         return np.random.beta(self.beta, self.beta, n)
 
 
 class RefStudentt(object):
     """
-    Add Docstring
+    Reference Student's t distribution for generating random samples, parameterized by a degrees of freedom parameter.
+
+    Parameters:
+        beta (float): Shape parameter that influences the degrees of freedom of the Student's t distribution.
+
+    Methods:
+        sample(int): Generates a sample from a Student's t distribution.
     """
     def __init__(self, beta):
         self.beta = beta
 
     def sample(self, n):
+        """
+        Generates random samples from a Student's t distribution.
+
+        Parameters:
+            n (int): Number of samples to generate.
+
+        Returns:
+            numpy.ndarray: Array of Student's t random samples.
+        """
         dof = 2*self.beta-1
         return 1./np.sqrt(dof)*np.random.standard_t(dof, n)
