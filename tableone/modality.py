@@ -1074,7 +1074,7 @@ def least_concave_majorant_sorted(x, y, eps=1e-12):
     return np.array(i)
 
 
-class KernelDensityDerivative(object):
+class KernelDensityDerivative:
     """
     Kernel density derivative estimator.
 
@@ -1302,7 +1302,7 @@ def select_calibration_distribution(d_hat):
     return RefStudentt(beta)
 
 
-class RefGaussian(object):
+class RefGaussian:
     """
     Reference Gaussian distribution for generating random samples.
 
@@ -1322,7 +1322,7 @@ class RefGaussian(object):
         return np.random.randn(n)
 
 
-class RefBeta(object):
+class RefBeta:
     """
     Reference Beta distribution for generating random samples, parameterized by a shape parameter.
 
@@ -1348,7 +1348,7 @@ class RefBeta(object):
         return np.random.beta(self.beta, self.beta, n)
 
 
-class RefStudentt(object):
+class RefStudentt:
     """
     Reference Student's t distribution for generating random samples, parameterized by a degrees of freedom parameter.
 
