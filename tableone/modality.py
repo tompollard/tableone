@@ -35,6 +35,7 @@ def generate_data(peaks=2, n=None, mu=None, std=None):
         mu = np.random.randint(0, 30, peaks)
     if not std:
         std = [1.0] * peaks
+
     # generate distributions then append
     dists = []
     for i in range(peaks):
@@ -58,7 +59,6 @@ def hartigan_diptest(data):
     Returns:
         float: P-value indicating the probability of the dataset being unimodal.
     """
-
     try:
         p = pval_hartigan(data[~np.isnan(data)])
     except (TypeError, ValueError, KeyError):
@@ -95,17 +95,22 @@ def cum_distr(data, w=None):
     """
     if w is None:
         w = np.ones(len(data))*1./len(data)
+
     eps = 1e-10
     data_ord = np.argsort(data)
     data_sort = data[data_ord]
     w_sort = w[data_ord]
     data_sort, indices = unique(data_sort, return_index=True, eps=eps, is_sorted=True)
+
     if len(indices) < len(data_ord):
         w_unique = np.zeros(len(indices))
+
         for i in range(len(indices)-1):
             w_unique[i] = np.sum(w_sort[indices[i]:indices[i+1]])
+
         w_unique[-1] = np.sum(w_sort[indices[-1]:])
         w_sort = w_unique
+
     wcum = np.cumsum(w_sort)
     wcum /= wcum[-1]
 
@@ -113,10 +118,12 @@ def cum_distr(data, w=None):
     x = np.empty(2*N)
     x[2*np.arange(N)] = data_sort
     x[2*np.arange(N)+1] = data_sort
+
     y = np.empty(2*N)
     y[0] = 0
     y[2*np.arange(N)+1] = wcum
     y[2*np.arange(N-1)+2] = wcum[:-1]
+
     return x, y
 
 
@@ -139,13 +146,16 @@ def unique(data, return_index, eps, is_sorted=True):
         data_sort = data[ord]
     else:
         data_sort = data
+
     isunique_sort = np.ones(len(data_sort), dtype='bool')
     j = 0
+
     for i in range(1, len(data_sort)):
         if data_sort[i] - data_sort[j] < eps:
             isunique_sort[i] = False
         else:
             j = i
+
     if not is_sorted:
         isunique = isunique_sort[rank]  # type: ignore
         data_unique = data[isunique]
@@ -159,6 +169,7 @@ def unique(data, return_index, eps, is_sorted=True):
         ind_unique = np.nonzero(isunique)[0]  # type: ignore
     else:
         ind_unique = np.nonzero(isunique_sort)[0]
+
     return data_unique, ind_unique
 
 
@@ -191,10 +202,6 @@ def dip_pval_tabinterpol(dip, N):
     Returns:
         float: Interpolated p-value based on the dip statistic and sample size.
     """
-
-    # if qDiptab_df is None:
-    #     raise DataError("Tabulated p-values not available. See installation instructions.")
-
     if np.isnan(N) or N < 10:
         return np.nan
 
@@ -766,6 +773,7 @@ def dip_pval_tabinterpol(dip, N):
         return 1
 
     iplow = np.nonzero(dip_interpol_sqrtN < dip_sqrtN)[0][-1]
+
     if iplow == len(dip_interpol_sqrtN) - 1:
         return 0
 
@@ -816,7 +824,6 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         yF  -   y-coordinates for EDF
 
     """
-
     # TODO! Preprocess xF and yF so that yF increasing and xF does
     # not have more than two copies of each x-value.
 
@@ -824,11 +831,6 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         raise ValueError('Need sorted x-values to compute dip')
     if (yF[1:]-yF[:-1] < -eps).any():
         raise ValueError('Need sorted y-values to compute dip')
-
-    # if plotting:
-    #     Nplot = 5
-    #     bfig = plt.figure(figsize=(12, 3))
-    #     i = 1  # plot index
 
     D = 0  # lower bound for dip*2
 
@@ -855,7 +857,9 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         # interpolation. Might cause trouble if included due to possibility
         # of infinity slope at beginning or end of interval.
         if iG[0] != iH[0] or iG[-1] != iH[-1]:
-            raise ValueError('Convex minorant and concave majorant should start and end at same points.')
+            msg = 'Convex minorant and concave majorant should start and end at same points.'
+            raise ValueError(msg)
+
         hipl = np.interp(xF[iG[1:-1]], xF[iH], yF[iH])
         gipl = np.interp(xF[iH[1:-1]], xF[iG], yF[iG])
         hipl = np.hstack([yF[iH[0]], hipl, yF[iH[-1]]])
@@ -870,18 +874,6 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         imaxdiffh = np.argmax(hdiff)
         d = max(gdiff[imaxdiffg], hdiff[imaxdiffh])
 
-        # # Plot current GCM and LCM.
-        # if plotting:
-        #     if i > Nplot:
-        #         bfig = plt.figure(figsize=(12, 3))
-        #         i = 1
-        #     bax = bfig.add_subplot(1, Nplot, i)
-        #     bax.plot(xF, yF, color='red')
-        #     bax.plot(xF, yF-d/2, color='black')
-        #     bax.plot(xF, yF+d/2, color='black')
-        #     bax.plot(xF[iG], yF[iG]+d/2, color='blue')
-        #     bax.plot(xF[iH], yF[iH]-d/2, color='blue')
-
         # if d <= D:
         #     if verbose:
         #         print("Difference in modal interval smaller than current dip")
@@ -895,16 +887,10 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         else:
             U0 = iH[imaxdiffh]
             L0 = iG[iG <= U0][-1]
+
         # Add points outside the modal interval to the final GCM and LCM.
         iGfin = np.hstack([iGfin, iG[(iG <= L0)*(iG > L)]])
         iHfin = np.hstack([iH[(iH >= U0)*(iH < U)], iHfin])
-
-        # # Plot new modal interval
-        # if plotting:
-        #     ymin, ymax = bax.get_ylim()
-        #     bax.axvline(xF[L0], ymin, ymax, color='orange')
-        #     bax.axvline(xF[U0], ymin, ymax, color='red')
-        #     bax.set_xlim(xF[L]-.1*(xF[U]-xF[L]), xF[U]+.1*(xF[U]-xF[L]))
 
         # Compute new lower bound for dip*2
         # i.e. largest difference outside modal interval
@@ -918,15 +904,6 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
                 print("Modal interval zero length")
             break
 
-        # if plotting:
-        #     mxpt = np.argmax(yF[L:(L0+1)] - gipl)
-        #     bax.plot([xF[L:][mxpt], xF[L:][mxpt]], [yF[L:][mxpt]+d/2,
-        #       gipl[mxpt]+d/2], '+', color='red')
-        #     mxpt = np.argmax(hipl - yF[U0:(U+1)])
-        #     bax.plot([xF[U0:][mxpt], xF[U0:][mxpt]], [yF[U0:][mxpt]-d/2,
-        #       hipl[mxpt]-d/2], '+', color='red')
-        #     i += 1
-
         # Change modal interval
         L = L0
         U = U0
@@ -936,31 +913,16 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
                 print("Difference in modal interval smaller than new dip")
             break
 
-    # if plotting:
-
-    #     # Add modal interval to figure
-    #     bax.axvline(xF[L0], ymin, ymax, color='green', linestyle='dashed')
-    #     bax.axvline(xF[U0], ymin, ymax, color='green', linestyle='dashed')
-
-    #     ## Plot unimodal function (not distribution function)
-    #     bfig = plt.figure()
-    #     bax = bfig.add_subplot(1, 1, 1)
-    #     bax.plot(xF, yF, color='red')
-    #     bax.plot(xF, yF-D/2, color='black')
-    #     bax.plot(xF, yF+D/2, color='black')
-
     # Find string position in modal interval
     iM = np.arange(iGfin[-1], iHfin[0]+1)  # type: ignore
     yM_lower = yF[iM]-D/2
     yM_lower[0] = yF[iM[0]]+D/2
     iMM_concave = least_concave_majorant_sorted(xF[iM], yM_lower)
     iM_concave = iM[iMM_concave]
-    # bax.plot(xF[iM], yM_lower, color='orange')
-    # bax.plot(xF[iM_concave], yM_lower[iMM_concave], color='red')
     lcm_ipl = np.interp(xF[iM], xF[iM_concave], yM_lower[iMM_concave])
+
     try:
         mode = iM[np.nonzero(lcm_ipl > yF[iM]+D/2)[0][-1]]
-        # bax.axvline(xF[mode], color='green', linestyle='dashed')
     except IndexError:
         iM_convex = np.zeros(0, dtype='i')
     else:
@@ -970,32 +932,16 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
         iM = iM[iM <= mode]
         iM_convex = iM[greatest_convex_minorant_sorted(xF[iM], yF[iM])]
 
-    # if plotting:
-
-    #     bax.plot(xF[np.hstack([iGfin, iM_convex, iM_concave, iHfin])],
-    #              np.hstack([yF[iGfin] + D/2, yF[iM_convex] + D/2,
-    #                         yM_lower[iMM_concave], yF[iHfin] - D/2]), color='blue')
-    #     #bax.plot(xF[iM], yM_lower, color='orange')
-
-    #     ## Plot unimodal distribution function
-    #     bfig = plt.figure()
-    #     bax = bfig.add_subplot(1, 1, 1)
-    #     bax.plot(xF, yF, color='red')
-    #     bax.plot(xF, yF-D/2, color='black')
-    #     bax.plot(xF, yF+D/2, color='black')
-
     # Find string position in modal interval
     iM = np.arange(iGfin[-1], iHfin[0]+1)  # type: ignore
     yM_lower = yF[iM]-D/2
     yM_lower[0] = yF[iM[0]]+D/2
     iMM_concave = least_concave_majorant_sorted(xF[iM], yM_lower)
     iM_concave = iM[iMM_concave]
-    # bax.plot(xF[iM], yM_lower, color='orange')
-    # bax.plot(xF[iM_concave], yM_lower[iMM_concave], color='red')
     lcm_ipl = np.interp(xF[iM], xF[iM_concave], yM_lower[iMM_concave])
+
     try:
         mode = iM[np.nonzero(lcm_ipl > yF[iM]+D/2)[0][-1]]
-        # bax.axvline(xF[mode], color='green', linestyle='dashed')
     except IndexError:
         iM_convex = np.zeros(0, dtype='i')
     else:
@@ -1009,6 +955,7 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
     xU = xF[np.hstack([iGfin[:-1], iM_convex, iM_concave, iHfin[1:]])]  # type: ignore
     yU = np.hstack([yF[iGfin[:-1]] + D/2, yF[iM_convex] + D/2,  # type: ignore
                     yM_lower[iMM_concave], yF[iHfin[1:]] - D/2])  # type: ignore
+
     # Add points so unimodal curve goes from 0 to 1
     k_start = (yU[1]-yU[0])/(xU[1]-xU[0]+1e-5)
     xU_start = xU[0] - yU[0]/(k_start+1e-5)
@@ -1016,11 +963,6 @@ def dip_and_closest_unimodal_from_cdf(xF, yF, plotting=False, verbose=False, eps
     xU_end = xU[-1] + (1-yU[-1])/(k_end+1e-5)
     xU = np.hstack([xU_start, xU, xU_end])
     yU = np.hstack([0, yU, 1])
-
-    # if plotting:
-    #     bax.plot(xU, yU, color='blue')
-    #     #bax.plot(xF[iM], yM_lower, color='orange')
-    #     plt.show()
 
     return D/2, (xU, yU)
 
@@ -1095,6 +1037,7 @@ class KernelDensityDerivative:
             self.kernel = lambda u: (u**2-1)*np.exp(-u**2/2)
         else:
             raise ValueError('Not implemented for derivative of order {}'.format(deriv_order))
+
         self.deriv_order = deriv_order
         self.h = silverman_bandwidth(data, deriv_order)
         self.datah = data/self.h
@@ -1102,23 +1045,18 @@ class KernelDensityDerivative:
     def evaluate(self, x):
         xh = np.array(x).reshape(-1)/self.h
         res = np.zeros(len(xh))
+
         if len(xh) > len(self.datah):  # loop over data
             for data_ in self.datah:
                 res += self.kernel(data_-xh)
         else:  # loop over x
             for i, x_ in enumerate(xh):
                 res[i] = np.sum(self.kernel(self.datah-x_))
+
         return res*1./(np.sqrt(2*np.pi)*self.h**(1+self.deriv_order)*len(self.datah))
 
     def score_samples(self, x):
         return self.evaluate(x)
-
-    # def plot(self, ax=None):
-    #     x = self.h*np.linspace(np.min(self.datah)-5, np.max(self.datah)+5, 200)
-    #     y = self.evaluate(x)
-    #     if ax is None:
-    #         fig, ax = plt.subplots()
-    #     ax.plot(x, y)
 
 
 def silverman_bandwidth(data, deriv_order=0):
@@ -1173,18 +1111,23 @@ def calibrated_dip_test(data, N_bootstrap=1000):
     xF, yF = cum_distr(data)
     dip = dip_from_cdf(xF, yF)
     n_eval = 512
+
     f_hat = KernelDensityDerivative(data, 0)
     f_bis_hat = KernelDensityDerivative(data, 2)
     x = np.linspace(np.min(data), np.max(data), n_eval)
+
     f_hat_eval = f_hat.evaluate(x)
     ind_x0_hat = np.argmax(f_hat_eval)
     d_hat = np.abs(f_bis_hat.evaluate(x[ind_x0_hat]))/f_hat_eval[ind_x0_hat]**3
+
     ref_distr = select_calibration_distribution(d_hat)
     ref_dips = np.zeros(N_bootstrap)
+
     for i in range(N_bootstrap):
         samp = ref_distr.sample(len(data))
         xF, yF = cum_distr(samp)
         ref_dips[i] = dip_from_cdf(xF, yF)
+
     return np.mean(ref_dips > dip)
 
 
@@ -1198,10 +1141,6 @@ def select_calibration_distribution(d_hat):
     Returns:
         object: An instance of a reference distribution class for generating samples.
     """
-    # data_dir = os.path.join('.', 'data')
-    # print(data_dir)
-    # with open(os.path.join(data_dir, 'gammaval.pkl'), 'r') as f:
-    #     savedat = pickle.load(f)
     savedat = {'beta_betadistr': np.array([1.0,
                                            2.718281828459045,
                                            7.38905609893065,
@@ -1285,6 +1224,7 @@ def select_calibration_distribution(d_hat):
 
     if np.abs(d_hat-np.pi) < 1e-4:
         return RefGaussian()
+
     if d_hat < 2*np.pi:  # beta distribution
         def gamma(beta): return 2*(beta-1)*betafun(beta, 1.0/2)**2 - d_hat
         i = np.searchsorted(savedat['gamma_betadistr'], d_hat)
@@ -1299,6 +1239,7 @@ def select_calibration_distribution(d_hat):
     beta_left = savedat['beta_studentt'][i-1]
     beta_right = savedat['beta_studentt'][i]
     beta = brentq(gamma, beta_left, beta_right)
+
     return RefStudentt(beta)
 
 
