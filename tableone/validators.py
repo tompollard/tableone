@@ -91,11 +91,15 @@ class InputValidator:
         """Ensure 'groupby' is provided as a str."""
         if groupby:
             if isinstance(groupby, list):
-                raise ValueError(f"Invalid 'groupby' type: expected a string, received a list. Use '{groupby[0]}' if it's the intended group.")
+                msg = (f"Invalid 'groupby' type: expected a string, received a list. "
+                       f"Use '{groupby[0]}' if it's the intended group.")
+                raise ValueError(msg)
             elif not isinstance(groupby, str):
-                raise TypeError(f"Invalid 'groupby' type: expected a string, received {type(groupby).__name__}.")
+                msg = f"Invalid 'groupby' type: expected a string, received {type(groupby).__name__}."
+                raise TypeError(msg)
         elif pval:
-            raise ValueError("The 'pval' parameter is set to True, but no 'groupby' parameter was specified.")
+            msg = "The 'pval' parameter is set to True, but no 'groupby' parameter was specified."
+            raise ValueError(msg)
 
     def check_list(self,
                    parameter: Optional[Union[List[Any], str]],
@@ -104,9 +108,12 @@ class InputValidator:
         """Ensure list arguments are properly formatted."""
         if parameter:
             if not isinstance(parameter, (list, str)):
-                raise TypeError(f"Invalid '{parameter_name}' type: expected a list or a string, received {type(parameter).__name__}.")
+                msg = (f"Invalid '{parameter_name}' type: expected a list "
+                       f"or a string, received {type(parameter).__name__}.")
+                raise TypeError(msg)
             if expected_type and any(not isinstance(item, expected_type) for item in parameter):
-                raise ValueError(f"All items in '{parameter_name}' list must be of type {expected_type.__name__}.")
+                msg = f"All items in '{parameter_name}' list must be of type {expected_type.__name__}."
+                raise ValueError(msg)
 
     def check_pval_adjust(self, pval_adjust: str):
         """Ensure 'pval_adjust' is a known method."""
@@ -114,21 +121,26 @@ class InputValidator:
             valid_methods = {"bonferroni", "sidak", "holm-sidak", "simes-hochberg", "hommel", None}
             if isinstance(pval_adjust, str):
                 if pval_adjust.lower() not in valid_methods:
-                    raise ValueError(f"Invalid 'pval_adjust' value: '{pval_adjust}'. "
-                                     f"Expected one of {', '.join(valid_methods)} or None.")
+                    msg = (f"Invalid 'pval_adjust' value: '{pval_adjust}'. "
+                           f"Expected one of {', '.join(valid_methods)} or None.")
+                    raise ValueError(msg)
             else:
-                raise TypeError(f"Invalid type for 'pval_adjust': expected a string or None, "
-                                f"received {type(pval_adjust).__name__}.")
+                msg = (f"Invalid type for 'pval_adjust': expected a string or None, "
+                       f"received {type(pval_adjust).__name__}.")
+                raise TypeError(msg)
 
     def check_order(self, order: dict):
         """Ensure the order argument is correctly specified."""
         if order is not None:
             if not isinstance(order, dict):
-                raise TypeError("The 'order' parameter must be a dictionary where keys are column names and values are lists of ordered categories.")
+                msg = ("The 'order' parameter must be a dictionary where keys are "
+                       "column names and values are lists of ordered categories.")
+                raise TypeError(msg)
 
             for key, values in order.items():
                 if not isinstance(values, list):
-                    raise TypeError(f"The value for '{key}' in 'order' must be a list of categories.")
+                    msg = f"The value for '{key}' in 'order' must be a list of categories."
+                    raise TypeError(msg)
 
     def check_exclusivity(self, categorical: list, continuous: list):
         """Ensure categorical and continuous are mutually exclusive."""
@@ -138,8 +150,9 @@ class InputValidator:
             continuous = []
 
         if set(categorical) & set(continuous):
-            raise ValueError("Columns cannot be both categorical and continuous: "
-                             f"{set(categorical) & set(continuous)}")
+            msg = ("Columns cannot be both categorical and continuous: "
+                   f"{set(categorical) & set(continuous)}")
+            raise ValueError(msg)
 
     def check_columns_exist(self, columns: list, categorical: list, continuous: list):
         """Ensure all specified columns exist in the DataFrame columns list."""
@@ -156,5 +169,5 @@ class InputValidator:
         all_specified = cat_set.union(cont_set)
         if not all_specified.issubset(set(columns)):
             missing = list(all_specified - set(columns))
-            raise ValueError("Specified categorical/continuous columns not found in the DataFrame: "
-                             f"{missing}")
+            msg = "Specified categorical/continuous columns not found in the DataFrame: f"{missing}"
+            raise ValueError(msg)
