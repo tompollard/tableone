@@ -193,6 +193,7 @@ class Tables:
                             categorical,
                             decimals,
                             row_percent,
+                            include_null,
                             groupby: Optional[str] = None,
                             groupbylvls: Optional[list] = None
                             ) -> pd.DataFrame:
@@ -223,12 +224,19 @@ class Tables:
             else:
                 df = cat_slice.copy()
 
-            # create n column and null count column
+            # create n column
             # must be done before converting values to strings
             ct = df.count().to_frame(name='n')
             ct.index.name = 'variable'
-            nulls = df.isnull().sum().to_frame(name='Missing')
-            nulls.index.name = 'variable'
+
+            if include_null:
+                # create an empty Missing column for display purposes
+                nulls = pd.DataFrame('', index=df.columns, columns=['Missing'])
+                nulls.index.name = 'variable'
+            else:
+                # Count and display null count
+                nulls = df.isnull().sum().to_frame(name='Missing')
+                nulls.index.name = 'variable'
 
             # Convert to str to handle int converted to boolean in the index.
             # Also avoid nans.
@@ -445,6 +453,7 @@ class Tables:
                          overall,
                          cat_describe,
                          categorical,
+                         include_null,
                          pval,
                          pval_adjust,
                          htest_table,
@@ -462,9 +471,14 @@ class Tables:
         """
         table = cat_describe['t1_summary'].copy()
 
-        # add the total count of null values across all levels
-        isnull = data[categorical].isnull().sum().to_frame(name='Missing')
-        isnull.index = isnull.index.rename('variable')
+        if include_null:
+            isnull = pd.DataFrame(index=categorical, columns=['Missing'])
+            isnull['Missing'] = ''
+            isnull.index.rename('variable', inplace=True)
+        else:
+            # add the total count of null values across all levels
+            isnull = data[categorical].isnull().sum().to_frame(name='Missing')
+            isnull.index = isnull.index.rename('variable')
 
         try:
             table = table.join(isnull)

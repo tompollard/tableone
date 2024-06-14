@@ -216,7 +216,7 @@ class TestTableOne(object):
         """
         categorical = ['likeshoney']
         table = TableOne(data_sample, columns=categorical,
-                         categorical=categorical)
+                         categorical=categorical, include_null=False)
 
         lh = table.cat_describe.loc['likeshoney']
 
@@ -796,7 +796,8 @@ class TestTableOne(object):
 
         # create tableone
         t1 = TableOne(df, label_suffix=False,
-                      categorical=['basket1', 'basket2', 'basket3', 'basket4'])
+                      categorical=['basket1', 'basket2', 'basket3', 'basket4'],
+                      include_null=False)
 
         assert all(t1.tableone.loc['basket1'].index == ['apple', 'banana',
                                                         'durian', 'lemon',
@@ -1028,7 +1029,7 @@ class TestTableOne(object):
 
         # if a custom order is not specified, the categorical order
         # specified above should apply
-        t1 = TableOne(data, label_suffix=False)
+        t1 = TableOne(data, label_suffix=False, include_null=False)
 
         t1_expected_order = {'month': ["feb", "jan", "mar", "apr"],
                              'day': ["wed", "thu", "mon", "tue"]}
@@ -1039,7 +1040,7 @@ class TestTableOne(object):
                     t1_expected_order[k])
 
         # if a desired order is set, it should override the order
-        t2 = TableOne(data, order=order, label_suffix=False)
+        t2 = TableOne(data, order=order, label_suffix=False, include_null=False)
 
         t2_expected_order = {'month': ["jan", "feb", "mar", "apr"],
                              'day': ["mon", "tue", "wed", "thu"]}
@@ -1104,7 +1105,7 @@ class TestTableOne(object):
         t1 = TableOne(data_pn, columns=columns,
                       categorical=categorical, groupby=groupby,
                       nonnormal=nonnormal, decimals=decimals,
-                      row_percent=False)
+                      row_percent=False, include_null=False)
 
         row1 = list(t1.tableone.loc["MechVent, n (%)"][group].values[0])
         row1_expect = [0, '540 (54.0)', '468 (54.2)', '72 (52.9)']
@@ -1154,7 +1155,7 @@ class TestTableOne(object):
         t2 = TableOne(data_pn, columns=columns,
                       categorical=categorical, groupby=groupby,
                       nonnormal=nonnormal, decimals=decimals,
-                      row_percent=True)
+                      row_percent=True, include_null=False)
 
         row1 = list(t2.tableone.loc["MechVent, n (%)"][group].values[0])
         row1_expect = [0, '540 (100.0)', '468 (86.7)', '72 (13.3)']
@@ -1204,7 +1205,7 @@ class TestTableOne(object):
         t1 = TableOne(data_pn, columns=columns, overall=False,
                       categorical=categorical, groupby=groupby,
                       nonnormal=nonnormal, decimals=decimals,
-                      row_percent=True)
+                      row_percent=True, include_null=False)
 
         row1 = list(t1.tableone.loc["MechVent, n (%)"][group].values[0])
         row1_expect = [0, '468 (86.7)', '72 (13.3)']

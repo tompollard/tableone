@@ -12,7 +12,7 @@ class DataValidator:
 
     def validate(self, data: pd.DataFrame, columns: list,
                  categorical: list,
-                 auto_fill_nulls: bool) -> None:
+                 include_null: bool) -> None:
         """
         Check the input dataset for obvious issues.
 
@@ -24,23 +24,6 @@ class DataValidator:
         self.check_unique_index(data)
         self.check_columns_exist(data, columns)
         self.check_duplicate_columns(data, columns)
-        if categorical and not auto_fill_nulls:
-            self.check_categorical_none(data, categorical)
-
-    def check_categorical_none(self, data: pd.DataFrame, categorical: List[str]):
-        """
-        Ensure that categorical columns do not contain None values.
-
-        Parameters:
-        data (pd.DataFrame): The DataFrame to check.
-        categorical (List[str]): The list of categorical columns to validate.
-        """
-        contains_none = [col for col in categorical if data[col].isnull().any()]
-        if contains_none:
-            raise InputError(f"The following categorical columns contains one or more null values: {contains_none}. "
-                             f"These must be converted to strings before processing. Either set "
-                             f"`auto_fill_nulls = True` or manually convert nulls to strings with: "
-                             f"data[categorical_columns] = data[categorical_columns].fillna('None')")
 
     def validate_input(self, data: pd.DataFrame):
         if not isinstance(data, pd.DataFrame):

@@ -169,9 +169,9 @@ class TableOne:
         Run Tukey's test for far outliers. If variables are found to
         have far outliers, a remark will be added below the Table 1.
         (default: False)
-    auto_fill_nulls : bool, optional
-        Attempt to automatically handle None/Null values in categorical columns
-        by treating them as a category named 'None'. (default: True)
+    include_null : bool, optional
+        Include None/Null values for categorical variables by treating them as a
+        category level. (default: True)
 
 
     Attributes
@@ -225,7 +225,7 @@ class TableOne:
                  dip_test: bool = False, normal_test: bool = False,
                  tukey_test: bool = False,
                  pval_threshold: Optional[float] = None,
-                 auto_fill_nulls: Optional[bool] = True) -> None:
+                 include_null: Optional[bool] = True) -> None:
 
         # Warn about deprecated parameters
         handle_deprecated_parameters(labels, isnull, pval_test_name, remarks)
@@ -240,7 +240,7 @@ class TableOne:
                                                htest, missing, ddof, rename, sort, limit, order,
                                                label_suffix, decimals, smd, overall, row_percent,
                                                dip_test, normal_test, tukey_test, pval_threshold,
-                                               auto_fill_nulls)
+                                               include_null)
 
         # Initialize intermediate tables
         self.initialize_intermediate_tables()
@@ -282,12 +282,12 @@ class TableOne:
                                    htest, missing, ddof, rename, sort, limit, order,
                                    label_suffix, decimals, smd, overall, row_percent, 
                                    dip_test, normal_test, tukey_test, pval_threshold,
-                                   auto_fill_nulls):
+                                   include_null):
         """
         Initialize attributes.
         """
         self._alt_labels = rename
-        self._auto_fill_nulls = auto_fill_nulls
+        self._include_null = include_null
         self._columns = columns if columns else data.columns.to_list()  # type: ignore
         self._categorical = detect_categorical(data[self._columns], groupby) if categorical is None else categorical
         if continuous:
@@ -318,7 +318,7 @@ class TableOne:
         self._tukey_test = tukey_test
         self._warnings = {}
 
-        if self._categorical and self._auto_fill_nulls:
+        if self._categorical and self._include_null:
             data[self._categorical] = handle_categorical_nulls(data[self._categorical])
 
         self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)
@@ -347,7 +347,7 @@ class TableOne:
         self.input_validator.validate(self._groupby, self._nonnormal, self._min_max,  # type: ignore
                                       self._pval_adjust, self._order, self._pval,  # type: ignore
                                       self._columns, self._categorical, self._continuous)  # type: ignore
-        self.data_validator.validate(data, self._columns, self._categorical, self._auto_fill_nulls)  # type: ignore
+        self.data_validator.validate(data, self._columns, self._categorical, self._include_null)  # type: ignore
 
     def create_intermediate_tables(self, data):
         """
@@ -366,6 +366,7 @@ class TableOne:
                                                                     self._categorical,
                                                                     self._decimals,
                                                                     self._row_percent,
+                                                                    self._include_null,
                                                                     groupby=None,
                                                                     groupbylvls=['Overall'])
 
@@ -385,6 +386,7 @@ class TableOne:
                                                                 self._categorical,
                                                                 self._decimals,
                                                                 self._row_percent,
+                                                                self._include_null,
                                                                 groupby=self._groupby,
                                                                 groupbylvls=self._groupbylvls)
 
@@ -413,6 +415,7 @@ class TableOne:
                                                           self._overall,
                                                           self.cat_describe,
                                                           self._categorical,
+                                                          self._include_null,
                                                           self._pval,
                                                           self._pval_adjust,
                                                           self.htest_table,
