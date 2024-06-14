@@ -55,7 +55,7 @@ setup(
         'scipy>=1.10.1',
         'statsmodels>=0.14.1',
         'tabulate>=0.9.0',
-        'Jinja2==3.1.2',
+        'Jinja2==3.1.4',
         'openpyxl==3.1.2'
         ],
 
