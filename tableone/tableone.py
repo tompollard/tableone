@@ -402,8 +402,7 @@ class TableOne:
 
         # compute standardized mean differences
         if self._smd:
-            self.smd_table = self.tables.create_smd_table(data,
-                                                          self._groupbylvls,
+            self.smd_table = self.tables.create_smd_table(self._groupbylvls,
                                                           self._continuous,
                                                           self._categorical,
                                                           self.cont_describe,

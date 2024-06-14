@@ -112,7 +112,6 @@ class Tables:
         return df
 
     def create_smd_table(self,
-                         data: pd.DataFrame,
                          groupbylvls,
                          continuous,
                          categorical,
