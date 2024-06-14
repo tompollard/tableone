@@ -10,7 +10,9 @@ class DataValidator:
         """Initialize the DataValidator class."""
         pass
 
-    def validate(self, data: pd.DataFrame, columns: list) -> None:
+    def validate(self, data: pd.DataFrame, columns: list,
+                 categorical: list,
+                 include_null: bool) -> None:
         """
         Check the input dataset for obvious issues.
 
