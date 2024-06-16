@@ -114,4 +114,11 @@ def handle_categorical_nulls(df: pd.DataFrame, null_value: str = 'None') -> pd.D
     Returns:
     - pd.DataFrame: The modified DataFrame if not inplace, otherwise None.
     """
-    return df.fillna(null_value)
+    for column in df.columns:
+        if df[column].isnull().any():
+            if df[column].dtype.name == 'category':
+                # Add 'None' to categories if it isn't already there
+                if null_value not in df[column].cat.categories:
+                    df.loc[:, column] = df[column].cat.add_categories(null_value)
+            df.loc[:, column] = df[column].fillna(null_value)
+    return df
