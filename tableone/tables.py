@@ -1,11 +1,10 @@
 from typing import Optional
-import warnings
 
 import numpy as np
 import pandas as pd
 
 from tableone.statistics import Statistics
-from tableone.exceptions import InputError
+from tableone.exceptions import InputError, non_continuous_warning
 
 
 class Tables:
@@ -363,7 +362,7 @@ class Tables:
 
         # check for coerced column containing all NaN to warn user
         for column in cont_data.columns[cont_data.count() == 0]:
-            self._non_continuous_warning(column)
+            non_continuous_warning(column)
 
         if groupby:
             # add the groupby column back
@@ -385,12 +384,6 @@ class Tables:
         df_cont.columns = df_cont.columns.set_levels(agg_rename, level=0)  # type: ignore
 
         return df_cont
-
-    # warnings
-    def _non_continuous_warning(self, c):
-        msg = ("'{}' has all non-numeric values. Consider including "
-               "it in the list of categorical variables.").format(c)
-        warnings.warn(msg, RuntimeWarning, stacklevel=2)
 
     def create_cont_table(self,
                           data,
