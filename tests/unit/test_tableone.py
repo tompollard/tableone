@@ -1242,3 +1242,21 @@ class TestTableOne(object):
 
         # Ensure that the error message matches the one produced by the code
         assert "Columns cannot be both categorical and continuous" in str(excinfo.value)
+
+    def test_null_values_correctly_handled_for_categorical_data_type(self):
+        """
+        Checks that null values are converted to a new category for categorical column type.
+
+        Issue raised by @eroell in https://github.com/tompollard/tableone/issues/177.
+        """
+        dummy_table = pd.DataFrame(
+            {
+                "age": [70, 80, 90, 85, 70],
+                "sex": ["m", "f", "m", "f", None]
+            }
+        )
+        dummy_table["sex"] = dummy_table["sex"].astype("category")
+        t = TableOne(dummy_table, include_null=True)
+
+        expected = '1 (20.0)'
+        assert t.tableone.loc["sex, n (%)", "None"]["Overall"] == expected
