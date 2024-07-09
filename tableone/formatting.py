@@ -42,28 +42,22 @@ def format_pvalues(table, pval, pval_adjust, pval_threshold):
     """
     # round pval column and convert to string
     if pval and pval_adjust:
-        if pval_threshold:
-            asterisk_mask = table['P-Value (adjusted)'] < pval_threshold
-
-        table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply(
-                                            '{:.3f}'.format).astype(str)
+        table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply('{:.3f}'.format).astype(str)
         table.loc[table['P-Value (adjusted)'] == '0.000',
                   'P-Value (adjusted)'] = '<0.001'
 
         if pval_threshold:
+            asterisk_mask = table['P-Value (adjusted)'] < pval_threshold
             table.loc[asterisk_mask, 'P-Value (adjusted)'] = (
                 table['P-Value (adjusted)'][asterisk_mask].astype(str)+"*"  # type: ignore
             )
 
     elif pval:
-        if pval_threshold:
-            asterisk_mask = table['P-Value'] < pval_threshold
-
-        table['P-Value'] = table['P-Value'].apply(
-                                    '{:.3f}'.format).astype(str)
+        table['P-Value'] = table['P-Value'].apply('{:.3f}'.format).astype(str)
         table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
 
         if pval_threshold:
+            asterisk_mask = table['P-Value'] < pval_threshold
             table.loc[asterisk_mask, 'P-Value'] = (
                 table['P-Value'][asterisk_mask].astype(str)+"*"  # type: ignore
             )
