@@ -245,9 +245,30 @@ class Tables:
                                      else None for row
                                      in cat_slice[column].values]
 
-            # create a dataframe with freq, proportion
-            df = df.melt().groupby(['variable',
-                                    'value']).size().to_frame(name='freq')
+            # # create a dataframe with freq, proportion
+            # df = df.melt().groupby(['variable',
+            #                         'value']).size().to_frame(name='freq')
+            melted = df.melt()
+
+            # Ensure all categories are included, even if missing in group
+            all_levels = {
+                col: cat_slice[col].astype("category").cat.categories
+                for col in categorical
+            }
+
+            # Build full multi-index with all combinations
+            full_index = pd.MultiIndex.from_product(
+                [[*cat_slice.columns], all_levels[cat_slice.columns[0]]],
+                names=['variable', 'value']
+            )
+
+            # Count, then reindex to ensure all levels are present
+            df = (
+                melted.groupby(['variable', 'value'])
+                .size()
+                .reindex(full_index, fill_value=0)
+                .to_frame(name='freq')
+            )
 
             df['percent'] = df['freq'].div(df.groupby(level=0).freq.sum(),
                                            level=0).astype(float) * 100
