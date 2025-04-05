@@ -1260,3 +1260,24 @@ class TestTableOne(object):
 
         expected = '1 (20.0)'
         assert t.tableone.loc["sex, n (%)", "None"]["Overall"] == expected
+
+
+def test_smd_with_missing_category_level_in_group():
+    """
+    Test that SMD is not NaN when one group is missing a level of a categorical variable.
+    This corresponds to GitHub issue #182.
+    """
+    df = pd.DataFrame({
+        'group': [0]*5 + [1]*5,
+        'color': ['red', 'red', 'blue', 'blue', 'green',
+                  'red', 'red', 'blue', 'blue', 'blue']
+    })
+
+    # Force color to be categorical with all expected levels
+    df['color'] = pd.Categorical(df['color'], categories=['red', 'blue', 'green'])
+
+    table = TableOne(df, columns=['color'], categorical=['color'], groupby='group', smd=True)
+
+    smd = table.tableone.loc['color, n (%)', 'Grouped by group']['SMD (0,1)'].iloc[0]
+
+    assert isinstance(smd, str) and smd.lower() != 'nan', "SMD should be computed and not be NaN"
