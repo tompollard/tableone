@@ -1281,3 +1281,37 @@ def test_smd_with_missing_category_level_in_group():
     smd = table.tableone.loc['color, n (%)', 'Grouped by group']['SMD (0,1)'].iloc[0]
 
     assert isinstance(smd, str) and smd.lower() != 'nan', "SMD should be computed and not be NaN"
+
+
+def test_missing_column_appears_in_first_row():
+    """
+    Test that the 'Missing' column is correctly populated only in the first
+    row of each categorical variable.
+    """
+    df = pd.DataFrame({
+        'group': [0]*5 + [1]*5,
+        'color': ['red', 'red', 'blue', 'blue', None,
+                  'red', 'red', 'blue', 'blue', 'blue']
+    })
+
+    table = TableOne(df,
+                     columns=['color'],
+                     categorical=['color'],
+                     groupby='group',
+                     include_null=False)
+
+    t1 = table.tableone
+
+    assert 'Missing' in t1['Grouped by group'].columns
+
+    # Extract rows for "color" variable
+    color_rows = t1.loc['color, n (%)', :]
+
+    # First row should contain a valid Missing value
+    assert color_rows.at[color_rows.index[0],
+                         ('Grouped by group', 'Missing')] == 1
+
+    # Remaining rows should have NaN
+    for i in range(1, len(color_rows)):
+        assert color_rows.at[color_rows.index[i],
+                             ('Grouped by group', 'Missing')] == ''
