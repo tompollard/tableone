@@ -1315,3 +1315,12 @@ def test_missing_column_appears_in_first_row():
     for i in range(1, len(color_rows)):
         assert color_rows.at[color_rows.index[i],
                              ('Grouped by group', 'Missing')] == ''
+
+
+def test_pval_with_numeric_missing():
+    df = pd.DataFrame({
+        'group': ['A', 'B', 'A', 'B', 'A'],
+        'numeric_cat': [1, 2, np.nan, 2, 1]
+    })
+    t1 = TableOne(df, columns=['numeric_cat'], categorical=['numeric_cat'], groupby='group', pval=True)
+    assert 'p-value' in t1.tableone.columns
