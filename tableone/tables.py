@@ -216,6 +216,18 @@ class Tables:
 
         cat_slice = data[categorical].copy()
 
+        # Ensure all category levels from the full dataset are preserved
+        all_levels = {
+            col: sorted(set(cat_slice[col].dropna().astype(str)))
+            for col in categorical
+        }
+
+        # Build full multi-index with all combinations
+        full_index = pd.MultiIndex.from_tuples(
+            [(col, val) for col in categorical for val in all_levels[col]],
+            names=['variable', 'value']
+        )
+
         for g in groupbylvls:  # type: ignore
             if groupby:
                 df = cat_slice.loc[data[groupby] == g, categorical]
@@ -246,17 +258,28 @@ class Tables:
                                      in cat_slice[column].values]
 
             # create a dataframe with freq, proportion
-            df = df.melt().groupby(['variable',
-                                    'value']).size().to_frame(name='freq')
+            df = (
+                df.melt()
+                .groupby(['variable', 'value'])
+                .size()
+                .reindex(full_index, fill_value=0)
+                .to_frame(name='freq')
+            )
 
             df['percent'] = df['freq'].div(df.groupby(level=0).freq.sum(),
                                            level=0).astype(float) * 100
 
             # add row percent
-            df['percent_row'] = df['freq'].div(cat_slice[categorical]
-                                               .melt()
-                                               .groupby(['variable', 'value'])
-                                               .size()) * 100
+            full_counts = (
+                cat_slice[categorical]
+                .melt()
+                .groupby(['variable', 'value'])
+                .size()
+            )
+
+            df['percent_row'] = df.index.map(
+                lambda idx: df.at[idx, 'freq'] / full_counts.get(idx, np.nan) * 100
+            )
 
             # set number of decimal places for percent
             if isinstance(decimals, int):
