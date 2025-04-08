@@ -102,23 +102,22 @@ def get_groups(data, groupby, order, reserved_columns):
     return groupbylvls
 
 
-def handle_categorical_nulls(df: pd.DataFrame, null_value: str = 'None') -> pd.DataFrame:
+def handle_categorical_nulls(df: pd.DataFrame, categorical: list, null_value: str = 'None') -> pd.DataFrame:
     """
     Convert None/Null values in specified categorical columns to a given string,
     so they are treated as an additional category.
 
     Parameters:
     - data (pd.DataFrame): The DataFrame containing the categorical data.
+    - categorical (list): List of categorical variables.
     - null_value (str): The string to replace null values with. Default is 'None'.
 
     Returns:
-    - pd.DataFrame: The modified DataFrame if not inplace, otherwise None.
+    - pd.DataFrame: The modified DataFrame.
     """
-    for column in df.columns:
+    df = df.copy()
+    for column in categorical:
         if df[column].isnull().any():
-            if df[column].dtype.name == 'category':
-                # Add 'None' to categories if it isn't already there
-                if null_value not in df[column].cat.categories:
-                    df.loc[:, column] = df[column].cat.add_categories(null_value)
-            df.loc[:, column] = df[column].fillna(null_value)
+            df[column] = df[column].astype(object).astype(str)
+            df[column] = df[column].replace('nan', null_value)
     return df

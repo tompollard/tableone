@@ -313,7 +313,7 @@ class TableOne:
         self._warnings = {}
 
         if self._categorical and self._include_null:
-            data[self._categorical] = handle_categorical_nulls(data[self._categorical])
+            data[self._categorical] = handle_categorical_nulls(data[self._categorical], self._categorical)
 
         self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)
 

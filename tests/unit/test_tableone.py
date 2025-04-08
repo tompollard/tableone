@@ -9,6 +9,7 @@ from scipy import stats
 from tableone import TableOne, load_dataset
 from tableone.validators import InputError
 from tableone.modality import hartigan_diptest, generate_data
+from tableone.preprocessors import handle_categorical_nulls
 
 seed = 12345
 
@@ -1315,3 +1316,80 @@ def test_missing_column_appears_in_first_row():
     for i in range(1, len(color_rows)):
         assert color_rows.at[color_rows.index[i],
                              ('Grouped by group', 'Missing')] == ''
+
+
+def test_pval_with_numeric_missing():
+    df = pd.DataFrame({
+        'group': ['A', 'B', 'A', 'B', 'A'],
+        'numeric_cat': [1, 2, np.nan, 2, 1]
+    })
+    t1 = TableOne(df, columns=['numeric_cat'], categorical=['numeric_cat'], groupby='group', pval=True)
+    assert ('Grouped by group', 'P-Value') in t1.tableone.columns
+
+
+def test_pval_numeric_categorical_with_nan():
+    df = pd.DataFrame({
+        'group': ['A', 'B', 'A', 'B', 'A'],
+        'numcat': [1, 2, np.nan, 2, 1]
+    })
+    t1 = TableOne(df, columns=['numcat'], categorical=['numcat'], groupby='group', pval=True)
+    assert ('Grouped by group', 'P-Value') in t1.tableone.columns
+    assert 'None' in t1.tableone.index.get_level_values(1)
+
+
+def test_pval_float_categorical_with_nan():
+    df = pd.DataFrame({
+        'group': ['A', 'B', 'A', 'B', 'A'],
+        'floatcat': [1.1, 2.2, np.nan, 2.2, 1.1]
+    })
+    t1 = TableOne(df, columns=['floatcat'], categorical=['floatcat'], groupby='group', pval=True)
+    assert ('Grouped by group', 'P-Value') in t1.tableone.columns
+    assert 'None' in t1.tableone.index.get_level_values(1)
+
+
+def test_pval_str_categorical_with_nan():
+    df = pd.DataFrame({
+        'group': ['A', 'B', 'A', 'B', 'A'],
+        'strcat': ['x', 'y', np.nan, 'y', 'x']
+    })
+    t1 = TableOne(df, columns=['strcat'], categorical=['strcat'], groupby='group', pval=True)
+    assert ('Grouped by group', 'P-Value') in t1.tableone.columns
+    assert 'None' in t1.tableone.index.get_level_values(1)
+
+
+def test_all_missing_categorical_column():
+    df = pd.DataFrame({
+        'group': ['A', 'B', 'A'],
+        'missingcat': [np.nan, np.nan, np.nan]
+    })
+    t1 = TableOne(df, columns=['missingcat'], categorical=['missingcat'], groupby='group', pval=True)
+    assert ('Grouped by group', 'P-Value') in t1.tableone.columns
+    assert 'None' in t1.tableone.index.get_level_values(1)
+
+
+def test_sorted_category_handling():
+    df = pd.DataFrame({
+        'group': ['A', 'B', 'A', 'B', 'A'],
+        'mixedcat': ['dog', np.nan, 'cat', 'rabbit', 'cat']
+    })
+    t1 = TableOne(df, columns=['mixedcat'], categorical=['mixedcat'], groupby='group', pval=True)
+    # Check if categories are sorted and include 'None'
+    categories = t1.tableone.index.get_level_values(1).tolist()
+    assert categories == sorted(categories, key=str)
+    assert 'None' in categories
+
+
+def test_handle_categorical_nulls_with_numeric_category():
+    df = pd.DataFrame({'x': [1, 2, np.nan]})
+    result = handle_categorical_nulls(df, categorical=['x'])
+    assert set(result['x'].unique()) == {'1.0', '2.0', 'None'}
+
+
+def test_handle_categorical_nulls_does_not_affect_continuous():
+    df = pd.DataFrame({
+        'cat': ['a', 'b', np.nan],
+        'cont': [1.0, 2.0, 3.0]
+    })
+    result = handle_categorical_nulls(df, categorical=['cat'])
+    assert result['cont'].dtype == float
+    assert result['cat'].iloc[2] == 'None'
