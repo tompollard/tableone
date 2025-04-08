@@ -10,7 +10,7 @@ authors = [
   { name="Alistair Johnson" },
   { name="Jesse Raffa" }
 ]
-license = {file = "LICENSE"}
+license = "MIT"
 description = "tableone is a package for creating 'Table 1' summary statistics for a patient population."
 readme = "README.md"
 requires-python = ">=3.9"
