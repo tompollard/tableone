@@ -1393,3 +1393,26 @@ def test_handle_categorical_nulls_does_not_affect_continuous():
     result = handle_categorical_nulls(df, categorical=['cat'])
     assert result['cont'].dtype == float
     assert result['cat'].iloc[2] == 'None'
+
+
+def test_pval_digits_custom_formatting():
+    df = pd.DataFrame({
+        'group': ['A', 'A', 'B', 'B', 'B'],
+        'x': [1, 5, 1, 2, 2],
+        'y': [1, 2, 5, 5, 6]
+    })
+
+    t1 = TableOne(df, columns=['x'], categorical=['x'], groupby='group', pval=True, pval_digits=5)
+    pval = t1.tableone['Grouped by group']['P-Value'].iloc[1]
+    assert pval == '0.23262'
+
+    t2 = TableOne(df, columns=['x'], categorical=['x'], groupby='group', pval=True, pval_digits=3,
+                pval_threshold=0.3)
+    pval = t2.tableone['Grouped by group']['P-Value'].iloc[1]
+    assert pval == '0.233*'
+
+
+    t3 = TableOne(df, columns=['y'], continuous=['y'], groupby='group', pval=True, pval_digits=1,
+                  pval_threshold=0.3)
+    pval = t3.tableone['Grouped by group']['P-Value'].iloc[1]
+    assert pval == '<0.1*'
