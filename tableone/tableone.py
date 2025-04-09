@@ -103,7 +103,12 @@ class TableOne:
         `holm-sidak` : step down method using Sidak adjustments
         `simes-hochberg` : step-up method (independent)
         `hommel` : closed method based on Simes tests (non-negative)
-
+    pval_digits : int, default=3
+        Number of decimal places to display for p-values.
+    pval_threshold : float, optional
+        Threshold below which p-values are marked with an asterisk (*).
+        For example, if set to 0.05, all p-values less than 0.05 will be
+        displayed with a trailing asterisk (e.g., '0.012*').
     htest_name : bool, optional
         Display a column with the names of hypothesis tests (default: False).
     htest : dict, optional
@@ -219,7 +224,8 @@ class TableOne:
                  dip_test: bool = False, normal_test: bool = False,
                  tukey_test: bool = False,
                  pval_threshold: Optional[float] = None,
-                 include_null: Optional[bool] = True) -> None:
+                 include_null: Optional[bool] = True,
+                 pval_digits: int = 3) -> None:
 
         # Warn about deprecated parameters
         handle_deprecated_parameters(labels, isnull, pval_test_name, remarks)
@@ -234,7 +240,7 @@ class TableOne:
                                                htest, missing, ddof, rename, sort, limit, order,
                                                label_suffix, decimals, smd, overall, row_percent,
                                                dip_test, normal_test, tukey_test, pval_threshold,
-                                               include_null)
+                                               include_null, pval_digits)
 
         # Initialize intermediate tables
         self.initialize_intermediate_tables()
@@ -276,7 +282,7 @@ class TableOne:
                                    htest, missing, ddof, rename, sort, limit, order,
                                    label_suffix, decimals, smd, overall, row_percent, 
                                    dip_test, normal_test, tukey_test, pval_threshold,
-                                   include_null):
+                                   include_null, pval_digits):
         """
         Initialize attributes.
         """
@@ -305,6 +311,7 @@ class TableOne:
         self._pval_adjust = pval_adjust
         self._pval_test_name = htest_name
         self._pval_threshold = pval_threshold
+        self._pval_digits = pval_digits
         self._reserved_columns = ['Missing', 'P-Value', 'Test', 'P-Value (adjusted)', 'SMD', 'Overall']
         self._row_percent = row_percent
         self._smd = smd
@@ -654,7 +661,7 @@ class TableOne:
         table.columns = table.columns.values.astype(str)
 
         table = sort_and_reindex(table, self._smd, self.smd_table, self._sort, self._columns)
-        table = format_pvalues(table, self._pval, self._pval_adjust, self._pval_threshold)
+        table = format_pvalues(table, self._pval, self._pval_adjust, self._pval_threshold, self._pval_digits)
         table = format_smd_columns(table, self._smd, self.smd_table)
         table = apply_order(table, self._order, self._groupby)
         table = apply_limits(table, data, self._limit, self._categorical, self._order)

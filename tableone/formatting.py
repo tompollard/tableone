@@ -35,32 +35,39 @@ def set_display_options(max_rows=None,
             warnings.warn(msg)
 
 
-def format_pvalues(table, pval, pval_adjust, pval_threshold):
+def format_pvalues(table, pval, pval_adjust, pval_threshold, pval_digits):
     """
-    Formats the p value columns, applying rounding rules and adding
-    significance markers based on defined thresholds.
+    Formats p-values to a fixed number of decimal places and optionally adds
+    significance markers based on a threshold.
     """
-    # round pval column and convert to string
-    if pval and pval_adjust:
-        table['P-Value (adjusted)'] = table['P-Value (adjusted)'].apply('{:.3f}'.format).astype(str)
-        table.loc[table['P-Value (adjusted)'] == '0.000',
-                  'P-Value (adjusted)'] = '<0.001'
+    def _format(p):
+        if pd.isnull(p):
+            return ""
+        try:
+            fval = float(p)
+        except Exception:
+            return str(p)
+        if fval < 10**(-pval_digits):
+            return f"<{10**(-pval_digits):.{pval_digits}f}"
+        return f"{fval:.{pval_digits}f}"
 
+    if pval_adjust:
+        col = 'P-Value (adjusted)'
         if pval_threshold:
-            asterisk_mask = table['P-Value (adjusted)'] < pval_threshold
-            table.loc[asterisk_mask, 'P-Value (adjusted)'] = (
-                table['P-Value (adjusted)'][asterisk_mask].astype(str)+"*"  # type: ignore
-            )
+            asterisk_mask = table[col] < pval_threshold
+            table[col] = table[col].apply(_format).astype(str)
+            table.loc[asterisk_mask, col] += "*"
+        else:
+            table[col] = table[col].apply(_format).astype(str)
 
     elif pval:
-        table['P-Value'] = table['P-Value'].apply('{:.3f}'.format).astype(str)
-        table.loc[table['P-Value'] == '0.000', 'P-Value'] = '<0.001'
-
+        col = 'P-Value'
         if pval_threshold:
-            asterisk_mask = table['P-Value'] < pval_threshold
-            table.loc[asterisk_mask, 'P-Value'] = (
-                table['P-Value'][asterisk_mask].astype(str)+"*"  # type: ignore
-            )
+            asterisk_mask = table[col] < pval_threshold
+            table[col] = table[col].apply(_format).astype(str)
+            table.loc[asterisk_mask, col] += "*"
+        else:
+            table[col] = table[col].apply(_format).astype(str)
 
     return table
 
