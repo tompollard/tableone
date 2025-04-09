@@ -37,8 +37,8 @@ def set_display_options(max_rows=None,
 
 def format_pvalues(table, pval, pval_adjust, pval_threshold, pval_digits):
     """
-    Formats the p-value columns, applying rounding to a fixed number of
-    decimal places and adding significance markers based on a threshold.
+    Formats p-values to a fixed number of decimal places and optionally adds
+    significance markers based on a threshold.
     """
     def _format(p):
         if pd.isnull(p):
@@ -54,19 +54,20 @@ def format_pvalues(table, pval, pval_adjust, pval_threshold, pval_digits):
     if pval_adjust:
         col = 'P-Value (adjusted)'
         if pval_threshold:
-            # Apply mask before formatting
             asterisk_mask = table[col] < pval_threshold
-        table[col] = table[col].apply(_format).astype(str)
-        if pval_threshold:
+            table[col] = table[col].apply(_format).astype(str)
             table.loc[asterisk_mask, col] += "*"
+        else:
+            table[col] = table[col].apply(_format).astype(str)
 
     elif pval:
         col = 'P-Value'
         if pval_threshold:
             asterisk_mask = table[col] < pval_threshold
-        table[col] = table[col].apply(_format).astype(str)
-        if pval_threshold:
+            table[col] = table[col].apply(_format).astype(str)
             table.loc[asterisk_mask, col] += "*"
+        else:
+            table[col] = table[col].apply(_format).astype(str)
 
     return table
 
