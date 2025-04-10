@@ -76,15 +76,15 @@ class TableOne:
         If the argument is set to None (or omitted), we attempt to detect
         continuous variables. Set to an empty list to indicate explicitly
         that there are no variables of this type to be included.
-    groupby : str, optional
-        Optional column for stratifying the final table (default: None).
-    nonnormal : list, optional
-        List of columns that contain non-normal variables (default: None).
+    groupby : str, default: None
+        Optional column for stratifying the final table.
+    nonnormal : list, default: None
+        List of columns that contain non-normal variables.
     min_max: list, optional
         List of variables that should report minimum and maximum, instead of
         standard deviation (for normal) or Q1-Q3 (for non-normal).
-    pval : bool, optional
-        Display computed P-Values (default: False).
+    pval : bool, default: False
+        Display computed P-Values.
     pval_adjust : str, optional
         Method used to adjust P-Values for multiple testing.
         The P-values from the unadjusted table (default when pval=True)
@@ -109,17 +109,21 @@ class TableOne:
         Threshold below which p-values are marked with an asterisk (*).
         For example, if set to 0.05, all p-values less than 0.05 will be
         displayed with a trailing asterisk (e.g., '0.012*').
-    htest_name : bool, optional
-        Display a column with the names of hypothesis tests (default: False).
+    htest_name : bool, default: False
+        Display a column with the names of hypothesis tests.
     htest : dict, optional
         Dictionary of custom hypothesis tests. Keys are variable names and
         values are functions. Functions must take a list of Numpy Arrays as
         the input argument and must return a test result.
         e.g. htest = {'age': myfunc}
-    missing : bool, optional
-        Display a count of null values (default: True).
-    ddof : int, optional
-        Degrees of freedom for standard deviation calculations (default: 1).
+    ttest_equal_var : bool, default=False
+        Whether to assume equal population variances when performing two-sample
+        t-tests. Set to False (default) to use Welch’s t-test, which is more robust
+        to unequal variances.
+    missing : bool, default: True
+        Display a count of null values.
+    ddof : int, default: 1
+        Degrees of freedom for standard deviation calculations.
     rename : dict, optional
         Dictionary of alternative names for variables.
         e.g. `rename = {'sex':'gender', 'trt':'treatment'}`
@@ -135,9 +139,9 @@ class TableOne:
     order : dict, optional
         Specify an order for categorical variables. Key is the variable, value
         is a list of values in order.  {e.g. 'sex': ['f', 'm', 'other']}
-    label_suffix : bool, optional
+    label_suffix : bool, default: True
         Append summary type (e.g. "mean (SD); median [Q1,Q3], n (%); ") to the
-        row label (default: True).
+        row label.
     decimals : int or dict, optional
         Number of decimal places to display. An integer applies the rule to all
         variables (default: 1). A dictionary (e.g. `decimals = {'age': 0)`)
@@ -145,32 +149,28 @@ class TableOne:
         variables. For continuous variables, applies to all summary statistics
         (e.g. mean and standard deviation). For categorical variables, applies
         to percentage only.
-    overall : bool, optional
+    overall : bool, default: True
         If True, add an "overall" column to the table. Smd and p-value
         calculations are performed only using stratified columns.
     row_percent : bool, optional
         If True, compute "n (%)" percentages for categorical variables across
         "groupby" rows rather than columns.
-    display_all : bool, optional
+    display_all : bool, default: False
         If True, set pd. display_options to display all columns and rows.
-        (default: False)
-    dip_test : bool, optional
+    dip_test : bool, default: False
         Run Hartigan's Dip Test for multimodality. If variables are found to
         have multimodal distributions, a remark will be added below the
         Table 1.
-        (default: False)
-    normal_test : bool, optional
+    normal_test : bool, default: False
         Test the null hypothesis that a sample come from a normal distribution.
         Uses scipy.stats.normaltest. If variables are found to have non-normal
         distributions, a remark will be added below the Table 1.
-        (default: False)
-    tukey_test : bool, optional
+    tukey_test : bool, default: False
         Run Tukey's test for far outliers. If variables are found to
         have far outliers, a remark will be added below the Table 1.
-        (default: False)
-    include_null : bool, optional
+    include_null : bool, default: True
         Include None/Null values for categorical variables by treating them as a
-        category level. (default: True)
+        category level.
 
 
     Attributes
@@ -225,7 +225,8 @@ class TableOne:
                  tukey_test: bool = False,
                  pval_threshold: Optional[float] = None,
                  include_null: Optional[bool] = True,
-                 pval_digits: int = 3) -> None:
+                 pval_digits: int = 3,
+                 ttest_equal_var: bool = False) -> None:
 
         # Warn about deprecated parameters
         handle_deprecated_parameters(labels, isnull, pval_test_name, remarks)
@@ -240,7 +241,7 @@ class TableOne:
                                                htest, missing, ddof, rename, sort, limit, order,
                                                label_suffix, decimals, smd, overall, row_percent,
                                                dip_test, normal_test, tukey_test, pval_threshold,
-                                               include_null, pval_digits)
+                                               include_null, pval_digits, ttest_equal_var)
 
         # Initialize intermediate tables
         self.initialize_intermediate_tables()
@@ -282,7 +283,7 @@ class TableOne:
                                    htest, missing, ddof, rename, sort, limit, order,
                                    label_suffix, decimals, smd, overall, row_percent, 
                                    dip_test, normal_test, tukey_test, pval_threshold,
-                                   include_null, pval_digits):
+                                   include_null, pval_digits, ttest_equal_var):
         """
         Initialize attributes.
         """
@@ -299,6 +300,7 @@ class TableOne:
         self._dip_test = dip_test
         self._groupby = groupby
         self._htest = htest
+        self._ttest_equal_var = ttest_equal_var
         self._isnull = missing
         self._label_suffix = label_suffix
         self._limit = limit
@@ -359,7 +361,8 @@ class TableOne:
             self.htest_table = self.tables.create_htest_table(data, self._continuous, self._categorical,
                                                               self._nonnormal, self._groupby,
                                                               self._groupbylvls, self._htest,
-                                                              self._pval, self._pval_adjust)
+                                                              self._pval, self._pval_adjust,
+                                                              self._ttest_equal_var)
 
         # create overall tables if required
         if self._categorical and self._groupby and self._overall:

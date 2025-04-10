@@ -114,8 +114,8 @@ class Statistics:
                 is_categorical: bool,
                 is_normal: bool,
                 min_observed: int,
-                catlevels: list,
-                h_test: dict):
+                h_test: dict,
+                ttest_equal_var: bool):
         """
         Compute P-Values.
 
@@ -133,8 +133,6 @@ class Statistics:
                 True if the variable is normally distributed.
             min_observed : int
                 Minimum number of values across groups for the variable.
-            catlevels : list
-                Sorted list of levels for categorical variables.
 
         Returns
         ----------
@@ -165,9 +163,9 @@ class Statistics:
         # continuous
         if (is_continuous and is_normal and len(grouped_data) == 2
                 and min_observed >= 2):
-            ptest = 'Two Sample T-test'
+            ptest = 'Welch’s T-test' if not ttest_equal_var else 'Pooled T-test'
             test_stat, pval = stats.ttest_ind(*grouped_data.values(),
-                                              equal_var=False,
+                                              equal_var=ttest_equal_var,
                                               nan_policy="omit")
         elif is_continuous and is_normal:
             # normally distributed
