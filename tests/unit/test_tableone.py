@@ -1428,5 +1428,5 @@ def test_ttest_equal_var_flag():
     assert pval_welch == "0.00065"
 
     t2 = TableOne(df, columns=['x'], groupby='group', pval=True, ttest_equal_var=True, pval_digits=5)
-    pval_welch = t2.tableone[('Grouped by group', 'P-Value')].iloc[1]
-    assert pval_welch == "0.00010"
+    pval = t2.tableone[('Grouped by group', 'P-Value')].iloc[1]
+    assert pval == "0.00010"
