@@ -1411,8 +1411,22 @@ def test_pval_digits_custom_formatting():
     pval = t2.tableone['Grouped by group']['P-Value'].iloc[1]
     assert pval == '0.233*'
 
-
     t3 = TableOne(df, columns=['y'], continuous=['y'], groupby='group', pval=True, pval_digits=1,
                   pval_threshold=0.3)
     pval = t3.tableone['Grouped by group']['P-Value'].iloc[1]
     assert pval == '<0.1*'
+
+
+def test_ttest_equal_var_flag():
+    df = pd.DataFrame({
+        'group': ['A', 'A', 'A', 'B', 'B', 'B'],
+        'x': [1.0, 2.0, 3.0, 20.0, 22.0, 24.0]
+    })
+
+    t1 = TableOne(df, columns=['x'], groupby='group', pval=True, ttest_equal_var=False, pval_digits=5)
+    pval_welch = t1.tableone[('Grouped by group', 'P-Value')].iloc[1]
+    assert pval_welch == "0.00065"
+
+    t2 = TableOne(df, columns=['x'], groupby='group', pval=True, ttest_equal_var=True, pval_digits=5)
+    pval_welch = t2.tableone[('Grouped by group', 'P-Value')].iloc[1]
+    assert pval_welch == "0.00010"

@@ -31,7 +31,8 @@ class Tables:
                            groupbylvls,
                            htest,
                            pval,
-                           pval_adjust) -> pd.DataFrame:
+                           pval_adjust,
+                           ttest_equal_var) -> pd.DataFrame:
         """
         Create a table containing P-Values for significance tests. Add features
         of the distributions and the P-Values to the dataframe.
@@ -89,7 +90,8 @@ class Tables:
             (df.loc[v, 'P-Value'],
              df.loc[v, 'Test'],
              warning_msg) = self.statistics._p_test(v, grouped_data, is_continuous, is_categorical,  # type: ignore
-                                                    is_normal,  min_observed, catlevels, htest)  # type: ignore
+                                                    is_normal,  min_observed, catlevels, htest,
+                                                    ttest_equal_var)  # type: ignore
 
             # TODO: Improve method for handling these warnings.
             # Write to logfile?
