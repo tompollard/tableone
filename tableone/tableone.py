@@ -13,7 +13,7 @@ from tableone.deprecations import handle_deprecated_parameters
 from tableone.formatting import (docstring_copier, set_display_options, format_pvalues,
                                  format_smd_columns, apply_limits, sort_and_reindex,
                                  apply_order, mask_duplicate_values, create_row_labels,
-                                 reorder_columns)
+                                 reorder_columns, generate_histograms)
 from tableone.preprocessors import (ensure_list, detect_categorical, order_categorical,
                                     get_groups, handle_categorical_nulls)
 from tableone.statistics import Statistics
@@ -171,6 +171,8 @@ class TableOne:
     include_null : bool, default: True
         Include None/Null values for categorical variables by treating them as a
         category level.
+    show_histograms : bool, default=False
+        Whether to include mini-histograms for continuous variables.
 
 
     Attributes
@@ -210,23 +212,35 @@ class TableOne:
                  continuous: Optional[list] = None,
                  groupby: Optional[str] = None,
                  nonnormal: Optional[list] = None,
-                 min_max: Optional[list] = None, pval: Optional[bool] = False,
-                 pval_adjust: Optional[str] = None, htest_name: bool = False,
-                 pval_test_name: bool = False, htest: Optional[dict] = None,
+                 min_max: Optional[list] = None,
+                 pval: Optional[bool] = False,
+                 pval_adjust: Optional[str] = None,
+                 htest_name: bool = False,
+                 pval_test_name: bool = False,
+                 htest: Optional[dict] = None,
                  isnull: Optional[bool] = None, missing: bool = True,
-                 ddof: int = 1, labels: Optional[dict] = None,
-                 rename: Optional[dict] = None, sort: Union[bool, str] = False,
+                 show_histograms: bool = False,
+                 ddof: int = 1,
+                 labels: Optional[dict] = None,
+                 rename: Optional[dict] = None,
+                 sort: Union[bool, str] = False,
                  limit: Union[int, dict, None] = None,
-                 order: Optional[dict] = None, remarks: bool = False,
-                 label_suffix: bool = True, decimals: Union[int, dict] = 1,
-                 smd: bool = False, overall: bool = True,
-                 row_percent: bool = False, display_all: bool = False,
-                 dip_test: bool = False, normal_test: bool = False,
+                 order: Optional[dict] = None,
+                 remarks: bool = False,
+                 label_suffix: bool = True,
+                 decimals: Union[int, dict] = 1,
+                 smd: bool = False,
+                 overall: bool = True,
+                 row_percent: bool = False,
+                 display_all: bool = False,
+                 dip_test: bool = False,
+                 normal_test: bool = False,
                  tukey_test: bool = False,
                  pval_threshold: Optional[float] = None,
                  include_null: Optional[bool] = True,
                  pval_digits: int = 3,
-                 ttest_equal_var: bool = False) -> None:
+                 ttest_equal_var: bool = False,
+                 ) -> None:
 
         # Warn about deprecated parameters
         handle_deprecated_parameters(labels, isnull, pval_test_name, remarks)
@@ -241,7 +255,8 @@ class TableOne:
                                                htest, missing, ddof, rename, sort, limit, order,
                                                label_suffix, decimals, smd, overall, row_percent,
                                                dip_test, normal_test, tukey_test, pval_threshold,
-                                               include_null, pval_digits, ttest_equal_var)
+                                               include_null, pval_digits, ttest_equal_var,
+                                               show_histograms)
 
         # Initialize intermediate tables
         self.initialize_intermediate_tables()
@@ -283,7 +298,8 @@ class TableOne:
                                    htest, missing, ddof, rename, sort, limit, order,
                                    label_suffix, decimals, smd, overall, row_percent, 
                                    dip_test, normal_test, tukey_test, pval_threshold,
-                                   include_null, pval_digits, ttest_equal_var):
+                                   include_null, pval_digits, ttest_equal_var,
+                                   show_histograms):
         """
         Initialize attributes.
         """
@@ -316,6 +332,7 @@ class TableOne:
         self._pval_digits = pval_digits
         self._reserved_columns = ['Missing', 'P-Value', 'Test', 'P-Value (adjusted)', 'SMD', 'Overall']
         self._row_percent = row_percent
+        self._show_histograms = show_histograms
         self._smd = smd
         self._sort = sort
         self._tukey_test = tukey_test
@@ -659,9 +676,57 @@ class TableOne:
         table = self._combine_tables()
         optional_columns = ['P-Value', 'P-Value (adjusted)', 'Test']
 
+        if self._show_histograms:
+            hist_cols = [
+                f"{lvl} Histogram" for lvl in self._groupbylvls
+                ] if self._groupby else ["Histogram"]
+            hist_cols.append("Overall Histogram") if self._groupby else None
+            optional_columns += hist_cols
+
         # ensure column headers are strings before reindexing
         table = table.reset_index().set_index(['variable', 'value'])  # type: ignore
         table.columns = table.columns.values.astype(str)
+
+        # Add histograms
+        if self._show_histograms:
+            histogram_cols = {}
+            for v in self._columns:
+                if v in self._continuous:
+                    histograms = []
+                    if self._groupby:
+                        for lvl in self._groupbylvls:
+                            lvl_values = data.loc[data[self._groupby] == lvl, v].dropna().values
+                            histograms.append(generate_histograms(lvl_values))
+                        overall_values = data[v].dropna().values
+                        histograms.append(generate_histograms(overall_values))
+                    else:
+                        overall_values = data[v].dropna().values
+                        histograms.append(generate_histograms(overall_values))
+                    histogram_cols[v] = histograms
+
+            if histogram_cols:
+                new_cols = []
+                if self._groupby:
+                    new_cols = [f"{lvl} Histogram" for lvl in self._groupbylvls] + ['Overall Histogram']
+                else:
+                    new_cols = ['Histogram']
+
+                var_names = table.index.get_level_values(0)
+                var_values = table.index.get_level_values(1)
+
+                for idx, colname in enumerate(new_cols):
+                    histograms = []
+                    for var, val in zip(var_names, var_values):
+                        # Only add histogram to the main summary row (val == '')
+                        if val == '':
+                            hists = histogram_cols.get(var, [])
+                            if idx < len(hists):
+                                histograms.append(hists[idx])
+                            else:
+                                histograms.append('')
+                        else:
+                            histograms.append('')  # No histogram for sub-rows
+                    table[colname] = histograms
 
         table = sort_and_reindex(table, self._smd, self.smd_table, self._sort, self._columns)
         table = format_pvalues(table, self._pval, self._pval_adjust, self._pval_threshold, self._pval_digits)

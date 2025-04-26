@@ -291,3 +291,21 @@ def reorder_columns(table, optional_columns, groupby, order, overall):
         table = table.reindex(cols, axis=1)
 
     return table
+
+
+def generate_histograms(values, bins=8) -> str:
+    """
+    Generate a small Unicode histogram for an array of values.
+    """
+    breakpoint()
+    if len(values) == 0:
+        return ''
+    counts, _ = np.histogram(values, bins=bins)
+    max_count = counts.max()
+    if max_count == 0:
+        normalized = [0] * len(counts)
+    else:
+        normalized = (counts / max_count * 7).round().astype(int)
+
+    blocks = '▁▂▃▄▅▆▇█'
+    return ''.join(blocks[n] for n in normalized)
