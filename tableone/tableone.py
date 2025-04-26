@@ -8,6 +8,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
+from typing import Tuple
 
 from tableone.deprecations import handle_deprecated_parameters
 from tableone.formatting import (docstring_copier, set_display_options, format_pvalues,
@@ -173,6 +174,12 @@ class TableOne:
         category level.
     show_histograms : bool, default=False
         Whether to include mini-histograms for continuous variables.
+    clip_histograms : tuple or None, default (1, 99)
+        If show_histograms=True, specify a (lower_percentile, upper_percentile) range to clip the
+        data before generating histograms. This reduces the influence of extreme outliers.
+        For example, (1, 99) clips to the 1st and 99th percentiles.
+        Set to None to disable clipping and use the full range of values.
+
 
 
     Attributes
@@ -220,6 +227,7 @@ class TableOne:
                  htest: Optional[dict] = None,
                  isnull: Optional[bool] = None, missing: bool = True,
                  show_histograms: bool = False,
+                 clip_histograms: Optional[Tuple[int, int]] = (1, 99),
                  ddof: int = 1,
                  labels: Optional[dict] = None,
                  rename: Optional[dict] = None,
@@ -256,7 +264,7 @@ class TableOne:
                                                label_suffix, decimals, smd, overall, row_percent,
                                                dip_test, normal_test, tukey_test, pval_threshold,
                                                include_null, pval_digits, ttest_equal_var,
-                                               show_histograms)
+                                               show_histograms, clip_histograms)
 
         # Initialize intermediate tables
         self.initialize_intermediate_tables()
@@ -299,12 +307,13 @@ class TableOne:
                                    label_suffix, decimals, smd, overall, row_percent, 
                                    dip_test, normal_test, tukey_test, pval_threshold,
                                    include_null, pval_digits, ttest_equal_var,
-                                   show_histograms):
+                                   show_histograms, clip_histograms):
         """
         Initialize attributes.
         """
         self._alt_labels = rename
         self._include_null = include_null
+        self._clip_histograms = clip_histograms
         self._columns = columns if columns else data.columns.to_list()  # type: ignore
         self._categorical = detect_categorical(data[self._columns], groupby) if categorical is None else categorical
         if continuous:
@@ -696,12 +705,12 @@ class TableOne:
                     if self._groupby:
                         for lvl in self._groupbylvls:
                             lvl_values = data.loc[data[self._groupby] == lvl, v].dropna().values
-                            histograms.append(generate_histograms(lvl_values))
+                            histograms.append(generate_histograms(lvl_values, clip=self._clip_histograms))
                         overall_values = data[v].dropna().values
-                        histograms.append(generate_histograms(overall_values))
+                        histograms.append(generate_histograms(overall_values, clip=self._clip_histograms))
                     else:
                         overall_values = data[v].dropna().values
-                        histograms.append(generate_histograms(overall_values))
+                        histograms.append(generate_histograms(overall_values, clip=self._clip_histograms))
                     histogram_cols[v] = histograms
 
             if histogram_cols:
@@ -725,7 +734,8 @@ class TableOne:
                             else:
                                 histograms.append('')
                         else:
-                            histograms.append('')  # No histogram for sub-rows
+                            # No histogram for sub-rows
+                            histograms.append('')
                     table[colname] = histograms
 
         table = sort_and_reindex(table, self._smd, self.smd_table, self._sort, self._columns)
