@@ -293,19 +293,38 @@ def reorder_columns(table, optional_columns, groupby, order, overall):
     return table
 
 
-def generate_histograms(values, bins=8) -> str:
+def generate_histograms(values, bins=8, clip=(1, 99)):
     """
-    Generate a small Unicode histogram for an array of values.
+    Generate a mini histogram using unicode blocks.
+
+    Parameters
+    ----------
+    values : np.ndarray
+        Numeric values.
+    bins : int
+        Number of bins for the histogram.
+    clip : tuple of (int, int) or None, optional
+        If specified, clip values to the given (lower_percentile, upper_percentile).
+        For example, clip=(1, 99) clips to 1st and 99th percentiles.
+        If None, no clipping is applied.
+
+    Returns
+    -------
+    str
+        Unicode sparkline.
     """
-    breakpoint()
     if len(values) == 0:
         return ''
-    counts, _ = np.histogram(values, bins=bins)
-    max_count = counts.max()
-    if max_count == 0:
-        normalized = [0] * len(counts)
-    else:
-        normalized = (counts / max_count * 7).round().astype(int)
+
+    if clip is not None:
+        lower, upper = np.percentile(values, clip)
+        values = np.clip(values, lower, upper)
+
+    hist, _ = np.histogram(values, bins=bins)
+    if hist.max() == 0:
+        return ''
 
     blocks = '▁▂▃▄▅▆▇█'
-    return ''.join(blocks[n] for n in normalized)
+    hist_normalized = np.floor((hist / hist.max()) * (len(blocks) - 1)).astype(int)
+
+    return ''.join(blocks[i] for i in hist_normalized)
