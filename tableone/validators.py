@@ -117,7 +117,7 @@ class InputValidator:
     def check_pval_adjust(self, pval_adjust: str):
         """Ensure 'pval_adjust' is a known method."""
         if pval_adjust is not None:
-            valid_methods = {"bonferroni", "sidak", "holm-sidak", "simes-hochberg", "hommel", None}
+            valid_methods = {"bonferroni", "sidak", "holm-sidak", "simes-hochberg", "hommel","holm","fdr_bh","fdr_by","fdr_tsbh","fdr_tsbky", None}
             if isinstance(pval_adjust, str):
                 if pval_adjust.lower() not in valid_methods:
                     msg = (f"Invalid 'pval_adjust' value: '{pval_adjust}'. "
