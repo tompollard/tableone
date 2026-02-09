@@ -442,7 +442,7 @@ class Tables:
         try:
             table = table.join(nulltable)
         # if columns form a CategoricalIndex, need to convert to string first
-        except TypeError:
+        except (pd.errors.InvalidIndexError, TypeError):
             table.columns = table.columns.astype(str)
             table = table.join(nulltable)
 
@@ -502,7 +502,7 @@ class Tables:
         try:
             table = table.join(isnull)
         # if columns form a CategoricalIndex, need to convert to string first
-        except TypeError:
+        except (pd.errors.InvalidIndexError, TypeError):
             table.columns = table.columns.astype(str)
             table = table.join(isnull)
 
